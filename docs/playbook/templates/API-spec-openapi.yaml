@@ -1,0 +1,77 @@
+openapi: 3.0.3
+info:
+  title: <Service / Feature API>
+  version: 1.0.0-draft
+  description: |
+    Summary of the API purpose, consumers, and links to related ADRs/RFCs.
+servers:
+  - url: https://api.example.com
+    description: Production
+  - url: https://staging-api.example.com
+    description: Staging
+
+tags:
+  - name: <Tag>
+    description: Logical grouping of operations.
+
+paths:
+  /resource:
+    get:
+      summary: List resources
+      description: |
+        Business context, pagination rules, and side-effects.
+      tags:
+        - <Tag>
+      operationId: listResources
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 25
+          description: Max results per page.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceList'
+        '401':
+          description: Unauthorized
+        '429':
+          description: Rate limited
+      security:
+        - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Resource:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    ResourceList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+        nextCursor:
+          type: string
+          nullable: true
