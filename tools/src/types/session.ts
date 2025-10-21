@@ -281,6 +281,35 @@ export interface WebSearchToolInput {
 // Type Guards
 // ============================================================================
 
+/**
+ * Type guard to check if value is a valid SessionEntry
+ */
+export function isSessionEntry(value: unknown): value is SessionEntry {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const entry = value as Record<string, unknown>;
+
+  // Check for required base properties (type is always present)
+  if (typeof entry.type !== 'string') {
+    return false;
+  }
+
+  // Check if it matches one of the known entry types
+  const validTypes = [
+    'user',
+    'assistant',
+    'system',
+    'summary',
+    'file-history-snapshot',
+    'create',
+    'update',
+  ];
+
+  return validTypes.includes(entry.type);
+}
+
 export function isUserEntry(entry: SessionEntry): entry is UserEntry {
   return entry.type === 'user';
 }

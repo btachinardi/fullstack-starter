@@ -45,6 +45,24 @@ export interface LogEntry {
   data?: unknown;
 }
 
+/**
+ * Type guard to check if value is a valid LogEntry
+ */
+export function isLogEntry(value: unknown): value is LogEntry {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'timestamp' in value &&
+    'level' in value &&
+    'source' in value &&
+    'message' in value &&
+    typeof (value as LogEntry).timestamp === 'string' &&
+    typeof (value as LogEntry).level === 'string' &&
+    typeof (value as LogEntry).source === 'string' &&
+    typeof (value as LogEntry).message === 'string'
+  );
+}
+
 export interface LoggerOptions {
   source: string;
   context?: LogContext;
@@ -167,7 +185,7 @@ export class Logger {
     level: LogLevel,
     message: string,
     data?: unknown,
-    extraContext?: LogContext,
+    extraContext?: LogContext
   ): LogEntry {
     return {
       timestamp: new Date().toISOString(),
@@ -251,7 +269,7 @@ export function createLogger(source: string, context?: LogContext): Logger {
 export function createHookLogger(
   hookName: string,
   sessionId?: string,
-  transcriptPath?: string,
+  transcriptPath?: string
 ): Logger {
   return new Logger({
     source: hookName,

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { createRouter, Link, Outlet } from './index';
+import { describe, expect, it } from 'vitest';
+import { Link, Outlet, createRouter } from './index';
 
 describe('platform-router', () => {
   it('should export createRouter', () => {

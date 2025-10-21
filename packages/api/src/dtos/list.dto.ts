@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PaginationQueryDto, PaginatedResponse } from './pagination.dto';
+import { type PaginatedResponse, PaginationQueryDto } from './pagination.dto';
 
 /**
  * Base List Query DTO following PRD-04 List Endpoint contract

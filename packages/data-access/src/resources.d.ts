@@ -1,5 +1,5 @@
-import { ApiClient } from './client';
-import { Resource, PaginatedResponse } from './types';
+import type { ApiClient } from './client';
+import type { PaginatedResponse, Resource } from './types';
 export interface ListResourcesParams {
     page?: number;
     perPage?: number;

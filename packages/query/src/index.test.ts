@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { createQueryClient, useQuery, QueryClientProvider } from './index';
+import { describe, expect, it } from 'vitest';
+import { QueryClientProvider, createQueryClient, useQuery } from './index';
 
 describe('platform-query', () => {
   it('should export createQueryClient', () => {

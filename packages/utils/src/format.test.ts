@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { formatDate, formatRelativeTime, formatNumber, truncate } from './format';
+import { describe, expect, it } from 'vitest';
+import { formatDate, formatNumber, formatRelativeTime, truncate } from './format';
 
 describe('formatDate', () => {
   it('should format a date correctly', () => {

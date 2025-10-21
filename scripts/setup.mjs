@@ -2,7 +2,7 @@
 
 import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -39,8 +39,8 @@ function log(message, level = 'info') {
 
   try {
     const logContent = existsSync(logFile) ? readFileSync(logFile, 'utf-8') : '';
-    writeFileSync(logFile, logContent + entry + '\\n');
-  } catch (err) {
+    writeFileSync(logFile, `${logContent + entry}\\n`);
+  } catch (_err) {
     // Ignore log file errors
   }
 }
@@ -63,7 +63,10 @@ function endStep(status = 'success', error = null) {
       currentStep.error = error.message || String(error);
     }
     steps.push(currentStep);
-    log(`${status === 'success' ? '✓' : '✗'} ${currentStep.name} (${currentStep.duration}ms)`, status === 'success' ? 'info' : 'error');
+    log(
+      `${status === 'success' ? '✓' : '✗'} ${currentStep.name} (${currentStep.duration}ms)`,
+      status === 'success' ? 'info' : 'error'
+    );
     currentStep = null;
   }
 }
@@ -95,8 +98,7 @@ function checkPrerequisites() {
 
     if (major < requiredMajor || (major === requiredMajor && minor < requiredMinor)) {
       throw new Error(
-        `Node.js ${requiredMajor}.${requiredMinor}.0 or higher is required. Current: ${nodeVersion}\\n` +
-        `Please update Node.js or use the Dev Container.`
+        `Node.js ${requiredMajor}.${requiredMinor}.0 or higher is required. Current: ${nodeVersion}\\nPlease update Node.js or use the Dev Container.`
       );
     }
     log(`✓ Node.js version: ${nodeVersion}`);
@@ -106,9 +108,7 @@ function checkPrerequisites() {
       const pnpmVersion = exec('pnpm --version');
       log(`✓ pnpm version: ${pnpmVersion}`);
     } catch {
-      throw new Error(
-        'pnpm is not available. Please enable Corepack with: corepack enable'
-      );
+      throw new Error('pnpm is not available. Please enable Corepack with: corepack enable');
     }
 
     // Check git
@@ -267,7 +267,7 @@ function writeSummary() {
     mode: flags.check ? 'check' : 'setup',
     steps,
     totalDuration: steps.reduce((sum, step) => sum + (step.duration || 0), 0),
-    success: steps.every(step => step.status === 'success' || step.status === 'skipped'),
+    success: steps.every((step) => step.status === 'success' || step.status === 'skipped'),
   };
 
   try {
@@ -296,7 +296,7 @@ async function main() {
     generateEnvFiles();
     setupHusky();
 
-    const summary = writeSummary();
+    const _summary = writeSummary();
 
     if (!flags.json) {
       console.log('\\n✨ Setup completed successfully!');

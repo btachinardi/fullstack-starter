@@ -21,10 +21,10 @@ A batteries-included monorepo for full-stack TypeScript applications with high q
 ### Code Quality Tooling
 
 - **TypeScript 5.7**: Strict mode enforcement across all packages
-- **ESLint**: Configured via `@starter/eslint` with React/Node variants
-- **Prettier**: Standardized formatting via `@starter/prettier`
-- **Biome** (tools/): Alternative linter/formatter for CLI tools
+- **Biome 1.9+**: Unified linter and formatter (Rust-based, replaces ESLint + Prettier)
 - **Husky + lint-staged**: Pre-commit hooks for quality gates
+- **Gitleaks**: Secret detection in commits
+- **Security Audits**: pnpm audit for dependency vulnerabilities
 
 ### Key Root Scripts
 
@@ -233,9 +233,10 @@ pnpm tools logs query <term>     # Search logs
 
 ### Quality Gates
 
-- Pre-commit: lint-staged with Prettier + ESLint auto-fix
+- Pre-commit: lint-staged with Biome auto-fix
 - CI: typecheck → lint → test → build (enforced via Turborepo)
 - Local CI: `pnpm ci:local` runs full pipeline
+- Manual: `pnpm lint:assertions` - Type assertion code review tool (run periodically)
 
 ---
 
@@ -248,6 +249,7 @@ pnpm tools logs query <term>     # Search logs
 5. **Build**: `pnpm build` (topological build order)
 6. **Test**: `pnpm test` (all test suites)
 7. **Quality**: `pnpm lint && pnpm typecheck && pnpm format:check`
+8. **Code Review** (optional): `pnpm lint:assertions` - Review type assertions
 
 ### Adding New Packages
 
@@ -278,6 +280,215 @@ pnpm tools logs query <term>     # Search logs
 - **Documentation**: Update CLAUDE.md when adding/changing workspace structure
 - **Commits**: Follow Conventional Commits for changelog generation
 - **PRs**: Keep focused and small; link to PRD/specs when applicable
+
+---
+
+## Type Safety & Code Quality Standards
+
+This project enforces **100% type-safe, lint-clean code** with zero tolerance for shortcuts. All code must pass strict TypeScript and Biome checks before committing.
+
+### TypeScript Strict Mode
+
+**Enabled strict checks:**
+- `strict`: true (enables all strict type checking)
+- `noImplicitAny`: Disallow implicit `any` types
+- `strictNullChecks`: Enforce null/undefined handling
+- `strictFunctionTypes`: Strict function type checking
+- `noUnusedLocals`: Error on unused variables
+- `noUnusedParameters`: Error on unused parameters
+
+### Type Safety Rules
+
+**Never use `any`** - Always use proper types:
+```typescript
+// ❌ WRONG - Using any
+let data: any = await response.json();
+
+// ✅ CORRECT - Using proper types with type guards
+interface ErrorResponse {
+  message?: string;
+  code?: string;
+}
+
+function isErrorResponse(data: unknown): data is ErrorResponse {
+  return typeof data === 'object' && data !== null && 'message' in data;
+}
+
+const data: unknown = await response.json();
+const error = isErrorResponse(data) ? data : { message: 'Unknown error' };
+```
+
+**Prefer type guards over type assertions (`as`)**:
+```typescript
+// ❌ WRONG - Unsafe type assertion
+const user = data as User;
+
+// ✅ CORRECT - Using type guard
+function isUser(data: unknown): data is User {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'id' in data &&
+    'name' in data &&
+    typeof (data as { id: unknown; name: unknown }).id === 'string' &&
+    typeof (data as { id: unknown; name: unknown }).name === 'string'
+  );
+}
+
+const user = isUser(data) ? data : null;
+```
+
+**Valid use cases for type assertions**:
+- Generic types: `return data as T` (when T is a type parameter)
+- Jest mocks: `const mock = service as jest.Mocked<typeof service>`
+- Double casting for safety: `const value = (input as unknown) as TargetType`
+- Global object typing: `(globalThis as NodeGlobal).process`
+
+**Manual code review tool**:
+Run `pnpm lint:assertions` periodically to identify potentially unsafe type assertions.
+This is a code review aid, not an automated blocker - it helps find assertions that
+could be replaced with type guards for better runtime safety.
+
+**Never use non-null assertions (`!`)** - Always handle undefined/null:
+```typescript
+// ❌ WRONG - Using non-null assertion
+const element = document.getElementById('root')!;
+const value = array[0]!;
+
+// ✅ CORRECT - Proper null handling
+const element = document.getElementById('root');
+if (!element) {
+  throw new Error('Root element not found');
+}
+
+const value = array[0];
+if (!value) {
+  return null;
+}
+```
+
+**Always handle regex match groups**:
+```typescript
+// ❌ WRONG - Assuming match groups exist
+const match = str.match(/(\d+)/);
+const number = match[1]; // Could be undefined!
+
+// ✅ CORRECT - Check match and groups
+const match = str.match(/(\d+)/);
+if (!match || !match[1]) {
+  throw new Error('No match found');
+}
+const number = match[1];
+```
+
+**Always validate unknown data**:
+```typescript
+// ❌ WRONG - Accessing properties on unknown
+function handleData(data: unknown) {
+  console.log(data.message); // Error!
+}
+
+// ✅ CORRECT - Type guard before access
+function handleData(data: unknown) {
+  if (typeof data === 'object' && data !== null && 'message' in data) {
+    console.log((data as { message: unknown }).message);
+  }
+}
+```
+
+### Biome Configuration
+
+**Enforced rules** (see `biome.json`):
+- **No explicit any**: `noExplicitAny: "warn"` - Warnings for any usage (will be error in future)
+- **No unused variables**: `noUnusedVariables: "error"`
+- **No var**: `noVar: "error"` - Use const/let only
+- **Use const**: `useConst: "error"` - Prefer const over let
+- **Organize imports**: Automatic import sorting
+- **Format**: Single quotes, 2-space indent, 100 line width, semicolons, es5 trailing commas
+
+**NestJS support:**
+- `unsafeParameterDecoratorsEnabled: true` - Required for parameter decorators
+
+**Testing globals:**
+- Jest globals recognized: `jest`, `describe`, `it`, `expect`, `beforeEach`, `afterEach`, `beforeAll`, `afterAll`
+
+### Code Quality Checklist
+
+Before committing code, ensure:
+
+- [ ] Zero TypeScript errors (`pnpm typecheck`)
+- [ ] Zero Biome errors (`pnpm lint`)
+- [ ] All tests passing (`pnpm test`)
+- [ ] No `any` types
+- [ ] No type assertions (`as`)
+- [ ] No non-null assertions (`!`)
+- [ ] All `unknown` values validated with type guards
+- [ ] All regex matches checked for null/undefined
+- [ ] All array accesses checked for undefined
+- [ ] All optional properties handled
+- [ ] No unused variables or imports
+
+### Type Guard Pattern
+
+**Standard type guard template:**
+```typescript
+interface MyType {
+  requiredField: string;
+  optionalField?: number;
+}
+
+function isMyType(data: unknown): data is MyType {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'requiredField' in data &&
+    typeof (data as { requiredField: unknown }).requiredField === 'string'
+  );
+}
+
+// Usage
+const data: unknown = await fetchData();
+if (isMyType(data)) {
+  // data is now MyType - safe to use
+  console.log(data.requiredField);
+}
+```
+
+### Error Handling
+
+**Always type errors properly:**
+```typescript
+// ❌ WRONG - Assuming error type
+try {
+  await someOperation();
+} catch (error) {
+  console.log(error.message); // Error! error is unknown
+}
+
+// ✅ CORRECT - Type guard or type check
+try {
+  await someOperation();
+} catch (error) {
+  const message = error instanceof Error ? error.message : 'Unknown error';
+  console.log(message);
+}
+```
+
+### Summary
+
+**Zero tolerance for:**
+- `any` types
+- Type assertions (`as`)
+- Non-null assertions (`!`)
+- Unsafe property access
+- Unhandled undefined/null
+
+**Always use:**
+- Proper interfaces and types
+- Type guards for validation
+- Explicit null/undefined checks
+- Type-safe error handling
+- Strict TypeScript settings
 
 ---
 

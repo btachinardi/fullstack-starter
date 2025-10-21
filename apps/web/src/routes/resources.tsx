@@ -1,6 +1,6 @@
 import { createRoute } from '@starter/router';
-import { Route as RootRoute } from './__root';
 import { ResourcesPage } from '../pages/ResourcesPage';
+import { Route as RootRoute } from './__root';
 
 export const Route = createRoute({
   getParentRoute: () => RootRoute,

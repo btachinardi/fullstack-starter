@@ -17,6 +17,7 @@ import * as logTools from '../tools/logs.js';
 import * as sessionTools from '../tools/session.js';
 import * as taskTools from '../tools/tasks.js';
 import type { TaskStatus } from '../types/tasks.js';
+import { getErrorMessage, isTaskStatus } from '../utils/type-guards.js';
 
 const program = new Command();
 
@@ -67,15 +68,15 @@ session
       console.log(`${chalk.cyan('Input Tokens:')}        ${result.tokens.input.toLocaleString()}`);
       console.log(`${chalk.cyan('Output Tokens:')}       ${result.tokens.output.toLocaleString()}`);
       console.log(
-        `${chalk.cyan('Cache Creation:')}      ${result.tokens.cacheCreation.toLocaleString()}`,
+        `${chalk.cyan('Cache Creation:')}      ${result.tokens.cacheCreation.toLocaleString()}`
       );
       console.log(
-        `${chalk.cyan('Cache Read:')}          ${result.tokens.cacheRead.toLocaleString()}`,
+        `${chalk.cyan('Cache Read:')}          ${result.tokens.cacheRead.toLocaleString()}`
       );
       console.log(`${chalk.cyan('Total:')}               ${result.tokens.total.toLocaleString()}`);
     } catch (error) {
       spinner.fail('Failed to parse session');
-      console.error(chalk.red((error as Error).message));
+      console.error(chalk.red(getErrorMessage(error)));
       process.exit(1);
     }
   });
@@ -96,7 +97,7 @@ session
 
       if ('toolUsage' in result) {
         spinner.succeed(
-          `Found ${result.toolUsage.reduce((sum, t) => sum + t.count, 0)} tool use(s)`,
+          `Found ${result.toolUsage.reduce((sum, t) => sum + t.count, 0)} tool use(s)`
         );
         console.log(chalk.bold('\n🔧 Tool Usage\n'));
         for (const { toolName, count } of result.toolUsage) {
@@ -111,7 +112,7 @@ session
       }
     } catch (error) {
       spinner.fail('Failed to analyze tools');
-      console.error(chalk.red((error as Error).message));
+      console.error(chalk.red(getErrorMessage(error)));
       process.exit(1);
     }
   });
@@ -175,10 +176,10 @@ session
         }
       } catch (error) {
         spinner.fail('Failed to analyze files');
-        console.error(chalk.red((error as Error).message));
+        console.error(chalk.red(getErrorMessage(error)));
         process.exit(1);
       }
-    },
+    }
   );
 
 // ----------------------------------------------------------------------------
@@ -216,7 +217,7 @@ session
       }
     } catch (error) {
       spinner.fail('Failed to find subagents');
-      console.error(chalk.red((error as Error).message));
+      console.error(chalk.red(getErrorMessage(error)));
       process.exit(1);
     }
   });
@@ -254,7 +255,7 @@ session
       }
     } catch (error) {
       spinner.fail('Failed to extract conversation');
-      console.error(chalk.red((error as Error).message));
+      console.error(chalk.red(getErrorMessage(error)));
       process.exit(1);
     }
   });
@@ -290,7 +291,7 @@ session
       }
     } catch (error) {
       spinner.fail('Failed to find bash commands');
-      console.error(chalk.red((error as Error).message));
+      console.error(chalk.red(getErrorMessage(error)));
       process.exit(1);
     }
   });
@@ -319,7 +320,7 @@ session
       }
     } catch (error) {
       spinner.fail('Failed to export session');
-      console.error(chalk.red((error as Error).message));
+      console.error(chalk.red(getErrorMessage(error)));
       process.exit(1);
     }
   });
@@ -351,7 +352,7 @@ session
       }
     } catch (error) {
       spinner.fail('Failed to list sessions');
-      console.error(chalk.red((error as Error).message));
+      console.error(chalk.red(getErrorMessage(error)));
       process.exit(1);
     }
   });
@@ -389,7 +390,7 @@ logs
       formatLogEntries(entries);
     } catch (error) {
       spinner.fail('Failed to read logs');
-      console.error(chalk.red((error as Error).message));
+      console.error(chalk.red(getErrorMessage(error)));
       process.exit(1);
     }
   });
@@ -445,10 +446,10 @@ logs
         formatLogEntries(entries);
       } catch (error) {
         spinner.fail('Failed to query logs');
-        console.error(chalk.red((error as Error).message));
+        console.error(chalk.red(getErrorMessage(error)));
         process.exit(1);
       }
-    },
+    }
   );
 
 // ----------------------------------------------------------------------------
@@ -503,7 +504,7 @@ logs
       }
     } catch (error) {
       spinner.fail('Failed to calculate statistics');
-      console.error(chalk.red((error as Error).message));
+      console.error(chalk.red(getErrorMessage(error)));
       process.exit(1);
     }
   });
@@ -534,7 +535,7 @@ logs
       }
     } catch (error) {
       spinner.fail('Failed to list sources');
-      console.error(chalk.red((error as Error).message));
+      console.error(chalk.red(getErrorMessage(error)));
       process.exit(1);
     }
   });
@@ -565,7 +566,7 @@ logs
       }
     } catch (error) {
       spinner.fail('Failed to list tools');
-      console.error(chalk.red((error as Error).message));
+      console.error(chalk.red(getErrorMessage(error)));
       process.exit(1);
     }
   });
@@ -580,7 +581,7 @@ function formatLogEntries(entries: LogEntry[]): void {
     const levelColor = getLevelColor(entry.level);
 
     console.log(
-      `${chalk.gray(`[${time}]`)} ${levelColor(entry.level.toUpperCase().padEnd(6))} ${chalk.cyan(entry.source)}`,
+      `${chalk.gray(`[${time}]`)} ${levelColor(entry.level.toUpperCase().padEnd(6))} ${chalk.cyan(entry.source)}`
     );
     console.log(`  ${entry.message}`);
 
@@ -627,521 +628,511 @@ const tasks = program.command('tasks').description('Manage task documents (*.tas
 // ----------------------------------------------------------------------------
 
 tasks
-	.command('list-docs')
-	.description('List all task documents in the project')
-	.option('-p, --path <path>', 'Search path (defaults to current directory)')
-	.action(async (options: { path?: string }) => {
-		const spinner = ora('Discovering task documents...').start();
+  .command('list-docs')
+  .description('List all task documents in the project')
+  .option('-p, --path <path>', 'Search path (defaults to current directory)')
+  .action(async (options: { path?: string }) => {
+    const spinner = ora('Discovering task documents...').start();
 
-		try {
-			const documents = await taskTools.discoverDocuments({
-				searchPath: options.path,
-			});
+    try {
+      const documents = await taskTools.discoverDocuments({
+        searchPath: options.path,
+      });
 
-			spinner.succeed(`Found ${documents.length} task document(s)`);
+      spinner.succeed(`Found ${documents.length} task document(s)`);
 
-			if (documents.length === 0) {
-				console.log(chalk.yellow('\nNo task documents found.'));
-				console.log(
-					chalk.gray('Task documents should have the .tasks.md extension'),
-				);
-				return;
-			}
+      if (documents.length === 0) {
+        console.log(chalk.yellow('\nNo task documents found.'));
+        console.log(chalk.gray('Task documents should have the .tasks.md extension'));
+        return;
+      }
 
-			console.log(chalk.bold('\n📋 Task Documents\n'));
-			for (const doc of documents) {
-				console.log(`  ${chalk.cyan('•')} ${doc.name}`);
-				console.log(`    ${chalk.gray(doc.path)}`);
-			}
-		} catch (error) {
-			spinner.fail('Failed to discover task documents');
-			console.error(chalk.red((error as Error).message));
-			process.exit(1);
-		}
-	});
+      console.log(chalk.bold('\n📋 Task Documents\n'));
+      for (const doc of documents) {
+        console.log(`  ${chalk.cyan('•')} ${doc.name}`);
+        console.log(`    ${chalk.gray(doc.path)}`);
+      }
+    } catch (error) {
+      spinner.fail('Failed to discover task documents');
+      console.error(chalk.red(getErrorMessage(error)));
+      process.exit(1);
+    }
+  });
 
 // ----------------------------------------------------------------------------
 // tasks list
 // ----------------------------------------------------------------------------
 
 tasks
-	.command('list')
-	.description('List all tasks in a document with optional filtering')
-	.option('-d, --doc <name>', 'Document name, path, or partial path')
-	.option('-s, --status <status>', 'Filter by status (todo, in progress, completed, cancelled)')
-	.option('-l, --list <name>', 'Filter by task list name')
-	.option('-t, --type <type>', 'Filter by task type')
-	.option('-p, --project <name>', 'Filter by project')
-	.option('--head <n>', 'Show only first N tasks')
-	.option('--tail <n>', 'Show only last N tasks')
-	.action(
-		async (options: {
-			doc?: string;
-			status?: string;
-			list?: string;
-			type?: string;
-			project?: string;
-			head?: string;
-			tail?: string;
-		}) => {
-			const spinner = ora('Loading tasks...').start();
+  .command('list')
+  .description('List all tasks in a document with optional filtering')
+  .option('-d, --doc <name>', 'Document name, path, or partial path')
+  .option('-s, --status <status>', 'Filter by status (todo, in progress, completed, cancelled)')
+  .option('-l, --list <name>', 'Filter by task list name')
+  .option('-t, --type <type>', 'Filter by task type')
+  .option('-p, --project <name>', 'Filter by project')
+  .option('--head <n>', 'Show only first N tasks')
+  .option('--tail <n>', 'Show only last N tasks')
+  .action(
+    async (options: {
+      doc?: string;
+      status?: string;
+      list?: string;
+      type?: string;
+      project?: string;
+      head?: string;
+      tail?: string;
+    }) => {
+      const spinner = ora('Loading tasks...').start();
 
-			try {
-				// Discover document
-				const documents = await taskTools.discoverDocuments({ doc: options.doc });
+      try {
+        // Discover document
+        const documents = await taskTools.discoverDocuments({ doc: options.doc });
 
-				if (documents.length === 0) {
-					spinner.fail('No task documents found');
-					console.log(chalk.yellow('\nNo matching task documents found.'));
-					return;
-				}
+        if (documents.length === 0) {
+          spinner.fail('No task documents found');
+          console.log(chalk.yellow('\nNo matching task documents found.'));
+          return;
+        }
 
-				const selectedDoc =
-					documents.length === 1
-						? documents[0]
-						: await taskTools.selectDocument(documents);
+        const selectedDoc =
+          documents.length === 1 ? documents[0] : await taskTools.selectDocument(documents);
 
-				if (!selectedDoc) {
-					spinner.fail('No document selected');
-					return;
-				}
+        if (!selectedDoc) {
+          spinner.fail('No document selected');
+          return;
+        }
 
-				// List tasks
-				const result = await taskTools.listTasks(selectedDoc.path, {
-					status: options.status as TaskStatus | undefined,
-					list: options.list,
-					type: options.type,
-					project: options.project,
-					head: options.head ? Number.parseInt(options.head) : undefined,
-					tail: options.tail ? Number.parseInt(options.tail) : undefined,
-				});
+        // List tasks
+        const result = await taskTools.listTasks(selectedDoc.path, {
+          status: isTaskStatus(options.status) ? options.status : undefined,
+          list: options.list,
+          type: options.type,
+          project: options.project,
+          head: options.head ? Number.parseInt(options.head) : undefined,
+          tail: options.tail ? Number.parseInt(options.tail) : undefined,
+        });
 
-				spinner.succeed(
-					`Found ${result.tasks.length} task(s) in ${result.document.frontmatter.title}`,
-				);
+        spinner.succeed(
+          `Found ${result.tasks.length} task(s) in ${result.document.frontmatter.title}`
+        );
 
-				if (result.tasks.length === 0) {
-					console.log(chalk.yellow('\nNo tasks match the filters.'));
-					return;
-				}
+        if (result.tasks.length === 0) {
+          console.log(chalk.yellow('\nNo tasks match the filters.'));
+          return;
+        }
 
-				console.log(chalk.bold(`\n📋 Tasks in ${result.document.frontmatter.title}\n`));
+        console.log(chalk.bold(`\n📋 Tasks in ${result.document.frontmatter.title}\n`));
 
-				// Group by task list
-				const tasksByList = new Map<string, typeof result.tasks>();
-				for (const task of result.tasks) {
-					if (!tasksByList.has(task.listName)) {
-						tasksByList.set(task.listName, []);
-					}
-					tasksByList.get(task.listName)!.push(task);
-				}
+        // Group by task list
+        const tasksByList = new Map<string, typeof result.tasks>();
+        for (const task of result.tasks) {
+          if (!tasksByList.has(task.listName)) {
+            tasksByList.set(task.listName, []);
+          }
+          tasksByList.get(task.listName)?.push(task);
+        }
 
-				// Display grouped tasks
-				for (const [listName, listTasks] of tasksByList) {
-					console.log(chalk.cyan(`tasks:${listName}`) + chalk.gray(` (${listTasks.length} tasks)`));
-					for (const task of listTasks) {
-						const statusColor = getStatusColor(task.status);
-						const statusLabel = getStatusLabel(task.status);
-						console.log(`  ${statusColor(statusLabel)} ${task.id} - ${task.title}`);
-					}
-					console.log();
-				}
+        // Display grouped tasks
+        for (const [listName, listTasks] of tasksByList) {
+          console.log(chalk.cyan(`tasks:${listName}`) + chalk.gray(` (${listTasks.length} tasks)`));
+          for (const task of listTasks) {
+            const statusColor = getStatusColor(task.status);
+            const statusLabel = getStatusLabel(task.status);
+            console.log(`  ${statusColor(statusLabel)} ${task.id} - ${task.title}`);
+          }
+          console.log();
+        }
 
-				// Show summary
-				const statusCounts = result.tasks.reduce(
-					(acc, t) => {
-						acc[t.status] = (acc[t.status] || 0) + 1;
-						return acc;
-					},
-					{} as Record<string, number>,
-				);
+        // Show summary
+        const statusCounts = result.tasks.reduce<Record<string, number>>(
+          (acc, t) => {
+            acc[t.status] = (acc[t.status] || 0) + 1;
+            return acc;
+          },
+          {}
+        );
 
-				console.log(
-					chalk.gray(
-						`Total: ${result.tasks.length} tasks (${Object.entries(statusCounts).map(([s, c]) => `${c} ${s}`).join(', ')})`,
-					),
-				);
-			} catch (error) {
-				spinner.fail('Failed to list tasks');
-				console.error(chalk.red((error as Error).message));
-				process.exit(1);
-			}
-		},
-	);
+        console.log(
+          chalk.gray(
+            `Total: ${result.tasks.length} tasks (${Object.entries(statusCounts)
+              .map(([s, c]) => `${c} ${s}`)
+              .join(', ')})`
+          )
+        );
+      } catch (error) {
+        spinner.fail('Failed to list tasks');
+        console.error(chalk.red(getErrorMessage(error)));
+        process.exit(1);
+      }
+    }
+  );
 
 // ----------------------------------------------------------------------------
 // tasks get
 // ----------------------------------------------------------------------------
 
 tasks
-	.command('get <taskId>')
-	.description('Get details of a specific task')
-	.option('-d, --doc <name>', 'Document name, path, or partial path')
-	.action(async (taskId: string, options: { doc?: string }) => {
-		const spinner = ora('Finding task...').start();
+  .command('get <taskId>')
+  .description('Get details of a specific task')
+  .option('-d, --doc <name>', 'Document name, path, or partial path')
+  .action(async (taskId: string, options: { doc?: string }) => {
+    const spinner = ora('Finding task...').start();
 
-		try {
-			// Discover document
-			const documents = await taskTools.discoverDocuments({ doc: options.doc });
+    try {
+      // Discover document
+      const documents = await taskTools.discoverDocuments({ doc: options.doc });
 
-			if (documents.length === 0) {
-				spinner.fail('No task documents found');
-				console.log(chalk.yellow('\nNo matching task documents found.'));
-				return;
-			}
+      if (documents.length === 0) {
+        spinner.fail('No task documents found');
+        console.log(chalk.yellow('\nNo matching task documents found.'));
+        return;
+      }
 
-			const selectedDoc =
-				documents.length === 1 ? documents[0] : await taskTools.selectDocument(documents);
+      const selectedDoc =
+        documents.length === 1 ? documents[0] : await taskTools.selectDocument(documents);
 
-			if (!selectedDoc) {
-				spinner.fail('No document selected');
-				return;
-			}
+      if (!selectedDoc) {
+        spinner.fail('No document selected');
+        return;
+      }
 
-			// Get task
-			const result = await taskTools.getTask(selectedDoc.path, taskId);
+      // Get task
+      const result = await taskTools.getTask(selectedDoc.path, taskId);
 
-			if (!result) {
-				spinner.fail(`Task ${taskId} not found`);
-				console.log(chalk.yellow(`\nTask ${taskId} not found in document.`));
-				return;
-			}
+      if (!result) {
+        spinner.fail(`Task ${taskId} not found`);
+        console.log(chalk.yellow(`\nTask ${taskId} not found in document.`));
+        return;
+      }
 
-			spinner.succeed(`Found task ${taskId}`);
+      spinner.succeed(`Found task ${taskId}`);
 
-			const { task, listName } = result;
+      const { task, listName } = result;
 
-			console.log(chalk.bold(`\n📋 Task: ${task.id} - ${task.title}\n`));
+      console.log(chalk.bold(`\n📋 Task: ${task.id} - ${task.title}\n`));
 
-			console.log(`${chalk.cyan('Title:')}       ${task.title}`);
-			console.log(`${chalk.cyan('Type:')}        ${task.type}`);
-			console.log(`${chalk.cyan('Project:')}     ${task.project}`);
-			console.log(`${chalk.cyan('List:')}        tasks:${listName}`);
-			console.log(`${chalk.cyan('Status:')}      ${getStatusColor(task.status)(task.status)}`);
+      console.log(`${chalk.cyan('Title:')}       ${task.title}`);
+      console.log(`${chalk.cyan('Type:')}        ${task.type}`);
+      console.log(`${chalk.cyan('Project:')}     ${task.project}`);
+      console.log(`${chalk.cyan('List:')}        tasks:${listName}`);
+      console.log(`${chalk.cyan('Status:')}      ${getStatusColor(task.status)(task.status)}`);
 
-			if (task.depends_on && task.depends_on.length > 0) {
-				console.log(`${chalk.cyan('Depends on:')}  ${task.depends_on.join(', ')}`);
-			}
+      if (task.depends_on && task.depends_on.length > 0) {
+        console.log(`${chalk.cyan('Depends on:')}  ${task.depends_on.join(', ')}`);
+      }
 
-			if (task.description) {
-				console.log(chalk.bold('\nDescription:'));
-				console.log(`  ${task.description}`);
-			}
+      if (task.description) {
+        console.log(chalk.bold('\nDescription:'));
+        console.log(`  ${task.description}`);
+      }
 
-			if (task.deliverables && task.deliverables.length > 0) {
-				console.log(chalk.bold('\nDeliverables:'));
-				for (const d of task.deliverables) {
-					console.log(`  ${chalk.gray('•')} ${d}`);
-				}
-			}
+      if (task.deliverables && task.deliverables.length > 0) {
+        console.log(chalk.bold('\nDeliverables:'));
+        for (const d of task.deliverables) {
+          console.log(`  ${chalk.gray('•')} ${d}`);
+        }
+      }
 
-			if (task.requirements && task.requirements.length > 0) {
-				console.log(chalk.bold('\nRequirements:'));
-				for (const r of task.requirements) {
-					console.log(`  ${chalk.gray('•')} ${r}`);
-				}
-			}
-		} catch (error) {
-			spinner.fail('Failed to get task');
-			console.error(chalk.red((error as Error).message));
-			process.exit(1);
-		}
-	});
+      if (task.requirements && task.requirements.length > 0) {
+        console.log(chalk.bold('\nRequirements:'));
+        for (const r of task.requirements) {
+          console.log(`  ${chalk.gray('•')} ${r}`);
+        }
+      }
+    } catch (error) {
+      spinner.fail('Failed to get task');
+      console.error(chalk.red(getErrorMessage(error)));
+      process.exit(1);
+    }
+  });
 
 // ----------------------------------------------------------------------------
 // tasks start
 // ----------------------------------------------------------------------------
 
 tasks
-	.command('start <taskId>')
-	.description('Mark a task as in progress')
-	.option('-d, --doc <name>', 'Document name, path, or partial path')
-	.action(async (taskId: string, options: { doc?: string }) => {
-		await updateTaskStatusCommand(taskId, 'in progress', options.doc);
-	});
+  .command('start <taskId>')
+  .description('Mark a task as in progress')
+  .option('-d, --doc <name>', 'Document name, path, or partial path')
+  .action(async (taskId: string, options: { doc?: string }) => {
+    await updateTaskStatusCommand(taskId, 'in progress', options.doc);
+  });
 
 // ----------------------------------------------------------------------------
 // tasks complete
 // ----------------------------------------------------------------------------
 
 tasks
-	.command('complete <taskId>')
-	.description('Mark a task as completed')
-	.option('-d, --doc <name>', 'Document name, path, or partial path')
-	.action(async (taskId: string, options: { doc?: string }) => {
-		await updateTaskStatusCommand(taskId, 'completed', options.doc);
-	});
+  .command('complete <taskId>')
+  .description('Mark a task as completed')
+  .option('-d, --doc <name>', 'Document name, path, or partial path')
+  .action(async (taskId: string, options: { doc?: string }) => {
+    await updateTaskStatusCommand(taskId, 'completed', options.doc);
+  });
 
 // ----------------------------------------------------------------------------
 // tasks cancel
 // ----------------------------------------------------------------------------
 
 tasks
-	.command('cancel <taskId>')
-	.description('Mark a task as cancelled')
-	.option('-d, --doc <name>', 'Document name, path, or partial path')
-	.action(async (taskId: string, options: { doc?: string }) => {
-		await updateTaskStatusCommand(taskId, 'cancelled', options.doc);
-	});
+  .command('cancel <taskId>')
+  .description('Mark a task as cancelled')
+  .option('-d, --doc <name>', 'Document name, path, or partial path')
+  .action(async (taskId: string, options: { doc?: string }) => {
+    await updateTaskStatusCommand(taskId, 'cancelled', options.doc);
+  });
 
 // ----------------------------------------------------------------------------
 // tasks reset
 // ----------------------------------------------------------------------------
 
 tasks
-	.command('reset <taskId>')
-	.description('Mark a task as todo')
-	.option('-d, --doc <name>', 'Document name, path, or partial path')
-	.action(async (taskId: string, options: { doc?: string }) => {
-		await updateTaskStatusCommand(taskId, 'todo', options.doc);
-	});
+  .command('reset <taskId>')
+  .description('Mark a task as todo')
+  .option('-d, --doc <name>', 'Document name, path, or partial path')
+  .action(async (taskId: string, options: { doc?: string }) => {
+    await updateTaskStatusCommand(taskId, 'todo', options.doc);
+  });
 
 // ----------------------------------------------------------------------------
 // tasks delete
 // ----------------------------------------------------------------------------
 
 tasks
-	.command('delete <taskId>')
-	.description('Delete a task from the document')
-	.option('-d, --doc <name>', 'Document name, path, or partial path')
-	.action(async (taskId: string, options: { doc?: string }) => {
-		const spinner = ora('Deleting task...').start();
+  .command('delete <taskId>')
+  .description('Delete a task from the document')
+  .option('-d, --doc <name>', 'Document name, path, or partial path')
+  .action(async (taskId: string, options: { doc?: string }) => {
+    const spinner = ora('Deleting task...').start();
 
-		try {
-			// Discover document
-			const documents = await taskTools.discoverDocuments({ doc: options.doc });
+    try {
+      // Discover document
+      const documents = await taskTools.discoverDocuments({ doc: options.doc });
 
-			if (documents.length === 0) {
-				spinner.fail('No task documents found');
-				return;
-			}
+      if (documents.length === 0) {
+        spinner.fail('No task documents found');
+        return;
+      }
 
-			const selectedDoc =
-				documents.length === 1 ? documents[0] : await taskTools.selectDocument(documents);
+      const selectedDoc =
+        documents.length === 1 ? documents[0] : await taskTools.selectDocument(documents);
 
-			if (!selectedDoc) {
-				spinner.fail('No document selected');
-				return;
-			}
+      if (!selectedDoc) {
+        spinner.fail('No document selected');
+        return;
+      }
 
-			// Delete task
-			const result = await taskTools.deleteTask(selectedDoc.path, taskId);
+      // Delete task
+      const result = await taskTools.deleteTask(selectedDoc.path, taskId);
 
-			if (result.success) {
-				spinner.succeed(result.message);
-			} else {
-				spinner.fail(result.message);
-			}
-		} catch (error) {
-			spinner.fail('Failed to delete task');
-			console.error(chalk.red((error as Error).message));
-			process.exit(1);
-		}
-	});
+      if (result.success) {
+        spinner.succeed(result.message);
+      } else {
+        spinner.fail(result.message);
+      }
+    } catch (error) {
+      spinner.fail('Failed to delete task');
+      console.error(chalk.red(getErrorMessage(error)));
+      process.exit(1);
+    }
+  });
 
 // ----------------------------------------------------------------------------
 // tasks add
 // ----------------------------------------------------------------------------
 
 tasks
-	.command('add')
-	.description('Add a new task to a task list')
-	.requiredOption('-d, --doc <name>', 'Document name, path, or partial path')
-	.requiredOption('-l, --list <name>', 'Task list name (e.g., "api", "web")')
-	.requiredOption('-t, --title <title>', 'Task title')
-	.requiredOption('--type <type>', 'Task type (e.g., "endpoint", "ui-component")')
-	.requiredOption('-p, --project <name>', 'Project path (e.g., "apps/api")')
-	.option('--desc <description>', 'Task description')
-	.action(
-		async (options: {
-			doc: string;
-			list: string;
-			title: string;
-			type: string;
-			project: string;
-			desc?: string;
-		}) => {
-			const spinner = ora('Adding task...').start();
+  .command('add')
+  .description('Add a new task to a task list')
+  .requiredOption('-d, --doc <name>', 'Document name, path, or partial path')
+  .requiredOption('-l, --list <name>', 'Task list name (e.g., "api", "web")')
+  .requiredOption('-t, --title <title>', 'Task title')
+  .requiredOption('--type <type>', 'Task type (e.g., "endpoint", "ui-component")')
+  .requiredOption('-p, --project <name>', 'Project path (e.g., "apps/api")')
+  .option('--desc <description>', 'Task description')
+  .action(
+    async (options: {
+      doc: string;
+      list: string;
+      title: string;
+      type: string;
+      project: string;
+      desc?: string;
+    }) => {
+      const spinner = ora('Adding task...').start();
 
-			try {
-				// Discover document
-				const documents = await taskTools.discoverDocuments({ doc: options.doc });
+      try {
+        // Discover document
+        const documents = await taskTools.discoverDocuments({ doc: options.doc });
 
-				if (documents.length === 0) {
-					spinner.fail('No task documents found');
-					return;
-				}
+        if (documents.length === 0) {
+          spinner.fail('No task documents found');
+          return;
+        }
 
-				const selectedDoc =
-					documents.length === 1
-						? documents[0]
-						: await taskTools.selectDocument(documents);
+        const selectedDoc =
+          documents.length === 1 ? documents[0] : await taskTools.selectDocument(documents);
 
-				if (!selectedDoc) {
-					spinner.fail('No document selected');
-					return;
-				}
+        if (!selectedDoc) {
+          spinner.fail('No document selected');
+          return;
+        }
 
-				// Add task
-				const result = await taskTools.addTask(selectedDoc.path, {
-					list: options.list,
-					title: options.title,
-					type: options.type,
-					project: options.project,
-					description: options.desc,
-				});
+        // Add task
+        const result = await taskTools.addTask(selectedDoc.path, {
+          list: options.list,
+          title: options.title,
+          type: options.type,
+          project: options.project,
+          description: options.desc,
+        });
 
-				if (result.success) {
-					spinner.succeed(result.message);
-				} else {
-					spinner.fail(result.message);
-				}
-			} catch (error) {
-				spinner.fail('Failed to add task');
-				console.error(chalk.red((error as Error).message));
-				process.exit(1);
-			}
-		},
-	);
+        if (result.success) {
+          spinner.succeed(result.message);
+        } else {
+          spinner.fail(result.message);
+        }
+      } catch (error) {
+        spinner.fail('Failed to add task');
+        console.error(chalk.red(getErrorMessage(error)));
+        process.exit(1);
+      }
+    }
+  );
 
 // ----------------------------------------------------------------------------
 // tasks validate
 // ----------------------------------------------------------------------------
 
 tasks
-	.command('validate')
-	.description('Validate task document structure')
-	.option('-d, --doc <name>', 'Document name, path, or partial path')
-	.action(async (options: { doc?: string }) => {
-		const spinner = ora('Validating task document...').start();
+  .command('validate')
+  .description('Validate task document structure')
+  .option('-d, --doc <name>', 'Document name, path, or partial path')
+  .action(async (options: { doc?: string }) => {
+    const spinner = ora('Validating task document...').start();
 
-		try {
-			// Discover document
-			const documents = await taskTools.discoverDocuments({ doc: options.doc });
+    try {
+      // Discover document
+      const documents = await taskTools.discoverDocuments({ doc: options.doc });
 
-			if (documents.length === 0) {
-				spinner.fail('No task documents found');
-				return;
-			}
+      if (documents.length === 0) {
+        spinner.fail('No task documents found');
+        return;
+      }
 
-			const selectedDoc =
-				documents.length === 1 ? documents[0] : await taskTools.selectDocument(documents);
+      const selectedDoc =
+        documents.length === 1 ? documents[0] : await taskTools.selectDocument(documents);
 
-			if (!selectedDoc) {
-				spinner.fail('No document selected');
-				return;
-			}
+      if (!selectedDoc) {
+        spinner.fail('No document selected');
+        return;
+      }
 
-			// Validate
-			const result = await taskTools.validateDocument(selectedDoc.path);
+      // Validate
+      const result = await taskTools.validateDocument(selectedDoc.path);
 
-			if (result.valid) {
-				spinner.succeed('Task document is valid');
-				console.log(chalk.bold('\n✓ Validation Passed\n'));
-				console.log(
-					`${chalk.cyan('Tasks:')}       ${result.taskCount}`,
-				);
-				console.log(
-					`${chalk.cyan('Task Lists:')} ${result.taskListCount}`,
-				);
-			} else {
-				spinner.fail('Task document has validation errors');
-				console.log(chalk.bold('\n✗ Validation Failed\n'));
+      if (result.valid) {
+        spinner.succeed('Task document is valid');
+        console.log(chalk.bold('\n✓ Validation Passed\n'));
+        console.log(`${chalk.cyan('Tasks:')}       ${result.taskCount}`);
+        console.log(`${chalk.cyan('Task Lists:')} ${result.taskListCount}`);
+      } else {
+        spinner.fail('Task document has validation errors');
+        console.log(chalk.bold('\n✗ Validation Failed\n'));
 
-				console.log(chalk.red(`Found ${result.errors.length} error(s):\n`));
-				for (const error of result.errors) {
-					const severityColor = error.severity === 'error' ? chalk.red : chalk.yellow;
-					console.log(
-						`  ${severityColor(`[${error.severity.toUpperCase()}]`)} ${error.message}`,
-					);
-					if (error.location) {
-						console.log(`    ${chalk.gray(`Location: ${error.location}`)}`);
-					}
-					if (error.field) {
-						console.log(`    ${chalk.gray(`Field: ${error.field}`)}`);
-					}
-				}
+        console.log(chalk.red(`Found ${result.errors.length} error(s):\n`));
+        for (const error of result.errors) {
+          const severityColor = error.severity === 'error' ? chalk.red : chalk.yellow;
+          console.log(`  ${severityColor(`[${error.severity.toUpperCase()}]`)} ${error.message}`);
+          if (error.location) {
+            console.log(`    ${chalk.gray(`Location: ${error.location}`)}`);
+          }
+          if (error.field) {
+            console.log(`    ${chalk.gray(`Field: ${error.field}`)}`);
+          }
+        }
 
-				process.exit(1);
-			}
-		} catch (error) {
-			spinner.fail('Failed to validate task document');
-			console.error(chalk.red((error as Error).message));
-			process.exit(1);
-		}
-	});
+        process.exit(1);
+      }
+    } catch (error) {
+      spinner.fail('Failed to validate task document');
+      console.error(chalk.red(getErrorMessage(error)));
+      process.exit(1);
+    }
+  });
 
 // ============================================================================
 // Tasks Helper Functions
 // ============================================================================
 
 async function updateTaskStatusCommand(
-	taskId: string,
-	newStatus: TaskStatus,
-	docOption?: string,
+  taskId: string,
+  newStatus: TaskStatus,
+  docOption?: string
 ): Promise<void> {
-	const spinner = ora(`Updating task ${taskId}...`).start();
+  const spinner = ora(`Updating task ${taskId}...`).start();
 
-	try {
-		// Discover document
-		const documents = await taskTools.discoverDocuments({ doc: docOption });
+  try {
+    // Discover document
+    const documents = await taskTools.discoverDocuments({ doc: docOption });
 
-		if (documents.length === 0) {
-			spinner.fail('No task documents found');
-			return;
-		}
+    if (documents.length === 0) {
+      spinner.fail('No task documents found');
+      return;
+    }
 
-		const selectedDoc =
-			documents.length === 1 ? documents[0] : await taskTools.selectDocument(documents);
+    const selectedDoc =
+      documents.length === 1 ? documents[0] : await taskTools.selectDocument(documents);
 
-		if (!selectedDoc) {
-			spinner.fail('No document selected');
-			return;
-		}
+    if (!selectedDoc) {
+      spinner.fail('No document selected');
+      return;
+    }
 
-		// Update status
-		const result = await taskTools.updateTaskStatus(selectedDoc.path, taskId, newStatus);
+    // Update status
+    const result = await taskTools.updateTaskStatus(selectedDoc.path, taskId, newStatus);
 
-		if (result.success) {
-			spinner.succeed(result.message);
-		} else {
-			spinner.fail(result.message);
-		}
-	} catch (error) {
-		spinner.fail('Failed to update task status');
-		console.error(chalk.red((error as Error).message));
-		process.exit(1);
-	}
+    if (result.success) {
+      spinner.succeed(result.message);
+    } else {
+      spinner.fail(result.message);
+    }
+  } catch (error) {
+    spinner.fail('Failed to update task status');
+    console.error(chalk.red(getErrorMessage(error)));
+    process.exit(1);
+  }
 }
 
 function getStatusColor(status: string): (text: string) => string {
-	switch (status) {
-		case 'todo':
-			return chalk.gray;
-		case 'in progress':
-			return chalk.yellow;
-		case 'completed':
-			return chalk.green;
-		case 'cancelled':
-			return chalk.red;
-		default:
-			return chalk.white;
-	}
+  switch (status) {
+    case 'todo':
+      return chalk.gray;
+    case 'in progress':
+      return chalk.yellow;
+    case 'completed':
+      return chalk.green;
+    case 'cancelled':
+      return chalk.red;
+    default:
+      return chalk.white;
+  }
 }
 
 function getStatusLabel(status: string): string {
-	switch (status) {
-		case 'todo':
-			return '[TODO]      ';
-		case 'in progress':
-			return '[IN PROGRESS]';
-		case 'completed':
-			return '[COMPLETED] ';
-		case 'cancelled':
-			return '[CANCELLED] ';
-		default:
-			return `[${status.toUpperCase()}]`;
-	}
+  switch (status) {
+    case 'todo':
+      return '[TODO]      ';
+    case 'in progress':
+      return '[IN PROGRESS]';
+    case 'completed':
+      return '[COMPLETED] ';
+    case 'cancelled':
+      return '[CANCELLED] ';
+    default:
+      return `[${status.toUpperCase()}]`;
+  }
 }
 
 // ============================================================================

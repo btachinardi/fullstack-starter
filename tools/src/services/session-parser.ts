@@ -18,6 +18,7 @@ import type {
 } from '../types/session.js';
 import {
   isAssistantEntry,
+  isSessionEntry,
   isSummaryEntry,
   isSystemEntry,
   isToolUse,
@@ -45,8 +46,12 @@ export class SessionParser {
 
     for (const line of lines) {
       try {
-        const entry = JSON.parse(line) as SessionEntry;
-        this.entries.push(entry);
+        const parsed: unknown = JSON.parse(line);
+        if (!isSessionEntry(parsed)) {
+          console.warn(`Skipping invalid session entry: ${line.substring(0, 100)}...`);
+          continue;
+        }
+        this.entries.push(parsed);
 
         // Extract session metadata from first entry with these fields
         if (entry.type !== 'summary' && 'sessionId' in entry) {

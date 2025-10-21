@@ -7,11 +7,11 @@ export function formatDate(date: Date | string): string {
   if (typeof date === 'string') {
     // Check if it's YYYY-MM-DD format
     const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (match) {
+    if (match?.[1] && match[2] && match[3]) {
       // Parse as local date to avoid timezone issues
-      const year = parseInt(match[1]!, 10);
-      const month = parseInt(match[2]!, 10);
-      const day = parseInt(match[3]!, 10);
+      const year = Number.parseInt(match[1], 10);
+      const month = Number.parseInt(match[2], 10);
+      const day = Number.parseInt(match[3], 10);
       d = new Date(year, month - 1, day);
     } else {
       d = new Date(date);
@@ -58,5 +58,5 @@ export function formatNumber(num: number): string {
  */
 export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
-  return str.slice(0, maxLength - 3) + '...';
+  return `${str.slice(0, maxLength - 3)}...`;
 }

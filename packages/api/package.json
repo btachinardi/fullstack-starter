@@ -12,7 +12,7 @@
   "files": ["src", "dist"],
   "scripts": {
     "build": "tsc",
-    "lint": "echo 'Lint via root'",
+    "lint": "biome check .",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests"
   },

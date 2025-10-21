@@ -21,8 +21,8 @@
 import { execSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { glob } from 'glob';
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import { glob } from 'glob';
 import { createSubagentStopHook } from '../services/hook-input.js';
 import type { SubagentStopInput } from '../services/hook-input.js';
 import { createHookLogger } from '../services/logger.js';
@@ -58,7 +58,7 @@ interface AgentFrontmatter {
  */
 async function parseAgentFrontmatter(
   agentType: string,
-  logger: Logger,
+  logger: Logger
 ): Promise<AgentFrontmatter | null> {
   const agentsDir = join(REPO_ROOT, '.claude', 'agents');
 
@@ -105,12 +105,7 @@ async function parseAgentFrontmatter(
         const [, key, value] = match;
         if (key === 'autoCommit') {
           frontmatter.autoCommit = value.trim().toLowerCase() === 'true';
-        } else if (
-          key === 'name' ||
-          key === 'description' ||
-          key === 'tools' ||
-          key === 'model'
-        ) {
+        } else if (key === 'name' || key === 'description' || key === 'tools' || key === 'model') {
           frontmatter[key] = value.trim();
         }
       }
@@ -139,7 +134,9 @@ async function shouldAutoCommit(agentType: string, logger: Logger): Promise<bool
   const frontmatter = await parseAgentFrontmatter(agentType, logger);
 
   if (!frontmatter) {
-    await logger.warn(`No agent file found for ${agentType}, defaulting to autoCommit: false (safe default)`);
+    await logger.warn(
+      `No agent file found for ${agentType}, defaulting to autoCommit: false (safe default)`
+    );
     return false; // Safe default: do not commit if we can't find the agent file
   }
 
@@ -258,7 +255,7 @@ Since this is from a hook, auto-approve and execute the commit without user inte
 // ============================================================================
 
 async function getLatestSubagentInvocation(
-  transcriptPath: string,
+  transcriptPath: string
 ): Promise<SubagentInvocation | null> {
   try {
     const invocations = await sessionAgents(transcriptPath);

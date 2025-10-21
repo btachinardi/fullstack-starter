@@ -8,9 +8,9 @@ export function formatDate(date) {
         const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
         if (match) {
             // Parse as local date to avoid timezone issues
-            const year = parseInt(match[1], 10);
-            const month = parseInt(match[2], 10);
-            const day = parseInt(match[3], 10);
+            const year = Number.parseInt(match[1], 10);
+            const month = Number.parseInt(match[2], 10);
+            const day = Number.parseInt(match[3], 10);
             d = new Date(year, month - 1, day);
         }
         else {
@@ -57,6 +57,6 @@ export function formatNumber(num) {
 export function truncate(str, maxLength) {
     if (str.length <= maxLength)
         return str;
-    return str.slice(0, maxLength - 3) + '...';
+    return `${str.slice(0, maxLength - 3)}...`;
 }
 //# sourceMappingURL=format.js.map

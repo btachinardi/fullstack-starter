@@ -53,7 +53,17 @@
       "Bash(winget install:*)",
       "Bash(pnpm --filter \"@starter/*\" typecheck:*)",
       "Bash(pnpm --filter \"@fullstack-starter/web\" typecheck:*)",
-      "Bash(pnpm --filter \"@fullstack-starter/api\" typecheck:*)"
+      "Bash(pnpm --filter \"@fullstack-starter/api\" typecheck:*)",
+      "Bash(pnpm audit:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm why:*)",
+      "Bash(pnpm view:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(for file in packages/*/package.json)",
+      "Bash(do:*)",
+      "Bash(pnpm biome check:*)",
+      "WebSearch",
+      "Bash(pnpm lint:assertions:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",

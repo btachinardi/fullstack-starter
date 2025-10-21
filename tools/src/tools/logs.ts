@@ -8,7 +8,7 @@ import { existsSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { LogEntry, LogLevel } from '../services/logger.js';
-import { getDefaultLogDir } from '../services/logger.js';
+import { getDefaultLogDir, isLogEntry } from '../services/logger.js';
 
 // ============================================================================
 // Types
@@ -53,7 +53,20 @@ export interface LogStatsResult {
 async function parseLogFile(filePath: string): Promise<LogEntry[]> {
   const content = await readFile(filePath, 'utf-8');
   const lines = content.trim().split('\n').filter(Boolean);
-  return lines.map((line) => JSON.parse(line) as LogEntry);
+
+  const entries: LogEntry[] = [];
+  for (const line of lines) {
+    try {
+      const parsed: unknown = JSON.parse(line);
+      if (isLogEntry(parsed)) {
+        entries.push(parsed);
+      }
+    } catch {
+      // Skip invalid lines
+    }
+  }
+
+  return entries;
 }
 
 /**
@@ -100,7 +113,7 @@ function filterEntries(entries: LogEntry[], options: LogQueryOptions): LogEntry[
         e.message.toLowerCase().includes(searchLower) ||
         JSON.stringify(e.data || {})
           .toLowerCase()
-          .includes(searchLower),
+          .includes(searchLower)
     );
   }
 
@@ -201,9 +214,8 @@ export async function logStats(options: { logDir?: string } = {}): Promise<LogSt
 
       bySource[entry.source] = (bySource[entry.source] || 0) + 1;
 
-      if (entry.context?.toolName) {
-        const toolName = entry.context.toolName as string;
-        byTool[toolName] = (byTool[toolName] || 0) + 1;
+      if (entry.context?.toolName && typeof entry.context.toolName === 'string') {
+        byTool[entry.context.toolName] = (byTool[entry.context.toolName] || 0) + 1;
       }
 
       if (!firstTimestamp || entry.timestamp < firstTimestamp) {
@@ -258,8 +270,8 @@ export async function listTools(options: { logDir?: string } = {}): Promise<stri
   for (const file of files) {
     const entries = await parseLogFile(file);
     for (const entry of entries) {
-      if (entry.context?.toolName) {
-        tools.add(entry.context.toolName as string);
+      if (entry.context?.toolName && typeof entry.context.toolName === 'string') {
+        tools.add(entry.context.toolName);
       }
     }
   }

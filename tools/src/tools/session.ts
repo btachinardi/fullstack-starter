@@ -111,7 +111,7 @@ export async function sessionInfo(filePath: string): Promise<SessionInfoResult> 
  */
 export async function sessionTools(
   filePath: string,
-  options: { includeCount: boolean } = { includeCount: false },
+  options: { includeCount: boolean } = { includeCount: false }
 ): Promise<{ tools: string[] } | { toolUsage: ToolUsage[] }> {
   const parser = new SessionParser();
   await parser.load(filePath);
@@ -144,7 +144,7 @@ export async function sessionFiles(
     filterRead?: boolean;
     filterWritten?: boolean;
     filterEdited?: boolean;
-  } = {},
+  } = {}
 ): Promise<FileAccessResult | { files: string[] }> {
   const parser = new SessionParser();
   await parser.load(filePath);
@@ -197,7 +197,7 @@ export async function sessionAgents(filePath: string): Promise<SubagentInvocatio
  */
 export async function sessionConversation(
   filePath: string,
-  options: { limit?: number } = {},
+  options: { limit?: number } = {}
 ): Promise<ConversationMessage[]> {
   const parser = new SessionParser();
   await parser.load(filePath);
@@ -226,7 +226,7 @@ export async function sessionBash(filePath: string): Promise<BashCommand[]> {
  */
 export async function sessionExport(
   filePath: string,
-  options: { pretty?: boolean } = {},
+  options: { pretty?: boolean } = {}
 ): Promise<string> {
   const parser = new SessionParser();
   const session = await parser.load(filePath);
@@ -249,7 +249,7 @@ export async function sessionList(projectPath?: string): Promise<string[]> {
     homedir(),
     '.claude',
     'projects',
-    `C--Users-bruno-Documents-Work-Projects-${projectName}`,
+    `C--Users-bruno-Documents-Work-Projects-${projectName}`
   );
 
   try {

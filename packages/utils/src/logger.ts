@@ -1,3 +1,5 @@
+import { isNodeDevelopment } from './type-guards.js';
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogEntry {
@@ -8,11 +10,7 @@ interface LogEntry {
 }
 
 class Logger {
-  private isDevelopment =
-    typeof globalThis !== 'undefined' &&
-    'process' in globalThis &&
-    typeof (globalThis as any).process === 'object' &&
-    (globalThis as any).process?.env?.NODE_ENV === 'development';
+  private isDevelopment = isNodeDevelopment();
 
   private formatMessage(entry: LogEntry): string {
     return `[${entry.timestamp}] ${entry.level.toUpperCase()}: ${entry.message}`;

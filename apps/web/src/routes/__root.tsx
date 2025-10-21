@@ -1,4 +1,4 @@
-import { createRootRoute, Link, Outlet } from '@starter/router';
+import { Link, Outlet, createRootRoute } from '@starter/router';
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -46,14 +46,10 @@ function RootComponent() {
   );
 }
 
+import { Route as AboutRoute } from './about';
 // Import route modules
 import { Route as IndexRoute } from './index';
 import { Route as ResourcesRoute } from './resources';
-import { Route as AboutRoute } from './about';
 
 // Create route tree
-export const routeTree = Route.addChildren([
-  IndexRoute,
-  ResourcesRoute,
-  AboutRoute,
-]);
+export const routeTree = Route.addChildren([IndexRoute, ResourcesRoute, AboutRoute]);

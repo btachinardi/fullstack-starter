@@ -1,4 +1,4 @@
-import { AppError, NetworkError, AuthError, NotFoundError, ValidationError } from '@starter/utils';
+import { AppError, AuthError, NetworkError, NotFoundError, ValidationError } from '@starter/utils';
 export class ApiClient {
     baseUrl;
     defaultHeaders;
@@ -81,8 +81,10 @@ export class ApiClient {
  * Create default API client
  */
 export function createApiClient(config) {
-    // @ts-ignore - import.meta.env is available in Vite environment
-    const baseUrl = config?.baseUrl || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || 'http://localhost:4000';
+    const baseUrl = config?.baseUrl ||
+        // @ts-ignore - import.meta.env is available in Vite environment
+        (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
+        'http://localhost:4000';
     return new ApiClient({ baseUrl, ...config });
 }
 //# sourceMappingURL=client.js.map

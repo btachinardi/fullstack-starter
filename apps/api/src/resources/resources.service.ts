@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { prisma, Prisma } from '@starter/db';
-import { createPaginatedResponse, PaginatedResponse } from '@starter/api';
+import { type PaginatedResponse, createPaginatedResponse } from '@starter/api';
+import { type Prisma, prisma } from '@starter/db';
+import type { Resource } from '@starter/db';
 import { NotFoundError } from '@starter/utils';
-import { CreateResourceDto, UpdateResourceDto, ListResourcesDto } from './dto';
-import { Resource } from '@starter/db';
+import type { CreateResourceDto, ListResourcesDto, UpdateResourceDto } from './dto';
 
 @Injectable()
 export class ResourcesService {

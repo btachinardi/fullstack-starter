@@ -66,6 +66,9 @@ run_job "Type Check" "pnpm turbo run typecheck --filter='./packages/*' --filter=
 run_job "Test" "pnpm turbo run test --filter='./packages/*' --filter='./apps/*'"
 run_job "Build" "pnpm turbo run build"
 
+# Security: Dependency audit (fail only on high/critical vulnerabilities)
+run_job "Security / Audit" "pnpm audit --production --audit-level=high"
+
 # Optional: Security checks (may require additional setup)
 if command -v gitleaks &> /dev/null; then
   run_job "Security / Gitleaks" "gitleaks detect --no-git"

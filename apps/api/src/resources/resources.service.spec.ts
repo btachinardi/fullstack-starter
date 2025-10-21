@@ -1,7 +1,7 @@
 import 'reflect-metadata';
-import { Test, TestingModule } from '@nestjs/testing';
-import { ResourcesService } from './resources.service';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { prisma } from '@starter/db';
+import { ResourcesService } from './resources.service';
 
 jest.mock('@starter/db', () => ({
   prisma: {
@@ -66,11 +66,9 @@ describe('ResourcesService', () => {
       expect(mockPrisma.resource.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            OR: expect.arrayContaining([
-              expect.objectContaining({ name: expect.any(Object) }),
-            ]),
+            OR: expect.arrayContaining([expect.objectContaining({ name: expect.any(Object) })]),
           }),
-        }),
+        })
       );
     });
 
@@ -85,7 +83,7 @@ describe('ResourcesService', () => {
           where: expect.objectContaining({
             status: 'active',
           }),
-        }),
+        })
       );
     });
   });

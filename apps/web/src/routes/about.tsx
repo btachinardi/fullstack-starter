@@ -1,6 +1,6 @@
 import { createRoute } from '@starter/router';
+import { Card, CardContent, CardHeader, CardTitle } from '@starter/ui/card';
 import { Route as RootRoute } from './__root';
-import { Card, CardHeader, CardTitle, CardContent } from '@starter/ui/card';
 
 export const Route = createRoute({
   getParentRoute: () => RootRoute,
@@ -18,7 +18,8 @@ function AboutComponent() {
         <CardContent>
           <div className="space-y-4">
             <p>
-              This is a production-ready fullstack starter built with modern tools and best practices.
+              This is a production-ready fullstack starter built with modern tools and best
+              practices.
             </p>
             <div>
               <h3 className="font-semibold mb-2">Technology Stack:</h3>

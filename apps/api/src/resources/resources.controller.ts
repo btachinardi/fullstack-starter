@@ -1,18 +1,18 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Param,
+  Controller,
   Delete,
-  Put,
-  Query,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { ResourcesService } from './resources.service';
-import { CreateResourceDto, UpdateResourceDto, ListResourcesDto } from './dto';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type { CreateResourceDto, ListResourcesDto, UpdateResourceDto } from './dto';
+import type { ResourcesService } from './resources.service';
 
 @ApiTags('resources')
 @Controller('resources')

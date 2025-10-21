@@ -11,16 +11,16 @@ export declare const ResourceSchema: z.ZodObject<{
     updatedAt: z.ZodString;
 }, "strip", z.ZodTypeAny, {
     id: string;
+    status: string;
     name: string;
     description: string | null;
-    status: string;
     createdAt: string;
     updatedAt: string;
 }, {
     id: string;
+    status: string;
     name: string;
     description: string | null;
-    status: string;
     createdAt: string;
     updatedAt: string;
 }>;

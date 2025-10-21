@@ -1,4 +1,4 @@
-import { AppError, NetworkError, AuthError, NotFoundError, ValidationError } from '@starter/utils';
+import { AppError, AuthError, NetworkError, NotFoundError, ValidationError } from '@starter/utils';
 
 export interface ApiClientConfig {
   baseUrl: string;
@@ -17,10 +17,7 @@ export class ApiClient {
     };
   }
 
-  private async request<T>(
-    path: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const headers = {
       ...this.defaultHeaders,
@@ -48,9 +45,24 @@ export class ApiClient {
   }
 
   private async handleError(response: Response): Promise<never> {
-    let errorData: any;
+    interface ErrorResponse {
+      message?: string;
+      code?: string;
+      errors?: Record<string, string[]>;
+    }
+
+    function isErrorResponse(data: unknown): data is ErrorResponse {
+      return (
+        typeof data === 'object' &&
+        data !== null &&
+        ('message' in data || 'code' in data || 'errors' in data)
+      );
+    }
+
+    let errorData: ErrorResponse;
     try {
-      errorData = await response.json();
+      const data = await response.json();
+      errorData = isErrorResponse(data) ? data : { message: response.statusText };
     } catch {
       errorData = { message: response.statusText };
     }
@@ -101,7 +113,10 @@ export class ApiClient {
  * Create default API client
  */
 export function createApiClient(config?: Partial<ApiClientConfig>): ApiClient {
-  // @ts-ignore - import.meta.env is available in Vite environment
-  const baseUrl = config?.baseUrl || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || 'http://localhost:4000';
+  const baseUrl =
+    config?.baseUrl ||
+    // @ts-ignore - import.meta.env is available in Vite environment
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
+    'http://localhost:4000';
   return new ApiClient({ baseUrl, ...config });
 }

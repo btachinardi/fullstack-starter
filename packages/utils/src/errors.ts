@@ -10,8 +10,8 @@ export class AppError extends Error {
   constructor(
     message: string,
     code: string,
-    statusCode: number = 500,
-    isRetryable: boolean = false,
+    statusCode = 500,
+    isRetryable = false,
     cause?: unknown
   ) {
     super(message);
@@ -39,7 +39,7 @@ export class AppError extends Error {
  * Authentication error
  */
 export class AuthError extends AppError {
-  constructor(message: string = 'Authentication required', cause?: unknown) {
+  constructor(message = 'Authentication required', cause?: unknown) {
     super(message, 'AUTH_ERROR', 401, false, cause);
     this.name = 'AuthError';
     Object.setPrototypeOf(this, AuthError.prototype);
@@ -50,7 +50,7 @@ export class AuthError extends AppError {
  * Authorization error (forbidden)
  */
 export class ForbiddenError extends AppError {
-  constructor(message: string = 'Access forbidden', cause?: unknown) {
+  constructor(message = 'Access forbidden', cause?: unknown) {
     super(message, 'FORBIDDEN', 403, false, cause);
     this.name = 'ForbiddenError';
     Object.setPrototypeOf(this, ForbiddenError.prototype);
@@ -61,7 +61,7 @@ export class ForbiddenError extends AppError {
  * Not found error
  */
 export class NotFoundError extends AppError {
-  constructor(message: string = 'Resource not found', cause?: unknown) {
+  constructor(message = 'Resource not found', cause?: unknown) {
     super(message, 'NOT_FOUND', 404, false, cause);
     this.name = 'NotFoundError';
     Object.setPrototypeOf(this, NotFoundError.prototype);
@@ -74,7 +74,7 @@ export class NotFoundError extends AppError {
 export class ValidationError extends AppError {
   public readonly errors?: unknown;
 
-  constructor(message: string = 'Validation failed', errors?: unknown, cause?: unknown) {
+  constructor(message = 'Validation failed', errors?: unknown, cause?: unknown) {
     super(message, 'VALIDATION_ERROR', 400, false, cause);
     this.name = 'ValidationError';
     this.errors = errors;
@@ -93,7 +93,7 @@ export class ValidationError extends AppError {
  * Network error
  */
 export class NetworkError extends AppError {
-  constructor(message: string = 'Network request failed', cause?: unknown) {
+  constructor(message = 'Network request failed', cause?: unknown) {
     super(message, 'NETWORK_ERROR', 0, true, cause);
     this.name = 'NetworkError';
     Object.setPrototypeOf(this, NetworkError.prototype);

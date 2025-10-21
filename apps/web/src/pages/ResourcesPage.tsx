@@ -1,10 +1,10 @@
-import * as React from 'react';
+import { ResourcesApi, createApiClient } from '@starter/data-access';
 import { useQuery } from '@starter/query';
-import { createApiClient, ResourcesApi } from '@starter/data-access';
-import { Card, CardHeader, CardTitle, CardContent } from '@starter/ui/card';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@starter/ui/table';
 import { Button } from '@starter/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@starter/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@starter/ui/table';
 import { formatRelativeTime } from '@starter/utils';
+import * as React from 'react';
 
 const apiClient = createApiClient();
 const resourcesApi = new ResourcesApi(apiClient);

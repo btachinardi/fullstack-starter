@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc",
     "postinstall": "prisma generate",
-    "lint": "echo 'Lint via root'",
+    "lint": "biome check .",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests",
     "db:generate": "prisma generate",

@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { createRoute } from '@starter/router';
+import { Card, CardContent, CardHeader, CardTitle } from '@starter/ui/card';
 import { Route as RootRoute } from './__root';
-import { Card, CardHeader, CardTitle, CardContent } from '@starter/ui/card';
 export const Route = createRoute({
     getParentRoute: () => RootRoute,
     path: '/about',

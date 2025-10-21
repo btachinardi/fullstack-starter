@@ -7,7 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@fullstack-starter/root"
-  ]
+  "ignore": ["@fullstack-starter/root"]
 }
