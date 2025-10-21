@@ -13,6 +13,16 @@ build
 out
 .next
 
+# TypeScript
+*.tsbuildinfo
+# Prevent build artifacts in src directories
+**/src/**/*.js
+**/src/**/*.d.ts
+**/src/**/*.js.map
+# But allow JS config files in src
+!**/src/**/*.config.js
+!**/src/**/*.setup.js
+
 # Turbo
 .turbo
 

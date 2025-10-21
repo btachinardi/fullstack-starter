@@ -1,7 +1,6 @@
 {
   "extends": "@starter/config-typescript/base.json",
   "compilerOptions": {
-    "composite": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "lib": ["ES2022", "DOM"]
