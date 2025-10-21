@@ -50,6 +50,14 @@ export default [
     },
   },
   {
-    ignores: ['dist', 'node_modules', '.turbo'],
+    ignores: [
+      'dist',
+      'node_modules',
+      '.turbo',
+      '**/*.d.ts', // Ignore generated type definitions
+      'src/**/*.js', // Ignore compiled JS in src (shouldn't be there, but just in case)
+      'src/**/*.js.map', // Ignore source maps
+      'src/routeTree.gen.ts', // Ignore TanStack Router generated files
+    ],
   },
 ];

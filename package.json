@@ -24,6 +24,8 @@
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "smoke": "turbo run smoke",
     "ci:bootstrap": "node scripts/setup.mjs --check",
+    "ci:local": "bash scripts/ci-local.sh",
+    "ci:quick": "bash scripts/ci-quick.sh",
     "web:scaffold": "node scripts/scaffold-feature.mjs",
     "web:route": "node scripts/scaffold-route.mjs",
     "api:migrate": "turbo run migrate --filter=@fullstack-starter/api",
