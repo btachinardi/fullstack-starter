@@ -47,7 +47,8 @@
       "Bash(pnpm tsc:*)",
       "Bash(find:*)",
       "Bash(node:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(pnpm add:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",

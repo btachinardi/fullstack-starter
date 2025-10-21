@@ -21,6 +21,7 @@
 import { execSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { glob } from 'glob';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { createSubagentStopHook } from '../services/hook-input.js';
 import type { SubagentStopInput } from '../services/hook-input.js';
@@ -50,79 +51,101 @@ interface AgentFrontmatter {
 /**
  * Parse agent frontmatter from markdown file
  * Extracts YAML frontmatter and returns parsed object
+ *
+ * Uses glob patterns to search for agent files in any subdirectory:
+ * - .claude/agents/*.md (root level)
+ * - .claude/agents/**\/*.md (any subdirectory)
  */
 async function parseAgentFrontmatter(
   agentType: string,
   logger: Logger,
 ): Promise<AgentFrontmatter | null> {
-  // Try project-level agent first (.claude/agents/)
-  const projectAgentPath = join(REPO_ROOT, '.claude', 'agents', `${agentType}.md`);
+  const agentsDir = join(REPO_ROOT, '.claude', 'agents');
 
-  // Also check for agents in subdirectories (e.g., .claude/agents/claude/subagent-creator.md)
-  const projectAgentPathClaude = join(REPO_ROOT, '.claude', 'agents', 'claude', `${agentType}.md`);
+  try {
+    // Search for agent files using glob patterns
+    // This finds files in root and all subdirectories
+    const pattern = `**/${agentType}.md`;
+    const matches = await glob(pattern, {
+      cwd: agentsDir,
+      absolute: true,
+      nodir: true,
+    });
 
-  const possiblePaths = [projectAgentPath, projectAgentPathClaude];
+    await logger.debug(`Found ${matches.length} potential agent file(s) for ${agentType}`, {
+      matches,
+    });
 
-  for (const agentPath of possiblePaths) {
-    try {
-      const content = await readFile(agentPath, 'utf-8');
+    if (matches.length === 0) {
+      await logger.warn(`No agent file found for type: ${agentType}`);
+      return null;
+    }
 
-      // Extract frontmatter (between --- markers)
-      const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-      if (!frontmatterMatch) {
-        await logger.debug(`No frontmatter found in ${agentPath}`);
-        continue;
-      }
+    // Use the first match (there should typically only be one)
+    const agentPath = matches[0];
+    await logger.debug(`Using agent file: ${agentPath}`);
 
-      const frontmatterText = frontmatterMatch[1];
-      const frontmatter: AgentFrontmatter = {};
+    const content = await readFile(agentPath, 'utf-8');
 
-      // Parse YAML-like frontmatter (simple key: value parsing)
-      const lines = frontmatterText.split('\n');
-      for (const line of lines) {
-        const match = line.match(/^(\w+):\s*(.+)$/);
-        if (match) {
-          const [, key, value] = match;
-          if (key === 'autoCommit') {
-            frontmatter.autoCommit = value.trim().toLowerCase() === 'true';
-          } else if (
-            key === 'name' ||
-            key === 'description' ||
-            key === 'tools' ||
-            key === 'model'
-          ) {
-            frontmatter[key] = value.trim();
-          }
+    // Extract frontmatter (between --- markers)
+    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+    if (!frontmatterMatch) {
+      await logger.debug(`No frontmatter found in ${agentPath}`);
+      return null;
+    }
+
+    const frontmatterText = frontmatterMatch[1];
+    const frontmatter: AgentFrontmatter = {};
+
+    // Parse YAML-like frontmatter (simple key: value parsing)
+    const lines = frontmatterText.split('\n');
+    for (const line of lines) {
+      const match = line.match(/^(\w+):\s*(.+)$/);
+      if (match) {
+        const [, key, value] = match;
+        if (key === 'autoCommit') {
+          frontmatter.autoCommit = value.trim().toLowerCase() === 'true';
+        } else if (
+          key === 'name' ||
+          key === 'description' ||
+          key === 'tools' ||
+          key === 'model'
+        ) {
+          frontmatter[key] = value.trim();
         }
       }
-
-      await logger.debug(`Parsed frontmatter for ${agentType}`, { frontmatter });
-      return frontmatter;
-    } catch (_error) {
-      // File doesn't exist at this path, try next
-      await logger.debug(`Agent file not found at ${agentPath}`);
     }
-  }
 
-  await logger.warn(`No agent file found for type: ${agentType}`);
-  return null;
+    await logger.debug(`Parsed frontmatter for ${agentType}`, { frontmatter });
+    return frontmatter;
+  } catch (error) {
+    await logger.error(`Failed to parse agent frontmatter for ${agentType}`, { error });
+    return null;
+  }
 }
 
 /**
  * Check if agent should auto-commit based on frontmatter
- * Default: true (commit unless explicitly disabled)
+ * Default: false (do not commit unless explicitly enabled)
+ *
+ * If no agent file is found, this likely means:
+ * 1. The agent is built-in (not a custom subagent)
+ * 2. The hook was triggered incorrectly
+ * 3. The agent file path is not in our search paths
+ *
+ * In all cases, we should NOT auto-commit by default.
  */
 async function shouldAutoCommit(agentType: string, logger: Logger): Promise<boolean> {
   const frontmatter = await parseAgentFrontmatter(agentType, logger);
 
   if (!frontmatter) {
-    await logger.info(`Agent ${agentType} has no frontmatter, defaulting to autoCommit: true`);
-    return true; // Default: always commit if no frontmatter
+    await logger.warn(`No agent file found for ${agentType}, defaulting to autoCommit: false (safe default)`);
+    return false; // Safe default: do not commit if we can't find the agent file
   }
 
   if (frontmatter.autoCommit === undefined) {
-    await logger.info(`Agent ${agentType} has no autoCommit field, defaulting to true`);
-    return true; // Default: always commit if field not specified
+    await logger.info(`Agent ${agentType} has no autoCommit field, defaulting to false`);
+    return false; // Safe default: do not commit unless explicitly enabled
   }
 
   await logger.info(`Agent ${agentType} autoCommit setting: ${frontmatter.autoCommit}`);
