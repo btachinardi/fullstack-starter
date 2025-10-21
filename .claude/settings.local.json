@@ -27,7 +27,12 @@
       "Read(**/tools/logs/**)",
       "Read(**/.claude/**)",
       "Read(**/ai/**)",
-      "Bash(pnpm build:tools)"
+      "Bash(pnpm build:tools)",
+      "Bash(pnpm ci:local:*)",
+      "Bash(pnpm prisma generate:*)",
+      "Bash(while read file)",
+      "Bash(done)",
+      "Bash(pnpm exec biome:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",
