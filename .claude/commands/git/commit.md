@@ -1,7 +1,7 @@
 ---
 description: Intelligently commit git changes using semantic commit messages with smart grouping for multi-concern changes
 allowed-tools: Bash(git *:*), Task
-model: claude-sonnet-4-5
+model: claude-haiku-4-5
 ---
 
 # /git:commit
@@ -15,6 +15,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
 ## Context & Prerequisites
 
 **Project Context:**
+
 - Semantic commit format: `type(scope): description`
 - Commit types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`, `build`, `revert`
 - Scope indicates the affected area (e.g., `api`, `web`, `ui`, `docs`, `config`)
@@ -22,10 +23,12 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
 - This command can be invoked manually or with subagent context from hooks
 
 **Specialized Subagents:**
+
 - `commit-grouper`: Analyzes changes and creates logical commit groups
 - `commit-message-generator`: Generates semantic commit messages for each group
 
 **Prerequisites:**
+
 - Git repository initialized
 - Changes exist (staged or unstaged)
 - Working directory is clean of conflicts
@@ -59,6 +62,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
 3. **Parse Commit Groups**
 
    Expected JSON structure:
+
    ```json
    {
      "strategy": "dependency-flow",
@@ -88,6 +92,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
 4. **Present Groups to User**
 
    Show proposed commit groups:
+
    ```
    Found 15 files across 3 systems
 
@@ -116,6 +121,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
      - Cancel operation
 
 **Validation:**
+
 - [ ] commit-grouper subagent invoked successfully
 - [ ] Commit groups received and parsed
 - [ ] Groups presented to user clearly
@@ -137,6 +143,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
    In a **single response**, call the Task tool **multiple times** (once per group):
 
    **Example for 3 groups:**
+
    ```
    # Call all three Task invocations in ONE message:
 
@@ -172,6 +179,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
 3. **Collect Generated Messages**
 
    Each subagent returns a commit message in format:
+
    ```
    type(scope): subject line
 
@@ -196,37 +204,43 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
 2. **For Each Commit Group (in dependency order):**
 
    a. **Reset staging area:**
-      ```bash
-      git reset
-      ```
+
+   ```bash
+   git reset
+   ```
 
    b. **Stage files for this group:**
-      ```bash
-      git add <file1> <file2> <file3> ...
-      ```
+
+   ```bash
+   git add <file1> <file2> <file3> ...
+   ```
 
    c. **Verify staging:**
-      ```bash
-      git status --porcelain
-      ```
-      Confirm only intended files are staged.
+
+   ```bash
+   git status --porcelain
+   ```
+
+   Confirm only intended files are staged.
 
    d. **Create commit:**
-      - If message is single-line:
-        ```bash
-        git commit -m "message"
-        ```
-      - If message has body/footer:
-        ```bash
-        echo "message" > /tmp/commit-msg.txt
-        git commit -F /tmp/commit-msg.txt
-        ```
+   - If message is single-line:
+     ```bash
+     git commit -m "message"
+     ```
+   - If message has body/footer:
+     ```bash
+     echo "message" > /tmp/commit-msg.txt
+     git commit -F /tmp/commit-msg.txt
+     ```
 
    e. **Verify commit created:**
-      ```bash
-      git log -1 --oneline
-      ```
-      Show commit hash and subject to user.
+
+   ```bash
+   git log -1 --oneline
+   ```
+
+   Show commit hash and subject to user.
 
    f. **Continue to next group**
 
@@ -235,24 +249,29 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
    After all commits created:
 
    a. **Show all commits:**
-      ```bash
-      git log -<N> --oneline
-      ```
-      Where N = number of commits just created.
+
+   ```bash
+   git log -<N> --oneline
+   ```
+
+   Where N = number of commits just created.
 
    b. **Verify clean state:**
-      ```bash
-      git status
-      ```
-      Confirm no staged or unstaged changes remain.
+
+   ```bash
+   git status
+   ```
+
+   Confirm no staged or unstaged changes remain.
 
    c. **Cleanup:**
-      - Remove temporary message files
-      - Confirm all operations successful
+   - Remove temporary message files
+   - Confirm all operations successful
 
 4. **Success Report**
 
    Present summary to user:
+
    ```
    ✓ Successfully created 3 commits:
 
@@ -267,6 +286,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
    ```
 
 **Validation:**
+
 - [ ] All commits created successfully
 - [ ] Each commit contains correct files
 - [ ] Each commit has correct message
@@ -285,19 +305,21 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
    - Check for subagent context (session_id, invocation_id, agent_type, prompt)
 
 2. **Include agent metadata**: Ensure commit message footer includes:
-     ```
-     Agent: <subagent-type>
-     Session-ID: <session-id>
-     Invocation-ID: <invocation-id>
 
-     Prompt:
-     <full-prompt>
-     ```
+   ```
+   Agent: <subagent-type>
+   Session-ID: <session-id>
+   Invocation-ID: <invocation-id>
+
+   Prompt:
+   <full-prompt>
+   ```
+
    - **Execute immediately**: Create commit without waiting for approval
    - **Log results**: Output to stderr for hook logging
 
-
 **Validation:**
+
 - [ ] Hook context detected correctly
 - [ ] Agent metadata included in footer
 
@@ -387,6 +409,7 @@ Next steps:
 ## Quality Standards
 
 ### Orchestration Quality
+
 - Subagent invocations are successful
 - Parallel message generation maximizes efficiency
 - User approval required at key decision points
@@ -394,6 +417,7 @@ Next steps:
 - Proper error handling if subagents fail
 
 ### Commit Message Quality (delegated to commit-message-generator)
+
 - Subject line under 72 characters
 - Uses imperative mood ("add" not "added")
 - Type and scope are accurate for changes
@@ -403,6 +427,7 @@ Next steps:
 - References issues/PRs when applicable
 
 ### Commit Grouping Quality (delegated to commit-grouper)
+
 - Each commit has single, focused purpose
 - Commits are logically independent
 - Commits can be cherry-picked or reverted safely
@@ -412,6 +437,7 @@ Next steps:
 - Dependency order respected
 
 ### Technical Standards
+
 - All staged changes accounted for in commits
 - No partial staging (commit contains complete logical unit)
 - Commit order respects dependencies from grouper
@@ -424,12 +450,14 @@ Next steps:
 ## Constraints & Boundaries
 
 ### Must Do
+
 - Delegate analysis and grouping to commit-grouper subagent
 - Delegate message generation to commit-message-generator subagents (in parallel)
 - Verify each commit was created successfully
 - Handle subagent failures gracefully
 
 ### Must Not Do
+
 - Perform analysis/grouping directly (delegate to commit-grouper)
 - Generate commit messages directly (delegate to commit-message-generator)
 - Invoke message generators sequentially (must be parallel)
@@ -439,6 +467,7 @@ Next steps:
 ### Scope Management
 
 **In Scope:**
+
 - Orchestrating the commit workflow
 - Invoking specialized subagents
 - Executing git commands (add, commit, reset)
@@ -447,6 +476,7 @@ Next steps:
 - Error recovery and fallback strategies
 
 **Out of Scope:**
+
 - Analyzing git changes directly (delegate to commit-grouper)
 - Generating commit messages directly (delegate to commit-message-generator)
 - Determining grouping strategy (subagent responsibility)
@@ -467,6 +497,7 @@ Next steps:
 **User:** `/git:commit`
 
 **Phase 1: Delegate to commit-grouper**
+
 ```
 Invoking commit-grouper...
 
@@ -478,6 +509,7 @@ Group 1 (feat/web): Add Button component
 ```
 
 **Phase 2: Delegate to commit-message-generator**
+
 ```
 Invoking commit-message-generator...
 
@@ -493,6 +525,7 @@ Includes comprehensive tests and Storybook stories.
 ```
 
 **Phase 3: Execute Commits**
+
 ```
 ✓ Created commit: a1b2c3d feat(web): add Button component
 ```
@@ -504,6 +537,7 @@ Includes comprehensive tests and Storybook stories.
 **User:** `/git:commit`
 
 **Phase 1: Delegate to commit-grouper**
+
 ```
 Invoking commit-grouper with dependency-flow strategy...
 
@@ -532,6 +566,7 @@ Group 5 (docs): Add authentication setup guide
 ```
 
 **Phase 2: Delegate to commit-message-generator (Parallel)**
+
 ```
 Generating commit messages (5 parallel subagents)...
 
@@ -540,6 +575,7 @@ All messages generated successfully.
 ```
 
 **Phase 3: Execute Commits**
+
 ```
 ✓ Commit 1: b2c3d4e chore(deps): add authentication dependencies
 ✓ Commit 2: c3d4e5f feat(types): add authentication types
@@ -553,6 +589,7 @@ All messages generated successfully.
 ### Example 3: Agent Hook Invocation
 
 **Invoked from SubagentStop hook with context:**
+
 ```json
 {
   "session_id": "1a7d9110-f81d-4bba-aa6f-2a1e017fbc2d",
@@ -563,6 +600,7 @@ All messages generated successfully.
 ```
 
 **Append subagent metadata to the commit message:**
+
 ```
 feat(api): add API performance analyzer
 
