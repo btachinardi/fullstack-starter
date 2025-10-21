@@ -8,6 +8,7 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@starter/(.*)$': '<rootDir>/../../packages/$1/src',
+    '^(.+)\\.js$': '$1',
   },
   moduleFileExtensions: ['ts', 'js', 'json'],
   modulePathIgnorePatterns: ['<rootDir>/../../packages/.*/dist'],

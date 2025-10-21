@@ -40,9 +40,7 @@ export function getErrorMessage(error: unknown): string {
 /**
  * Type guard to check if globalThis has Node.js process
  */
-export function isNodeEnvironment(
-  global: typeof globalThis
-): global is typeof globalThis & {
+export function isNodeEnvironment(global: typeof globalThis): global is typeof globalThis & {
   process: {
     env?: {
       NODE_ENV?: string;

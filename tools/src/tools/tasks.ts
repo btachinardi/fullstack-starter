@@ -211,6 +211,9 @@ function normalizeTask(task: unknown): Task {
 
   // Don't throw on missing fields - let validation catch this
   // Provide defaults to allow parsing to continue
+  // Don't normalize status - let validation catch invalid values
+  const rawStatus = typeof t.status === 'string' ? t.status.toLowerCase().trim() : 'todo';
+
   return {
     id: t.id ? String(t.id) : '',
     title: t.title ? String(t.title) : '',
@@ -219,26 +222,9 @@ function normalizeTask(task: unknown): Task {
     description: typeof t.description === 'string' ? t.description : '',
     deliverables: Array.isArray(t.deliverables) ? t.deliverables : [],
     requirements: Array.isArray(t.requirements) ? t.requirements : [],
-    status: normalizeStatus(typeof t.status === 'string' ? t.status : 'todo'),
+    status: rawStatus as TaskStatus,
     depends_on: Array.isArray(t.depends_on) ? t.depends_on.map(String) : [],
   };
-}
-
-/**
- * Normalize status value
- */
-function normalizeStatus(status: string): TaskStatus {
-  if (!status) return 'todo';
-  const normalized = status.toLowerCase().trim();
-
-  // Check if it's a valid TaskStatus
-  const validStatuses: TaskStatus[] = ['todo', 'in progress', 'completed', 'cancelled'];
-  if (validStatuses.includes(normalized as TaskStatus)) {
-    return normalized as TaskStatus;
-  }
-
-  // Default to todo if invalid
-  return 'todo';
 }
 
 // ============================================================================
@@ -591,7 +577,7 @@ function generateTaskId(tasks: Task[]): string {
   const numericIds = ids
     .map((id) => {
       const match = id.match(/^(\d+)\.(\d+)$/);
-      if (match && match[1] && match[2]) {
+      if (match?.[1] && match[2]) {
         return { major: Number.parseInt(match[1]), minor: Number.parseInt(match[2]) };
       }
       return null;

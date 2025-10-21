@@ -63,7 +63,8 @@
       "Bash(do:*)",
       "Bash(pnpm biome check:*)",
       "WebSearch",
-      "Bash(pnpm lint:assertions:*)"
+      "Bash(pnpm lint:assertions:*)",
+      "Bash(pnpm lint-staged:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",

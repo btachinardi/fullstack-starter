@@ -1,8 +1,6 @@
+import { isNodeDevelopment } from './type-guards.js';
 class Logger {
-    isDevelopment = typeof globalThis !== 'undefined' &&
-        'process' in globalThis &&
-        typeof globalThis.process === 'object' &&
-        globalThis.process?.env?.NODE_ENV === 'development';
+    isDevelopment = isNodeDevelopment();
     formatMessage(entry) {
         return `[${entry.timestamp}] ${entry.level.toUpperCase()}: ${entry.message}`;
     }

@@ -9,6 +9,7 @@
     "pnpm": ">=9.0.0"
   },
   "scripts": {
+    "prepare": "husky || true",
     "setup": "node scripts/setup.mjs",
     "dev": "turbo run dev --parallel",
     "dev:web": "turbo run dev --filter=@fullstack-starter/web",

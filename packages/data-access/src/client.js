@@ -34,9 +34,15 @@ export class ApiClient {
         }
     }
     async handleError(response) {
+        function isErrorResponse(data) {
+            return (typeof data === 'object' &&
+                data !== null &&
+                ('message' in data || 'code' in data || 'errors' in data));
+        }
         let errorData;
         try {
-            errorData = await response.json();
+            const data = await response.json();
+            errorData = isErrorResponse(data) ? data : { message: response.statusText };
         }
         catch {
             errorData = { message: response.statusText };

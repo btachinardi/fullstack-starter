@@ -21,8 +21,8 @@ const ALLOWED_ASSERTIONS = [
 // Patterns that are allowed (regex patterns)
 const ALLOWED_PATTERNS = [
   /^as jest\./i, // Jest mocks: as jest.Mocked<T>, as jest.Mock, etc.
-  /^as [A-Z]$/,  // Single-letter generic types: as T, as U, as K, as V, etc.
-  /^as [A-Z][A-Z]?$/,  // Two-letter generic types: as TKey, as TValue, etc.
+  /^as [A-Z]$/, // Single-letter generic types: as T, as U, as K, as V, etc.
+  /^as [A-Z][A-Z]?$/, // Two-letter generic types: as TKey, as TValue, etc.
 ];
 
 const IGNORE_PATTERNS = [
@@ -178,10 +178,18 @@ function checkFile(filePath) {
  * Main execution
  */
 function main() {
-  console.log(`${colors.cyan}╔════════════════════════════════════════════════════════════╗${colors.reset}`);
-  console.log(`${colors.cyan}║  Type Assertion Checker - Manual Code Review Tool         ║${colors.reset}`);
-  console.log(`${colors.cyan}║  Run periodically to identify potentially unsafe patterns  ║${colors.reset}`);
-  console.log(`${colors.cyan}╚════════════════════════════════════════════════════════════╝${colors.reset}\n`);
+  console.log(
+    `${colors.cyan}╔════════════════════════════════════════════════════════════╗${colors.reset}`
+  );
+  console.log(
+    `${colors.cyan}║  Type Assertion Checker - Manual Code Review Tool         ║${colors.reset}`
+  );
+  console.log(
+    `${colors.cyan}║  Run periodically to identify potentially unsafe patterns  ║${colors.reset}`
+  );
+  console.log(
+    `${colors.cyan}╚════════════════════════════════════════════════════════════╝${colors.reset}\n`
+  );
 
   const files = findTypeScriptFiles(rootDir);
   let totalViolations = 0;
@@ -199,13 +207,19 @@ function main() {
   if (totalViolations === 0) {
     console.log(`${colors.green}✓ No potentially unsafe type assertions found${colors.reset}`);
     console.log(`${colors.gray}  Checked ${files.length} TypeScript files${colors.reset}\n`);
-    console.log(`${colors.gray}Note: This is informational only. Many type assertions are valid.${colors.reset}\n`);
+    console.log(
+      `${colors.gray}Note: This is informational only. Many type assertions are valid.${colors.reset}\n`
+    );
     process.exit(0);
   }
 
   // Report violations
-  console.log(`${colors.yellow}⚠ Found ${totalViolations} potentially unsafe type assertion(s) in ${filesWithViolations.length} file(s)${colors.reset}\n`);
-  console.log(`${colors.gray}Review these assertions to determine if they should be replaced with type guards.${colors.reset}\n`);
+  console.log(
+    `${colors.yellow}⚠ Found ${totalViolations} potentially unsafe type assertion(s) in ${filesWithViolations.length} file(s)${colors.reset}\n`
+  );
+  console.log(
+    `${colors.gray}Review these assertions to determine if they should be replaced with type guards.${colors.reset}\n`
+  );
 
   for (const { file, violations } of filesWithViolations) {
     const relativePath = relative(rootDir, file);

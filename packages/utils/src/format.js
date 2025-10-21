@@ -6,7 +6,7 @@ export function formatDate(date) {
     if (typeof date === 'string') {
         // Check if it's YYYY-MM-DD format
         const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if (match) {
+        if (match?.[1] && match[2] && match[3]) {
             // Parse as local date to avoid timezone issues
             const year = Number.parseInt(match[1], 10);
             const month = Number.parseInt(match[2], 10);
