@@ -43,7 +43,11 @@
       "Bash(pnpm exec vitest:*)",
       "Bash(pkill:*)",
       "Bash(pnpm exec tsc:*)",
-      "Bash(pnpm turbo run build:*)"
+      "Bash(pnpm turbo run build:*)",
+      "Bash(pnpm tsc:*)",
+      "Bash(find:*)",
+      "Bash(node:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",
