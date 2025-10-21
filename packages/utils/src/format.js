@@ -2,7 +2,24 @@
  * Format a date to a readable string
  */
 export function formatDate(date) {
-    const d = typeof date === 'string' ? new Date(date) : date;
+    let d;
+    if (typeof date === 'string') {
+        // Check if it's YYYY-MM-DD format
+        const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (match) {
+            // Parse as local date to avoid timezone issues
+            const year = parseInt(match[1], 10);
+            const month = parseInt(match[2], 10);
+            const day = parseInt(match[3], 10);
+            d = new Date(year, month - 1, day);
+        }
+        else {
+            d = new Date(date);
+        }
+    }
+    else {
+        d = date;
+    }
     return d.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
