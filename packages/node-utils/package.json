@@ -1,0 +1,29 @@
+{
+  "name": "@starter/node-utils",
+  "version": "0.1.0",
+  "description": "Server utilities for fullstack-starter",
+  "type": "commonjs",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./errors": "./src/errors.ts",
+    "./logger": "./src/logger.ts"
+  },
+  "files": ["src", "dist"],
+  "scripts": {
+    "build": "tsc",
+    "lint": "echo 'Lint via root'",
+    "typecheck": "tsc --noEmit",
+    "test": "jest"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@starter/config-typescript": "workspace:*",
+    "@types/node": "^22.10.2",
+    "jest": "^29.7.0",
+    "typescript": "^5.7.2"
+  }
+}

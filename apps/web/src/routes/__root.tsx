@@ -1,9 +1,4 @@
-import { createRootRoute, Link, Outlet } from '@tanstack/react-router';
-import { QueryClient } from '@tanstack/react-query';
-
-interface RouterContext {
-  queryClient: QueryClient;
-}
+import { createRootRoute, Link, Outlet } from '@starter/platform-router';
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -27,6 +22,12 @@ function RootComponent() {
                   Home
                 </Link>
                 <Link
+                  to="/resources"
+                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
+                >
+                  Resources
+                </Link>
+                <Link
                   to="/about"
                   className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
                 >
@@ -38,12 +39,21 @@ function RootComponent() {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main>
         <Outlet />
       </main>
     </div>
   );
 }
 
+// Import route modules
+import { Route as IndexRoute } from './index';
+import { Route as ResourcesRoute } from './resources';
+import { Route as AboutRoute } from './about';
+
 // Create route tree
-export const routeTree = Route;
+export const routeTree = Route.addChildren([
+  IndexRoute,
+  ResourcesRoute,
+  AboutRoute,
+]);

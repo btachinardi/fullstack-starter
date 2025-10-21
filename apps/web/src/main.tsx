@@ -1,20 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { RouterProvider, createRouter } from '@tanstack/react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createRouter } from '@starter/platform-router';
+import { createQueryClient, QueryClientProvider } from '@starter/platform-query';
 
 import { routeTree } from './routes/__root';
 import './index.css';
 
-// Create a query client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 1,
-    },
-  },
-});
+// Create a query client using platform utility
+const queryClient = createQueryClient();
 
 // Create a router instance
 const router = createRouter({
