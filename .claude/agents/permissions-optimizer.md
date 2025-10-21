@@ -3,6 +3,7 @@ name: permissions-optimizer
 description: Specialized agent for managing Claude Code permissions with security-focused analysis. Use when you need to consolidate bloated permission lists, analyze security implications of permission patterns, or migrate to the three-tier permission model (ALLOW/DENY/ASK). This agent prevents security vulnerabilities like accidental force pushes, hard resets, or package publishing while maintaining development workflow efficiency.
 tools: Read, Write, Bash
 model: claude-sonnet-4-5
+autoCommit: true
 ---
 
 # Permissions Optimizer Agent

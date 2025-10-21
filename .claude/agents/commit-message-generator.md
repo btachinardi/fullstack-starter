@@ -3,6 +3,7 @@ name: commit-message-generator
 description: Generates high-quality semantic commit messages from grouped file changes. Use when you have a commit group (set of related files with metadata) and need to generate a professional, convention-compliant commit message. This agent analyzes file diffs, determines appropriate commit type and scope, and crafts descriptive messages following semantic commit format. Part of the intelligent multi-commit workflow alongside commit-grouper agent.
 tools: Read, Grep, Bash
 model: claude-sonnet-4-5
+autoCommit: false
 ---
 
 # Commit Message Generator Agent

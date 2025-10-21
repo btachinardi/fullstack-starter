@@ -3,6 +3,7 @@ name: slash-command-creator
 description: Creates optimized custom Claude Code slash commands following project templates and best practices. Use when users want to create new slash commands or improve existing ones.
 tools: Read, Write, Glob, Grep, Edit
 model: claude-sonnet-4-5
+autoCommit: true
 ---
 
 # Slash Command Creator Agent

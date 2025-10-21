@@ -3,6 +3,7 @@ name: subagent-creator
 description: Creates new Claude Code sub-agents following project templates and best practices
 tools: Read, Write, Glob, Grep
 model: claude-sonnet-4-5
+autoCommit: true
 ---
 
 # Sub-Agent Creator

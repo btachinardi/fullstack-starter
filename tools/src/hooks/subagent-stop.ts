@@ -19,6 +19,8 @@
  */
 
 import { execSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { sessionAgents } from "../tools/session.js";
 import type { SubagentInvocation } from "../tools/session.js";
@@ -32,6 +34,98 @@ import type { Logger } from "../services/logger.js";
 // ============================================================================
 
 const REPO_ROOT = process.cwd();
+
+// ============================================================================
+// Agent Frontmatter Parsing
+// ============================================================================
+
+interface AgentFrontmatter {
+  name?: string;
+  description?: string;
+  tools?: string;
+  model?: string;
+  autoCommit?: boolean;
+}
+
+/**
+ * Parse agent frontmatter from markdown file
+ * Extracts YAML frontmatter and returns parsed object
+ */
+async function parseAgentFrontmatter(
+  agentType: string,
+  logger: Logger
+): Promise<AgentFrontmatter | null> {
+  // Try project-level agent first (.claude/agents/)
+  const projectAgentPath = join(REPO_ROOT, ".claude", "agents", `${agentType}.md`);
+
+  // Also check for agents in subdirectories (e.g., .claude/agents/claude/subagent-creator.md)
+  const projectAgentPathClaude = join(REPO_ROOT, ".claude", "agents", "claude", `${agentType}.md`);
+
+  const possiblePaths = [projectAgentPath, projectAgentPathClaude];
+
+  for (const agentPath of possiblePaths) {
+    try {
+      const content = await readFile(agentPath, "utf-8");
+
+      // Extract frontmatter (between --- markers)
+      const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+      if (!frontmatterMatch) {
+        await logger.debug(`No frontmatter found in ${agentPath}`);
+        continue;
+      }
+
+      const frontmatterText = frontmatterMatch[1];
+      const frontmatter: AgentFrontmatter = {};
+
+      // Parse YAML-like frontmatter (simple key: value parsing)
+      const lines = frontmatterText.split("\n");
+      for (const line of lines) {
+        const match = line.match(/^(\w+):\s*(.+)$/);
+        if (match) {
+          const [, key, value] = match;
+          if (key === "autoCommit") {
+            frontmatter.autoCommit = value.trim().toLowerCase() === "true";
+          } else if (key === "name" || key === "description" || key === "tools" || key === "model") {
+            frontmatter[key] = value.trim();
+          }
+        }
+      }
+
+      await logger.debug(`Parsed frontmatter for ${agentType}`, { frontmatter });
+      return frontmatter;
+    } catch (error) {
+      // File doesn't exist at this path, try next
+      await logger.debug(`Agent file not found at ${agentPath}`);
+    }
+  }
+
+  await logger.warn(`No agent file found for type: ${agentType}`);
+  return null;
+}
+
+/**
+ * Check if agent should auto-commit based on frontmatter
+ * Default: true (commit unless explicitly disabled)
+ */
+async function shouldAutoCommit(
+  agentType: string,
+  logger: Logger
+): Promise<boolean> {
+  const frontmatter = await parseAgentFrontmatter(agentType, logger);
+
+  if (!frontmatter) {
+    await logger.info(`Agent ${agentType} has no frontmatter, defaulting to autoCommit: true`);
+    return true; // Default: always commit if no frontmatter
+  }
+
+  if (frontmatter.autoCommit === undefined) {
+    await logger.info(`Agent ${agentType} has no autoCommit field, defaulting to true`);
+    return true; // Default: always commit if field not specified
+  }
+
+  await logger.info(`Agent ${agentType} autoCommit setting: ${frontmatter.autoCommit}`);
+  return frontmatter.autoCommit;
+}
 
 // ============================================================================
 // Git Operations
@@ -194,6 +288,20 @@ async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
     return;
   }
 
+  // Check if agent has autoCommit enabled
+  const agentType = details?.subagentType || "unknown-agent";
+  const shouldCommit = await shouldAutoCommit(agentType, logger);
+
+  if (!shouldCommit) {
+    await logger.info(
+      `Agent ${agentType} has autoCommit disabled, skipping commit`
+    );
+    console.error(
+      `⊘ Skipping commit for subagent: ${agentType} (autoCommit: false)`
+    );
+    return;
+  }
+
   // If we couldn't extract subagent details, use fallback
   const commitDetails: SubagentInvocation = details || {
     subagentType: "unknown-agent",
@@ -238,4 +346,6 @@ export {
   handleSubagentStop,
   getLatestSubagentInvocation,
   commitWithAgent,
+  shouldAutoCommit,
+  parseAgentFrontmatter,
 };

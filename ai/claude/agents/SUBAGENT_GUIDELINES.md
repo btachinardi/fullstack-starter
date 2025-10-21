@@ -45,6 +45,7 @@ name: your-sub-agent-name
 description: Description of when this subagent should be invoked
 tools: Read, Grep, Glob, Bash
 model: claude-sonnet-4-5
+autoCommit: true
 ---
 
 [System prompt content follows]
@@ -74,6 +75,16 @@ model: claude-sonnet-4-5
 - Values: `claude-sonnet-4-5` or `claude-haiku-4-5`
 - Omit to inherit model from main agent
 - See `ai/claude/MODEL_GUIDELINES.md` for detailed model selection guidance
+
+**`autoCommit`**: Auto-commit behavior control
+- Values: `true` or `false`
+- Default: `true` (commits changes when agent completes)
+- Set to `false` for:
+  - Research/query/exploration agents that don't modify code
+  - Git-related agents to prevent recursion issues
+  - Agents that generate analysis documents only
+- When set to `false`, the SubagentStop hook will skip auto-committing changes
+- Example: `autoCommit: false` for a code-analysis agent that generates reports
 
 ---
 
@@ -488,6 +499,7 @@ Before deploying a sub-agent, verify:
 - [ ] File is in correct location (`.claude/agents/`)
 - [ ] Tool access is appropriate for purpose
 - [ ] Model selection matches task complexity
+- [ ] `autoCommit` field is set appropriately (false for research/git agents, true or omit for implementation agents)
 - [ ] Workflow has 3-5 logical phases
 - [ ] Each phase has clear inputs/outputs
 - [ ] Quality standards are explicit
@@ -510,6 +522,7 @@ name: api-contract-validator
 description: Validates API contracts against OpenAPI specifications and ensures backend/frontend alignment
 tools: Read, Grep, Bash
 model: claude-sonnet-4-5
+autoCommit: true
 ---
 
 # API Contract Validator Agent

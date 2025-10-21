@@ -3,6 +3,7 @@ name: agent-name
 description: Brief description of agent purpose and when to invoke it
 tools: Read, Grep, Glob, Bash
 model: claude-sonnet-4-5
+autoCommit: true
 ---
 
 # Sub-Agent File Structure
@@ -16,6 +17,7 @@ Sub-agents are defined in Markdown files with YAML frontmatter at the top.
 - `description`: (Required) Detailed description of when to use this agent
 - `tools`: (Optional) Comma-separated tool list (e.g., `Read, Grep, Glob, Bash`) OR omit to inherit all tools + MCP
 - `model`: (Optional) Model alias: `claude-sonnet-4-5` or `claude-haiku-4-5`
+- `autoCommit`: (Optional) Whether to auto-commit changes when agent completes. Default: `true`. Set to `false` for research/query agents or git-related agents to prevent recursion
 
 **Example YAML Frontmatter:**
 ```yaml
@@ -24,6 +26,7 @@ name: my-specialized-agent
 description: Analyzes code quality and suggests improvements when reviewing pull requests
 tools: Read, Grep, Bash
 model: claude-sonnet-4-5
+autoCommit: true
 ---
 ```
 
