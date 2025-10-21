@@ -3,6 +3,7 @@ name: commit-grouper
 description: Analyzes git changes (staged and unstaged) and clusters them into logical commit groups based on system scope, change nature, and dependencies. First phase of intelligent multi-commit workflow.
 tools: Read, Bash, Grep, Glob
 model: claude-sonnet-4-5
+autoCommit: false
 ---
 
 # Commit Grouper Agent
