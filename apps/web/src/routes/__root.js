@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { createRootRoute, Link, Outlet } from '@starter/platform-router';
+import { createRootRoute, Link, Outlet } from '@starter/router';
 export const Route = createRootRoute({
     component: RootComponent,
 });

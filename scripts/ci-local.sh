@@ -75,13 +75,13 @@ else
   echo ""
 fi
 
-if command -v cyclonedx-node-pnpm &> /dev/null; then
-  run_job "Security / SBOM" "pnpm sbom"
-else
-  echo -e "${YELLOW}⚠️  Skipping SBOM generation (cyclonedx-node-pnpm not installed)${NC}"
-  echo "   Install: npm install -g @cyclonedx/cyclonedx-npm"
-  echo ""
-fi
+# SBOM generation (optional - requires npm/yarn, not currently supported for pnpm)
+# if command -v cyclonedx-npm &> /dev/null; then
+#   run_job "Security / SBOM" "cyclonedx-npm --output-file sbom.json"
+# else
+#   echo -e "${YELLOW}⚠️  Skipping SBOM generation (optional - cyclonedx tooling designed for npm/yarn)${NC}"
+#   echo ""
+# fi
 
 # Summary
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

@@ -21,7 +21,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@starter/config-typescript": "workspace:*",
+    "@starter/typescript": "workspace:*",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }

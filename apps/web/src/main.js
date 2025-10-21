@@ -1,8 +1,8 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { RouterProvider, createRouter } from '@starter/platform-router';
-import { createQueryClient, QueryClientProvider } from '@starter/platform-query';
+import { RouterProvider, createRouter } from '@starter/router';
+import { createQueryClient, QueryClientProvider } from '@starter/query';
 import { routeTree } from './routes/__root';
 import './index.css';
 // Create a query client using platform utility

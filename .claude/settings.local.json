@@ -49,7 +49,11 @@
       "Bash(node:*)",
       "Bash(taskkill:*)",
       "Bash(pnpm add:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(winget install:*)",
+      "Bash(pnpm --filter \"@starter/*\" typecheck:*)",
+      "Bash(pnpm --filter \"@fullstack-starter/web\" typecheck:*)",
+      "Bash(pnpm --filter \"@fullstack-starter/api\" typecheck:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",

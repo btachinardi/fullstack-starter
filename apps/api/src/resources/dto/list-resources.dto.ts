@@ -1,3 +1,3 @@
-import { ListQueryDto } from '@starter/platform-api';
+import { ListQueryDto } from '@starter/api';
 
 export class ListResourcesDto extends ListQueryDto {}

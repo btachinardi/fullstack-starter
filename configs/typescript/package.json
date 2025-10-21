@@ -1,0 +1,22 @@
+{
+  "name": "@starter/typescript",
+  "version": "0.1.0",
+  "description": "Shared TypeScript configuration for fullstack-starter",
+  "type": "module",
+  "main": "./base.json",
+  "files": [
+    "base.json",
+    "react.json",
+    "node.json"
+  ],
+  "scripts": {
+    "lint": "echo 'No lint for config package'",
+    "test": "echo 'No tests for config package'"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

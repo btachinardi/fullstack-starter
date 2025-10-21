@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { prisma } from '@starter/platform-db';
-import { createPaginatedResponse, PaginatedResponse } from '@starter/platform-api';
-import { NotFoundError } from '@starter/node-utils';
+import { prisma, Prisma } from '@starter/db';
+import { createPaginatedResponse, PaginatedResponse } from '@starter/api';
+import { NotFoundError } from '@starter/utils';
 import { CreateResourceDto, UpdateResourceDto, ListResourcesDto } from './dto';
-import { Resource } from '@starter/platform-db';
+import { Resource } from '@starter/db';
 
 @Injectable()
 export class ResourcesService {
@@ -12,7 +12,7 @@ export class ResourcesService {
     const skip = (page - 1) * perPage;
 
     // Build where clause
-    const where: any = {};
+    const where: Prisma.ResourceWhereInput = {};
     if (status) {
       where.status = status;
     }
@@ -24,7 +24,7 @@ export class ResourcesService {
     }
 
     // Build orderBy
-    const orderBy: any = {};
+    const orderBy: Record<string, 'asc' | 'desc'> = {};
     if (sort) {
       const fields = sort.split(',');
       for (const field of fields) {

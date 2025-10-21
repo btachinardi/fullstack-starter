@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { RouterProvider, createRouter } from '@starter/platform-router';
-import { createQueryClient, QueryClientProvider } from '@starter/platform-query';
+import { RouterProvider, createRouter } from '@starter/router';
+import { createQueryClient, QueryClientProvider } from '@starter/query';
 
 import { routeTree } from './routes/__root';
 import './index.css';

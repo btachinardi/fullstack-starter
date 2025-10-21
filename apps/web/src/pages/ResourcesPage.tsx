@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useQuery } from '@starter/platform-query';
+import { useQuery } from '@starter/query';
 import { createApiClient, ResourcesApi } from '@starter/data-access';
 import { Card, CardHeader, CardTitle, CardContent } from '@starter/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@starter/ui/table';

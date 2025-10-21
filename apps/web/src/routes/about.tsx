@@ -1,4 +1,4 @@
-import { createRoute } from '@starter/platform-router';
+import { createRoute } from '@starter/router';
 import { Route as RootRoute } from './__root';
 import { Card, CardHeader, CardTitle, CardContent } from '@starter/ui/card';
 

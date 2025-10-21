@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ResourcesService } from './resources.service';
-import { prisma } from '@starter/platform-db';
+import { prisma } from '@starter/db';
 
-jest.mock('@starter/platform-db', () => ({
+jest.mock('@starter/db', () => ({
   prisma: {
     resource: {
       findMany: jest.fn(),

@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { createRoute } from '@starter/platform-router';
+import { createRoute } from '@starter/router';
 import { Route as RootRoute } from './__root';
 export const Route = createRoute({
     getParentRoute: () => RootRoute,

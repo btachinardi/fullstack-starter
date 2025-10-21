@@ -1,0 +1,20 @@
+{
+  "name": "@starter/prettier",
+  "version": "0.1.0",
+  "description": "Shared Prettier configuration for fullstack-starter",
+  "type": "module",
+  "main": "./index.json",
+  "files": [
+    "index.json"
+  ],
+  "scripts": {
+    "lint": "echo 'No lint for config package'",
+    "test": "echo 'No tests for config package'"
+  },
+  "peerDependencies": {
+    "prettier": "^3.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2"
+  }
+}

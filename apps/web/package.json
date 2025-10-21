@@ -15,8 +15,8 @@
   },
   "dependencies": {
     "@starter/data-access": "workspace:*",
-    "@starter/platform-query": "workspace:*",
-    "@starter/platform-router": "workspace:*",
+    "@starter/query": "workspace:*",
+    "@starter/router": "workspace:*",
     "@starter/ui": "workspace:*",
     "@starter/utils": "workspace:*",
     "@tanstack/react-query": "^5.62.11",
