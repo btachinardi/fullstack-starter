@@ -1,0 +1,41 @@
+{
+  "includeCoAuthoredBy": false,
+  "permissions": {
+    "allow": [
+      "Bash(node tools/dist/cli/main.js logs tail -n 20)",
+      "Bash(node tools/dist/cli/main.js logs query --source subagent-stop -n 5)",
+      "Bash(node tools/dist/cli/main.js logs tail -n 3)",
+      "Bash(node tools/dist/cli/main.js logs query --source subagent-stop --session ad89caaf-3d33-4d44-a586-f6dc9f3d1ac3)",
+      "Bash(node tools/dist/cli/main.js logs query --source subagent-stop --session ad89caaf-3d33-4d44-a586-f6dc9f3d1ac3 -n 20)",
+      "Bash(node tools/dist/cli/main.js logs query --source subagent-stop --level error -n 10)",
+      "Bash(node tools/dist/cli/main.js logs query --source subagent-stop --level debug -n 5)",
+      "Bash(node tools/dist/cli/main.js logs tail -n 5)",
+      "Bash(node tools/dist/cli/main.js logs query --source subagent-stop --level debug -n 10)",
+      "Bash(git add README.md)",
+      "Bash(git commit -m \"$(cat <<''EOF''\ndocs: rebrand from Feature Delivery Starter to Full-Stack Starter\n\nUpdate repository name to better reflect the full-stack nature\nof the monorepo starter template.\nEOF\n)\")",
+      "Bash(git add docs/prd/starter/index.md docs/prd/starter/prd-02-shared-configuration-platform-packages.md docs/prd/starter/prd-03-web-application-shell.md docs/prd/starter/prd-04-api-application-shell.md)",
+      "Bash(git commit -m \"$(cat <<''EOF''\ndocs: reorganize PRD portfolio and clarify package scopes\n\nReorder PRDs to follow dependency flow (PRD-01 through PRD-05).\nClarify scope boundaries between packages and applications:\n- PRD-02 focuses on reusable packages and abstractions\n- PRD-03/04 demonstrate integration patterns in applications\n- Define contract ownership (API defines, packages consume)\n- Add Storybook Scenes and application examples scope\n\nUpdate PRD descriptions to reflect production-ready shells\nand explicit OpenAPI contract generation flow.\nEOF\n)\")",
+      "Bash(git add docs/prd/PRD_TEMPLATE.md docs/prd/PRD_INDEX_TEMPLATE.md docs/prd/agents/)",
+      "Bash(git commit -m \"$(cat <<''EOF''\ndocs: add PRD templates for consistent documentation\n\nAdd reusable templates for creating new PRD portfolios:\n- PRD_TEMPLATE.md: individual PRD structure template\n- PRD_INDEX_TEMPLATE.md: portfolio index template\n- agents/AGENTS_PRD_DRAFT.md: draft PRD for agent system\n\nTemplates provide consistent structure for documenting\nproduct requirements across the repository.\nEOF\n)\")",
+      "Bash(git add tools/)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat(tools): add CLI tools package with session parser and logging\n\nAdd @fullstack-starter/tools package providing:\n- Session parser for analyzing Claude Code transcript files\n- Structured logging with multiple output formats (JSON, text)\n- CLI commands for session info, agents, tools, files, conversation\n- Logs management: tail, query, stats, sources\n- SubagentStop hook for automated agent workflow tracking\n\nBuilt with TypeScript, tsup bundler, Biome linter/formatter.\nUses Claude Agent SDK for transcript parsing.\nEOF\n)\")",
+      "Bash(git add .claude/)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat(config): add Claude Code agents and commands\n\nAdd Claude Code configuration including:\n\nAgents:\n- analysis-plan-executor: executes architectural analysis documents\n- subagent-creator: creates new specialized subagents\n- slash-command-creator: creates optimized slash commands\n- empty: no-op agent for testing workflows\n\nCommands:\n- /agents:create: scaffold new agents\n- /git:commit: intelligent semantic commits with multi-concern grouping\n\nSettings:\n- Local configuration with SubagentStop hook integration\n- Configured to use tools package hooks\nEOF\n)\")"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "hooks": {
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node tools/dist/hooks/subagent-stop.js"
+          }
+        ]
+      }
+    ]
+  }
+}
