@@ -12,6 +12,7 @@
   "files": ["src", "dist", "prisma"],
   "scripts": {
     "build": "tsc",
+    "postinstall": "prisma generate",
     "lint": "echo 'Lint via root'",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests",
