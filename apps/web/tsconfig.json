@@ -1,6 +1,7 @@
 {
   "extends": "../../configs/typescript/react.json",
   "compilerOptions": {
+    "outDir": "./dist",
     "baseUrl": ".",
     "types": ["vite/client"],
     "paths": {
