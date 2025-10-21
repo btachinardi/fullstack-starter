@@ -7,21 +7,18 @@
  * output formatting.
  */
 
-import { Command } from 'commander';
-import chalk from 'chalk';
-import ora from 'ora';
 import { writeFile } from 'node:fs/promises';
-import * as sessionTools from '../tools/session.js';
-import * as logTools from '../tools/logs.js';
+import chalk from 'chalk';
+import { Command } from 'commander';
+import ora from 'ora';
 import type { LogEntry } from '../services/logger.js';
 import { getDefaultLogDir } from '../services/logger.js';
+import * as logTools from '../tools/logs.js';
+import * as sessionTools from '../tools/session.js';
 
 const program = new Command();
 
-program
-  .name('tools')
-  .description('CLI tools for fullstack-starter project')
-  .version('0.1.0');
+program.name('tools').description('CLI tools for fullstack-starter project').version('0.1.0');
 
 // ============================================================================
 // Session Tool
@@ -65,12 +62,8 @@ session
       console.log(`${chalk.cyan('Errors:')}             ${result.stats.errors}`);
 
       console.log(chalk.bold('\n💰 Token Usage\n'));
-      console.log(
-        `${chalk.cyan('Input Tokens:')}        ${result.tokens.input.toLocaleString()}`,
-      );
-      console.log(
-        `${chalk.cyan('Output Tokens:')}       ${result.tokens.output.toLocaleString()}`,
-      );
+      console.log(`${chalk.cyan('Input Tokens:')}        ${result.tokens.input.toLocaleString()}`);
+      console.log(`${chalk.cyan('Output Tokens:')}       ${result.tokens.output.toLocaleString()}`);
       console.log(
         `${chalk.cyan('Cache Creation:')}      ${result.tokens.cacheCreation.toLocaleString()}`,
       );
@@ -100,7 +93,9 @@ session
       const result = await sessionTools.sessionTools(file, { includeCount: !!options.count });
 
       if ('toolUsage' in result) {
-        spinner.succeed(`Found ${result.toolUsage.reduce((sum, t) => sum + t.count, 0)} tool use(s)`);
+        spinner.succeed(
+          `Found ${result.toolUsage.reduce((sum, t) => sum + t.count, 0)} tool use(s)`,
+        );
         console.log(chalk.bold('\n🔧 Tool Usage\n'));
         for (const { toolName, count } of result.toolUsage) {
           console.log(`${chalk.cyan(toolName.padEnd(20))} ${count} time(s)`);
@@ -130,10 +125,7 @@ session
   .option('-w, --written', 'Show only files written')
   .option('-e, --edited', 'Show only files edited')
   .action(
-    async (
-      file: string,
-      options: { read?: boolean; written?: boolean; edited?: boolean },
-    ) => {
+    async (file: string, options: { read?: boolean; written?: boolean; edited?: boolean }) => {
       const spinner = ora('Analyzing file access...').start();
 
       try {
@@ -147,11 +139,7 @@ session
 
         if ('files' in result) {
           // Single filter applied
-          const filterName = options.read
-            ? 'Read'
-            : options.written
-              ? 'Written'
-              : 'Edited';
+          const filterName = options.read ? 'Read' : options.written ? 'Written' : 'Edited';
           console.log(chalk.bold(`\n📁 Files ${filterName} (${result.files.length})\n`));
           for (const f of result.files) {
             console.log(`  ${f}`);
@@ -260,7 +248,7 @@ session
       }
 
       if (limit && conversation.length === limit) {
-        console.log(chalk.gray(`... use --limit to see more messages\n`));
+        console.log(chalk.gray('... use --limit to see more messages\n'));
       }
     } catch (error) {
       spinner.fail('Failed to extract conversation');
@@ -314,27 +302,25 @@ session
   .description('Export session as JSON')
   .option('-o, --output <file>', 'Output file (defaults to stdout)')
   .option('--pretty', 'Pretty print JSON', false)
-  .action(
-    async (file: string, options: { output?: string; pretty?: boolean }) => {
-      const spinner = ora('Exporting session...').start();
+  .action(async (file: string, options: { output?: string; pretty?: boolean }) => {
+    const spinner = ora('Exporting session...').start();
 
-      try {
-        const json = await sessionTools.sessionExport(file, { pretty: options.pretty });
+    try {
+      const json = await sessionTools.sessionExport(file, { pretty: options.pretty });
 
-        if (options.output) {
-          await writeFile(options.output, json, 'utf-8');
-          spinner.succeed(`Exported to ${options.output}`);
-        } else {
-          spinner.stop();
-          console.log(json);
-        }
-      } catch (error) {
-        spinner.fail('Failed to export session');
-        console.error(chalk.red((error as Error).message));
-        process.exit(1);
+      if (options.output) {
+        await writeFile(options.output, json, 'utf-8');
+        spinner.succeed(`Exported to ${options.output}`);
+      } else {
+        spinner.stop();
+        console.log(json);
       }
-    },
-  );
+    } catch (error) {
+      spinner.fail('Failed to export session');
+      console.error(chalk.red((error as Error).message));
+      process.exit(1);
+    }
+  });
 
 // ----------------------------------------------------------------------------
 // session list
@@ -372,9 +358,7 @@ session
 // Logs Tool
 // ============================================================================
 
-const logs = program
-  .command('logs')
-  .description('Query and analyze structured logs');
+const logs = program.command('logs').description('Query and analyze structured logs');
 
 // ----------------------------------------------------------------------------
 // logs tail
@@ -439,7 +423,7 @@ logs
       try {
         const entries = await logTools.queryLogs({
           source: options.source,
-          level: options.level as any,
+          level: options.level as 'debug' | 'info' | 'warn' | 'error' | undefined,
           toolName: options.tool,
           sessionId: options.session,
           search: options.search,

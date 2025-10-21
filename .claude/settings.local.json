@@ -32,7 +32,18 @@
       "Bash(pnpm prisma generate:*)",
       "Bash(while read file)",
       "Bash(done)",
-      "Bash(pnpm exec biome:*)"
+      "Bash(pnpm exec biome:*)",
+      "Bash(pnpm turbo run test:*)",
+      "Bash(node -e:*)",
+      "Bash(pnpm vitest run:*)",
+      "Bash(cat:*)",
+      "Bash(node --input-type=module -e:*)",
+      "Bash(node --loader=tsx --input-type=module -e:*)",
+      "Bash(md5sum:*)",
+      "Bash(pnpm exec vitest:*)",
+      "Bash(pkill:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(pnpm turbo run build:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",

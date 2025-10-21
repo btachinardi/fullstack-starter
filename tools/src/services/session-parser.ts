@@ -8,20 +8,20 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type {
-  SessionEntry,
-  ParsedSession,
-  UserEntry,
   AssistantEntry,
+  ParsedSession,
+  SessionEntry,
   SystemEntry,
-  ToolUse,
   ToolName,
+  ToolUse,
+  UserEntry,
 } from '../types/session.js';
 import {
-  isUserEntry,
   isAssistantEntry,
-  isSystemEntry,
   isSummaryEntry,
+  isSystemEntry,
   isToolUse,
+  isUserEntry,
 } from '../types/session.js';
 
 export class SessionParser {
@@ -55,7 +55,7 @@ export class SessionParser {
           if (!this.cwd) this.cwd = entry.cwd;
           if (!this.gitBranch && entry.gitBranch) this.gitBranch = entry.gitBranch;
         }
-      } catch (error) {
+      } catch (_error) {
         console.warn(`Skipping invalid JSON line: ${line.substring(0, 100)}...`);
       }
     }
@@ -79,9 +79,7 @@ export class SessionParser {
       return content.some((c) => c.type === 'tool_result');
     }).length;
 
-    const errors = this.entries.filter(
-      (e) => isSystemEntry(e) && e.level === 'error',
-    ).length;
+    const errors = this.entries.filter((e) => isSystemEntry(e) && e.level === 'error').length;
 
     const timestamps = this.entries
       .filter((e) => 'timestamp' in e && e.timestamp)

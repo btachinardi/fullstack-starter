@@ -69,55 +69,53 @@ export type HookInput =
 // Hook Input Parser
 // ============================================================================
 
-export class HookInputParser {
-  /**
-   * Parse hook input from stdin
-   */
-  static async parseStdin(): Promise<HookInput> {
-    const stdinBuffer: Buffer[] = [];
+/**
+ * Parse hook input from stdin
+ */
+export async function parseStdin(): Promise<HookInput> {
+  const stdinBuffer: Buffer[] = [];
 
-    for await (const chunk of process.stdin) {
-      stdinBuffer.push(chunk);
-    }
-
-    const input = Buffer.concat(stdinBuffer).toString('utf-8');
-    return JSON.parse(input) as HookInput;
+  for await (const chunk of process.stdin) {
+    stdinBuffer.push(chunk);
   }
 
-  /**
-   * Parse hook input from string
-   */
-  static parseString(input: string): HookInput {
-    return JSON.parse(input) as HookInput;
-  }
+  const input = Buffer.concat(stdinBuffer).toString('utf-8');
+  return JSON.parse(input) as HookInput;
+}
 
-  /**
-   * Type guard for SubagentStop input
-   */
-  static isSubagentStop(input: HookInput): input is SubagentStopInput {
-    return input.hook_event_name === 'SubagentStop';
-  }
+/**
+ * Parse hook input from string
+ */
+export function parseString(input: string): HookInput {
+  return JSON.parse(input) as HookInput;
+}
 
-  /**
-   * Type guard for PreToolUse input
-   */
-  static isPreToolUse(input: HookInput): input is PreToolUseInput {
-    return input.hook_event_name === 'PreToolUse';
-  }
+/**
+ * Type guard for SubagentStop input
+ */
+export function isSubagentStop(input: HookInput): input is SubagentStopInput {
+  return input.hook_event_name === 'SubagentStop';
+}
 
-  /**
-   * Type guard for PostToolUse input
-   */
-  static isPostToolUse(input: HookInput): input is PostToolUseInput {
-    return input.hook_event_name === 'PostToolUse';
-  }
+/**
+ * Type guard for PreToolUse input
+ */
+export function isPreToolUse(input: HookInput): input is PreToolUseInput {
+  return input.hook_event_name === 'PreToolUse';
+}
 
-  /**
-   * Type guard for UserPromptSubmit input
-   */
-  static isUserPromptSubmit(input: HookInput): input is UserPromptSubmitInput {
-    return input.hook_event_name === 'UserPromptSubmit';
-  }
+/**
+ * Type guard for PostToolUse input
+ */
+export function isPostToolUse(input: HookInput): input is PostToolUseInput {
+  return input.hook_event_name === 'PostToolUse';
+}
+
+/**
+ * Type guard for UserPromptSubmit input
+ */
+export function isUserPromptSubmit(input: HookInput): input is UserPromptSubmitInput {
+  return input.hook_event_name === 'UserPromptSubmit';
 }
 
 // ============================================================================
@@ -134,7 +132,7 @@ export abstract class HookHandler<T extends HookInput = HookInput> {
    * Initialize the hook with parsed input
    */
   async initialize(): Promise<void> {
-    this.input = (await HookInputParser.parseStdin()) as T;
+    this.input = (await parseStdin()) as T;
   }
 
   /**
@@ -181,7 +179,7 @@ export function createHook<T extends HookInput>(
 ): () => Promise<void> {
   return async () => {
     try {
-      const input = await HookInputParser.parseStdin();
+      const input = await parseStdin();
 
       if (!validate(input)) {
         throw new Error(`Invalid hook input type: ${input.hook_event_name}`);
@@ -201,7 +199,7 @@ export function createHook<T extends HookInput>(
 export function createSubagentStopHook(
   handler: (input: SubagentStopInput) => Promise<void>,
 ): () => Promise<void> {
-  return createHook(HookInputParser.isSubagentStop, handler);
+  return createHook(isSubagentStop, handler);
 }
 
 /**
@@ -210,7 +208,7 @@ export function createSubagentStopHook(
 export function createPreToolUseHook(
   handler: (input: PreToolUseInput) => Promise<void>,
 ): () => Promise<void> {
-  return createHook(HookInputParser.isPreToolUse, handler);
+  return createHook(isPreToolUse, handler);
 }
 
 /**
@@ -219,7 +217,7 @@ export function createPreToolUseHook(
 export function createPostToolUseHook(
   handler: (input: PostToolUseInput) => Promise<void>,
 ): () => Promise<void> {
-  return createHook(HookInputParser.isPostToolUse, handler);
+  return createHook(isPostToolUse, handler);
 }
 
 /**
@@ -228,5 +226,5 @@ export function createPostToolUseHook(
 export function createUserPromptSubmitHook(
   handler: (input: UserPromptSubmitInput) => Promise<void>,
 ): () => Promise<void> {
-  return createHook(HookInputParser.isUserPromptSubmit, handler);
+  return createHook(isUserPromptSubmit, handler);
 }

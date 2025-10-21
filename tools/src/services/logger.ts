@@ -17,16 +17,16 @@
  * - Easy querying and filtering
  */
 
-import { appendFile, mkdir } from "node:fs/promises";
-import { join, basename } from "node:path";
-import { existsSync } from "node:fs";
-import { homedir, platform } from "node:os";
+import { existsSync } from 'node:fs';
+import { appendFile, mkdir } from 'node:fs/promises';
+import { homedir, platform } from 'node:os';
+import { basename, join } from 'node:path';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type LogLevel = "debug" | "info" | "warn" | "error";
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface LogContext {
   sessionId?: string;
@@ -64,14 +64,14 @@ function getAppDataDir(): string {
   const home = homedir();
 
   switch (plat) {
-    case "win32":
-      return process.env.APPDATA || join(home, "AppData", "Roaming");
-    case "darwin":
-      return join(home, "Library", "Application Support");
-    case "linux":
-      return process.env.XDG_DATA_HOME || join(home, ".local", "share");
+    case 'win32':
+      return process.env.APPDATA || join(home, 'AppData', 'Roaming');
+    case 'darwin':
+      return join(home, 'Library', 'Application Support');
+    case 'linux':
+      return process.env.XDG_DATA_HOME || join(home, '.local', 'share');
     default:
-      return join(home, ".local", "share");
+      return join(home, '.local', 'share');
   }
 }
 
@@ -88,7 +88,7 @@ function getWorkspaceName(): string {
 export function getDefaultLogDir(): string {
   const appData = getAppDataDir();
   const workspace = getWorkspaceName();
-  return join(appData, workspace, "tools", "logs");
+  return join(appData, workspace, 'tools', 'logs');
 }
 
 // ============================================================================
@@ -112,14 +112,14 @@ export class Logger {
     this.source = options.source;
     this.context = options.context || {};
     this.logDir = options.logDir || getDefaultLogDir();
-    this.minLevel = options.minLevel || "info";
+    this.minLevel = options.minLevel || 'info';
   }
 
   /**
    * Get the log file path for today
    */
   private getLogFilePath(): string {
-    const date = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     return join(this.logDir, `${date}.jsonl`);
   }
 
@@ -149,14 +149,14 @@ export class Logger {
 
     await this.ensureLogDir();
     const logFile = this.getLogFilePath();
-    const logLine = JSON.stringify(entry) + "\n";
+    const logLine = `${JSON.stringify(entry)}\n`;
 
     try {
-      await appendFile(logFile, logLine, "utf-8");
+      await appendFile(logFile, logLine, 'utf-8');
     } catch (error) {
       // Fallback to stderr if we can't write to log file
-      console.error("[Logger] Failed to write log:", error);
-      console.error("[Logger] Log entry:", logLine);
+      console.error('[Logger] Failed to write log:', error);
+      console.error('[Logger] Log entry:', logLine);
     }
   }
 
@@ -167,7 +167,7 @@ export class Logger {
     level: LogLevel,
     message: string,
     data?: unknown,
-    extraContext?: LogContext
+    extraContext?: LogContext,
   ): LogEntry {
     return {
       timestamp: new Date().toISOString(),
@@ -183,28 +183,28 @@ export class Logger {
    * Log at debug level
    */
   async debug(message: string, data?: unknown, context?: LogContext): Promise<void> {
-    await this.writeLog(this.createEntry("debug", message, data, context));
+    await this.writeLog(this.createEntry('debug', message, data, context));
   }
 
   /**
    * Log at info level
    */
   async info(message: string, data?: unknown, context?: LogContext): Promise<void> {
-    await this.writeLog(this.createEntry("info", message, data, context));
+    await this.writeLog(this.createEntry('info', message, data, context));
   }
 
   /**
    * Log at warn level
    */
   async warn(message: string, data?: unknown, context?: LogContext): Promise<void> {
-    await this.writeLog(this.createEntry("warn", message, data, context));
+    await this.writeLog(this.createEntry('warn', message, data, context));
   }
 
   /**
    * Log at error level
    */
   async error(message: string, data?: unknown, context?: LogContext): Promise<void> {
-    await this.writeLog(this.createEntry("error", message, data, context));
+    await this.writeLog(this.createEntry('error', message, data, context));
   }
 
   /**
@@ -248,14 +248,18 @@ export function createLogger(source: string, context?: LogContext): Logger {
 /**
  * Create a logger for a hook
  */
-export function createHookLogger(hookName: string, sessionId?: string, transcriptPath?: string): Logger {
+export function createHookLogger(
+  hookName: string,
+  sessionId?: string,
+  transcriptPath?: string,
+): Logger {
   return new Logger({
     source: hookName,
     context: {
       sessionId,
       transcriptPath,
     },
-    minLevel: "debug", // Enable debug logging for hooks
+    minLevel: 'debug', // Enable debug logging for hooks
   });
 }
 

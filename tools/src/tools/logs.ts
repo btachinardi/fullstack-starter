@@ -4,11 +4,11 @@
  * Provides functions to query and filter structured logs.
  */
 
-import { readFile, readdir } from "node:fs/promises";
-import { join } from "node:path";
-import { existsSync } from "node:fs";
-import type { LogEntry, LogLevel } from "../services/logger.js";
-import { getDefaultLogDir } from "../services/logger.js";
+import { existsSync } from 'node:fs';
+import { readFile, readdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import type { LogEntry, LogLevel } from '../services/logger.js';
+import { getDefaultLogDir } from '../services/logger.js';
 
 // ============================================================================
 // Types
@@ -51,8 +51,8 @@ export interface LogStatsResult {
  * Parse a JSONL log file
  */
 async function parseLogFile(filePath: string): Promise<LogEntry[]> {
-  const content = await readFile(filePath, "utf-8");
-  const lines = content.trim().split("\n").filter(Boolean);
+  const content = await readFile(filePath, 'utf-8');
+  const lines = content.trim().split('\n').filter(Boolean);
   return lines.map((line) => JSON.parse(line) as LogEntry);
 }
 
@@ -66,7 +66,7 @@ async function getLogFiles(logDir: string): Promise<string[]> {
 
   const files = await readdir(logDir);
   return files
-    .filter((f) => f.endsWith(".jsonl"))
+    .filter((f) => f.endsWith('.jsonl'))
     .sort()
     .map((f) => join(logDir, f));
 }
@@ -98,7 +98,9 @@ function filterEntries(entries: LogEntry[], options: LogQueryOptions): LogEntry[
     filtered = filtered.filter(
       (e) =>
         e.message.toLowerCase().includes(searchLower) ||
-        JSON.stringify(e.data || {}).toLowerCase().includes(searchLower)
+        JSON.stringify(e.data || {})
+          .toLowerCase()
+          .includes(searchLower),
     );
   }
 
@@ -124,7 +126,7 @@ export async function queryLogs(options: LogQueryOptions = {}): Promise<LogEntry
   let filesToRead = files;
   if (options.startDate || options.endDate) {
     filesToRead = files.filter((f) => {
-      const fileName = f.split(/[\\/]/).pop()?.replace(".jsonl", "");
+      const fileName = f.split(/[\\/]/).pop()?.replace('.jsonl', '');
       if (!fileName) return false;
       if (options.startDate && fileName < options.startDate) return false;
       if (options.endDate && fileName > options.endDate) return false;
@@ -187,8 +189,8 @@ export async function logStats(options: { logDir?: string } = {}): Promise<LogSt
   const byTool: Record<string, number> = {};
 
   let totalEntries = 0;
-  let firstTimestamp = "";
-  let lastTimestamp = "";
+  let firstTimestamp = '';
+  let lastTimestamp = '';
 
   for (const file of files) {
     const entries = await parseLogFile(file);

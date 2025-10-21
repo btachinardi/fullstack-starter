@@ -2,7 +2,7 @@
  * Session Parser Tests
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { SessionParser } from './session-parser.js';
 
 describe('SessionParser', () => {
