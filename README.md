@@ -1,4 +1,4 @@
-# Feature Delivery Starter
+# Full-Stack Starter
 
 A batteries-included **monorepo starter** for shipping full-stack features with high quality and repeatability. It implements the **Feature Delivery Playbook** (workflows, checklists, templates) and a stack-specific baseline:
 
