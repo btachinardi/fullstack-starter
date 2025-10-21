@@ -755,7 +755,7 @@ This protects you from accidental data loss while maintaining workflow efficienc
 ### Works Well With
 
 - **General-purpose agent:** For testing permission changes with real commands
-- **slash-command-creator agent:** For creating custom commands that respect new permissions
+- **slash-command-writer agent:** For creating custom commands that respect new permissions
 - **analysis-plan-executor agent:** For implementing permission strategies from analysis documents
 
 ### Delegates To

@@ -29,8 +29,8 @@ This system creates agent systems, which themselves consist of orchestration com
 
 ### Specialized Sub-Agents
 
-**`subagent-creator`** - Creates sub-agent files
-- **Location:** `.claude-code/agents/subagent-creator.md`
+**`subagent-writer`** - Writes (creates and updates) sub-agent files
+- **Location:** `.claude-code/agents/subagent-writer.md`
 - **Purpose:** Translate agent specifications into production-ready sub-agent files
 - **Tools:** All tools (`*`)
 - **Phases:**
@@ -39,8 +39,8 @@ This system creates agent systems, which themselves consist of orchestration com
   3. Agent Implementation - Create markdown file following template
   4. Validation & Documentation - Verify quality and completeness
 
-**`command-creator`** - Creates slash command files
-- **Location:** `.claude-code/agents/command-creator.md`
+**`slash-command-writer`** - Writes (creates and updates) slash command files
+- **Location:** `.claude-code/agents/slash-command-writer.md`
 - **Purpose:** Translate workflow specifications into production-ready command files
 - **Tools:** All tools (`*`)
 - **Phases:**
@@ -188,8 +188,8 @@ Then follow the prompts to describe your agent system requirements.
 - `.claude-code/SLASH_COMMAND_TEMPLATE.md` - Command creation template
 
 ### Sub-Agents
-- `.claude-code/agents/subagent-creator.md` - Sub-agent creation specialist
-- `.claude-code/agents/command-creator.md` - Command creation specialist
+- `.claude-code/agents/subagent-writer.md` - Sub-agent writer specialist
+- `.claude-code/agents/slash-command-writer.md` - Slash command writer specialist
 
 ### Commands
 - `.claude/commands/agents/create.md` - Main orchestration command
@@ -268,8 +268,8 @@ When updating templates (`.claude-code/*_TEMPLATE.md`):
 3. Document changes in template changelog
 4. Validate existing agent systems still work
 
-### Updating Creator Agents
-When updating creator agents (`.claude-code/agents/*-creator.md`):
+### Updating Writer Agents
+When updating writer agents (`.claude-code/agents/*-writer.md`):
 1. Ensure alignment with templates
 2. Test with various agent system types
 3. Validate orchestration command still works correctly

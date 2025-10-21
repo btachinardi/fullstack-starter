@@ -556,7 +556,7 @@ All messages generated successfully.
 ```json
 {
   "session_id": "1a7d9110-f81d-4bba-aa6f-2a1e017fbc2d",
-  "agent_type": "subagent-creator",
+  "agent_type": "subagent-writer",
   "prompt": "Create a subagent that analyzes API performance...",
   "invocation_id": "toolu_01Sx5EFM4ViaXkqZECJ3Zgqu"
 }
@@ -570,7 +570,7 @@ Implement API performance analyzer with metrics collection and visualization.
 
 Closes #123
 
-Agent: subagent-creator
+Agent: subagent-writer
 Session-ID: 1a7d9110-f81d-4bba-aa6f-2a1e017fbc2d
 Invocation-ID: toolu_01Sx5EFM4ViaXkqZECJ3Zgqu
 

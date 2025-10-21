@@ -873,7 +873,7 @@ Changed files: 120
 ### Works Well With
 - **commit-message-generator** agent: Takes the groups from this agent and generates semantic commit messages for each
 - **general-purpose** agent: For invoking this agent as part of `/git:commit` workflow
-- **slash-command-creator** agent: For updating `/git:commit` command to use this workflow
+- **slash-command-writer** agent: For updating `/git:commit` command to use this workflow
 
 ### Delegates To
 - **User**: For approval of grouping plan, strategy selection when ambiguous, resolution of edge cases
