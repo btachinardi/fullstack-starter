@@ -1,6 +1,6 @@
 ---
 description: Intelligently commit git changes using semantic commit messages with smart grouping for multi-concern changes
-allowed-tools: Bash(git *:*), Read, Grep, Glob
+allowed-tools: Bash(git *:*), Task
 model: claude-sonnet-4-5
 ---
 
@@ -10,7 +10,7 @@ Intelligently commit git changes using semantic commit messages with smart group
 
 ## Objective
 
-Analyze staged changes, generate proper semantic commit messages following project conventions, and intelligently group changes into focused, single-concern commits when changes span multiple systems or features.
+Orchestrate intelligent git commits by delegating to specialized subagents for change analysis, commit grouping, and message generation. This command coordinates the workflow while maintaining quality standards and user interaction.
 
 ## Context & Prerequisites
 
@@ -18,35 +18,18 @@ Analyze staged changes, generate proper semantic commit messages following proje
 - Semantic commit format: `type(scope): description`
 - Commit types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`, `build`, `revert`
 - Scope indicates the affected area (e.g., `api`, `web`, `ui`, `docs`, `config`)
-- SubagentStop hook auto-commits with `chore(agent): changes from <agent-name>`
+- SubagentStop hook auto-commits with appropriate type/scope based on changes
 - This command can be invoked manually or with subagent context from hooks
+
+**Specialized Subagents:**
+- `commit-grouper`: Analyzes changes and creates logical commit groups
+- `commit-message-generator`: Generates semantic commit messages for each group
 
 **Prerequisites:**
 - Git repository initialized
 - Changes exist (staged or unstaged)
 - Working directory is clean of conflicts
-
-**Semantic Commit Convention:**
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
-
-**Type Guidelines:**
-- `feat`: New features or functionality
-- `fix`: Bug fixes
-- `chore`: Maintenance tasks (dependencies, config, tooling)
-- `docs`: Documentation only changes
-- `refactor`: Code changes that neither fix bugs nor add features
-- `test`: Adding or updating tests
-- `style`: Code style changes (formatting, missing semicolons)
-- `perf`: Performance improvements
-- `ci`: CI/CD configuration changes
-- `build`: Build system or external dependencies
-- `revert`: Reverting previous commits
+- Subagent definitions exist in `.claude/agents/`
 
 ## Instructions
 
