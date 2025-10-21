@@ -1,0 +1,28 @@
+{
+  "name": "@starter/data-access",
+  "version": "0.1.0",
+  "description": "API client and data access for fullstack-starter",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./resources": "./src/resources.ts"
+  },
+  "files": ["src", "dist"],
+  "scripts": {
+    "build": "tsc",
+    "lint": "echo 'Lint via root'",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@starter/utils": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@starter/config-typescript": "workspace:*",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

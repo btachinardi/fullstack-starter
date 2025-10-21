@@ -1,0 +1,34 @@
+# Gitleaks configuration for secret scanning
+# See: https://github.com/gitleaks/gitleaks
+
+title = "Gitleaks configuration for fullstack-starter"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(api[_-]?key|apikey)(['\"]?\s*[:=]\s*['\"]?)([a-zA-Z0-9_\-]{32,})'''
+tags = ["key", "API"]
+
+[[rules]]
+id = "jwt-token"
+description = "JWT Token"
+regex = '''eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'''
+tags = ["jwt"]
+
+[allowlist]
+description = "Allowlist for false positives"
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.template$''',
+  '''docs/.*\.md$''',
+  '''\.changeset/.*\.md$''',
+]
+
+regexes = [
+  '''your-secret-key-change-in-production''',
+  '''change-me-in-production''',
+  '''example-api-key''',
+]
