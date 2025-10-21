@@ -395,14 +395,15 @@ export async function deleteTask(
   taskId: string
 ): Promise<TaskOperationResult> {
   const document = await parseTaskDocument(documentPath);
-  let _taskFound = false;
   let updatedContent = document.rawContent;
 
   for (const taskList of document.taskLists) {
     const taskIndex = taskList.tasks.findIndex((t) => t.id === taskId);
     if (taskIndex !== -1) {
-      _taskFound = true;
       const task = taskList.tasks[taskIndex];
+      if (!task) {
+        continue;
+      }
 
       // Remove from in-memory list
       taskList.tasks.splice(taskIndex, 1);
@@ -501,7 +502,11 @@ function updateTaskInYaml(
     if (parsed && Array.isArray(parsed.tasks)) {
       const taskIndex = parsed.tasks.findIndex((t) => String(t.id) === taskId);
       if (taskIndex !== -1) {
-        parsed.tasks[taskIndex] = { ...parsed.tasks[taskIndex], ...updates };
+        const existingTask = parsed.tasks[taskIndex];
+        if (!existingTask) {
+          return match;
+        }
+        parsed.tasks[taskIndex] = { ...existingTask, ...updates };
 
         const updatedYaml = yaml.dump(parsed, {
           indent: 2,
@@ -586,7 +591,7 @@ function generateTaskId(tasks: Task[]): string {
   const numericIds = ids
     .map((id) => {
       const match = id.match(/^(\d+)\.(\d+)$/);
-      if (match) {
+      if (match && match[1] && match[2]) {
         return { major: Number.parseInt(match[1]), minor: Number.parseInt(match[2]) };
       }
       return null;

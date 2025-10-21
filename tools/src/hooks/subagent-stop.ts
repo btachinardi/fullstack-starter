@@ -83,6 +83,10 @@ async function parseAgentFrontmatter(
 
     // Use the first match (there should typically only be one)
     const agentPath = matches[0];
+    if (!agentPath) {
+      await logger.warn(`No valid agent path found for type: ${agentType}`);
+      return null;
+    }
     await logger.debug(`Using agent file: ${agentPath}`);
 
     const content = await readFile(agentPath, 'utf-8');
@@ -95,6 +99,10 @@ async function parseAgentFrontmatter(
     }
 
     const frontmatterText = frontmatterMatch[1];
+    if (!frontmatterText) {
+      await logger.debug(`Invalid frontmatter in ${agentPath}`);
+      return null;
+    }
     const frontmatter: AgentFrontmatter = {};
 
     // Parse YAML-like frontmatter (simple key: value parsing)
@@ -102,7 +110,11 @@ async function parseAgentFrontmatter(
     for (const line of lines) {
       const match = line.match(/^(\w+):\s*(.+)$/);
       if (match) {
-        const [, key, value] = match;
+        const key = match[1];
+        const value = match[2];
+        if (!key || !value) {
+          continue;
+        }
         if (key === 'autoCommit') {
           frontmatter.autoCommit = value.trim().toLowerCase() === 'true';
         } else if (key === 'name' || key === 'description' || key === 'tools' || key === 'model') {

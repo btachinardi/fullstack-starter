@@ -54,11 +54,11 @@ export class SessionParser {
         this.entries.push(parsed);
 
         // Extract session metadata from first entry with these fields
-        if (entry.type !== 'summary' && 'sessionId' in entry) {
-          if (!this.sessionId) this.sessionId = entry.sessionId;
-          if (!this.version) this.version = entry.version;
-          if (!this.cwd) this.cwd = entry.cwd;
-          if (!this.gitBranch && entry.gitBranch) this.gitBranch = entry.gitBranch;
+        if (parsed.type !== 'summary' && 'sessionId' in parsed) {
+          if (!this.sessionId) this.sessionId = parsed.sessionId;
+          if (!this.version) this.version = parsed.version;
+          if (!this.cwd) this.cwd = parsed.cwd;
+          if (!this.gitBranch && parsed.gitBranch) this.gitBranch = parsed.gitBranch;
         }
       } catch (_error) {
         console.warn(`Skipping invalid JSON line: ${line.substring(0, 100)}...`);

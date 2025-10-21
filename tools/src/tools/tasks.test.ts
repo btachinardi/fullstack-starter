@@ -126,8 +126,12 @@ describe('Tasks Management Tool', () => {
       const docs = await tasks.discoverDocuments({ searchPath: tempDir });
 
       expect(docs).toHaveLength(2);
-      expect(docs[0].name).toMatch(/test-feature|feature-2/);
-      expect(docs[0].path).toContain('.tasks.md');
+      const firstDoc = docs[0];
+      expect(firstDoc).toBeDefined();
+      if (firstDoc) {
+        expect(firstDoc.name).toMatch(/test-feature|feature-2/);
+        expect(firstDoc.path).toContain('.tasks.md');
+      }
     });
 
     it('should return empty array when no documents found', async () => {
@@ -146,7 +150,11 @@ describe('Tasks Management Tool', () => {
       });
 
       expect(docs).toHaveLength(1);
-      expect(docs[0].name).toBe('test-feature');
+      const firstDoc = docs[0];
+      expect(firstDoc).toBeDefined();
+      if (firstDoc) {
+        expect(firstDoc.name).toBe('test-feature');
+      }
     });
   });
 
@@ -160,8 +168,14 @@ describe('Tasks Management Tool', () => {
       expect(doc.frontmatter.description).toBe('Sample task document for testing');
       expect(doc.frontmatter.source).toBe('ai/docs/prds/test-prd.md');
       expect(doc.taskLists).toHaveLength(2);
-      expect(doc.taskLists[0].name).toBe('db');
-      expect(doc.taskLists[1].name).toBe('api');
+      const firstList = doc.taskLists[0];
+      const secondList = doc.taskLists[1];
+      expect(firstList).toBeDefined();
+      expect(secondList).toBeDefined();
+      if (firstList && secondList) {
+        expect(firstList.name).toBe('db');
+        expect(secondList.name).toBe('api');
+      }
     });
 
     it('should throw error for missing frontmatter', async () => {
@@ -182,7 +196,13 @@ describe('Tasks Management Tool', () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
 
       const doc = await tasks.parseTaskDocument(testDocPath);
-      const firstTask = doc.taskLists[0].tasks[0];
+      const firstList = doc.taskLists[0];
+      expect(firstList).toBeDefined();
+      if (!firstList) return;
+
+      const firstTask = firstList.tasks[0];
+      expect(firstTask).toBeDefined();
+      if (!firstTask) return;
 
       expect(firstTask.id).toBe('1.1');
       expect(firstTask.title).toBe('Create database schema');
@@ -199,7 +219,13 @@ describe('Tasks Management Tool', () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
 
       const doc = await tasks.parseTaskDocument(testDocPath);
-      const secondTask = doc.taskLists[0].tasks[1];
+      const firstList = doc.taskLists[0];
+      expect(firstList).toBeDefined();
+      if (!firstList) return;
+
+      const secondTask = firstList.tasks[1];
+      expect(secondTask).toBeDefined();
+      if (!secondTask) return;
 
       expect(secondTask.depends_on).toEqual(['1.1']);
     });
@@ -214,8 +240,12 @@ describe('Tasks Management Tool', () => {
       const result = await tasks.listTasks(testDocPath);
 
       expect(result.tasks).toHaveLength(4);
-      expect(result.tasks[0].id).toBe('1.1');
-      expect(result.tasks[0].listName).toBe('db');
+      const firstTask = result.tasks[0];
+      expect(firstTask).toBeDefined();
+      if (firstTask) {
+        expect(firstTask.id).toBe('1.1');
+        expect(firstTask.listName).toBe('db');
+      }
     });
 
     it('should filter tasks by status', async () => {
@@ -236,23 +266,39 @@ describe('Tasks Management Tool', () => {
       const result = await tasks.listTasks(testDocPath, { type: 'endpoint' });
 
       expect(result.tasks).toHaveLength(1);
-      expect(result.tasks[0].type).toBe('endpoint');
+      const firstTask = result.tasks[0];
+      expect(firstTask).toBeDefined();
+      if (firstTask) {
+        expect(firstTask.type).toBe('endpoint');
+      }
     });
 
     it('should apply head limit', async () => {
       const result = await tasks.listTasks(testDocPath, { head: 2 });
 
       expect(result.tasks).toHaveLength(2);
-      expect(result.tasks[0].id).toBe('1.1');
-      expect(result.tasks[1].id).toBe('1.2');
+      const firstTask = result.tasks[0];
+      const secondTask = result.tasks[1];
+      expect(firstTask).toBeDefined();
+      expect(secondTask).toBeDefined();
+      if (firstTask && secondTask) {
+        expect(firstTask.id).toBe('1.1');
+        expect(secondTask.id).toBe('1.2');
+      }
     });
 
     it('should apply tail limit', async () => {
       const result = await tasks.listTasks(testDocPath, { tail: 2 });
 
       expect(result.tasks).toHaveLength(2);
-      expect(result.tasks[0].id).toBe('2.1');
-      expect(result.tasks[1].id).toBe('2.2');
+      const firstTask = result.tasks[0];
+      const secondTask = result.tasks[1];
+      expect(firstTask).toBeDefined();
+      expect(secondTask).toBeDefined();
+      if (firstTask && secondTask) {
+        expect(firstTask.id).toBe('2.1');
+        expect(secondTask.id).toBe('2.2');
+      }
     });
 
     it('should combine multiple filters', async () => {
@@ -262,7 +308,11 @@ describe('Tasks Management Tool', () => {
       });
 
       expect(result.tasks).toHaveLength(1);
-      expect(result.tasks[0].id).toBe('2.2');
+      const firstTask = result.tasks[0];
+      expect(firstTask).toBeDefined();
+      if (firstTask) {
+        expect(firstTask.id).toBe('2.2');
+      }
     });
   });
 
@@ -308,8 +358,15 @@ describe('Tasks Management Tool', () => {
 
       // Verify the change was persisted
       const doc = await tasks.parseTaskDocument(testDocPath);
-      const task = doc.taskLists[0].tasks[0];
-      expect(task.status).toBe('in progress');
+      const firstList = doc.taskLists[0];
+      expect(firstList).toBeDefined();
+      if (!firstList) return;
+
+      const task = firstList.tasks[0];
+      expect(task).toBeDefined();
+      if (task) {
+        expect(task.status).toBe('in progress');
+      }
     });
 
     it('should handle all valid status transitions', async () => {
@@ -352,7 +409,11 @@ describe('Tasks Management Tool', () => {
 
       // Verify task was removed
       const doc = await tasks.parseTaskDocument(testDocPath);
-      const task = doc.taskLists[0].tasks.find((t) => t.id === '1.1');
+      const firstList = doc.taskLists[0];
+      expect(firstList).toBeDefined();
+      if (!firstList) return;
+
+      const task = firstList.tasks.find((t) => t.id === '1.1');
       expect(task).toBeUndefined();
     });
 
@@ -388,7 +449,11 @@ describe('Tasks Management Tool', () => {
       const doc = await tasks.parseTaskDocument(testDocPath);
       const dbTasks = doc.taskLists.find((list) => list.name === 'db');
       expect(dbTasks?.tasks).toHaveLength(3); // Was 2, now 3
-      expect(dbTasks?.tasks[2].title).toBe('New database task');
+      const newTask = dbTasks?.tasks[2];
+      expect(newTask).toBeDefined();
+      if (newTask) {
+        expect(newTask.title).toBe('New database task');
+      }
     });
 
     it('should generate unique task ID', async () => {

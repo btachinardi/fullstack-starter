@@ -62,7 +62,7 @@ echo ""
 # Run CI jobs in order (matching GitHub Actions workflow)
 run_job "Setup / Bootstrap Check" "pnpm ci:bootstrap"
 run_job "Lint" "pnpm turbo run lint --filter='./packages/*' --filter='./apps/*'"
-run_job "Type Check" "pnpm turbo run typecheck --filter='./packages/*' --filter='./apps/*'"
+run_job "Type Check" "pnpm turbo run typecheck"
 run_job "Test" "pnpm turbo run test --filter='./packages/*' --filter='./apps/*'"
 run_job "Build" "pnpm turbo run build"
 

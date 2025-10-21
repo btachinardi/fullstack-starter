@@ -61,8 +61,9 @@ export function isNodeEnvironment(
  * Check if running in Node.js development mode
  */
 export function isNodeDevelopment(): boolean {
-  if (!isNodeEnvironment(globalThis)) {
+  const global = globalThis;
+  if (!isNodeEnvironment(global)) {
     return false;
   }
-  return globalThis.process.env?.NODE_ENV === 'development';
+  return global.process.env?.NODE_ENV === 'development';
 }
