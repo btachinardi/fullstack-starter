@@ -1,0 +1,50 @@
+{
+  "name": "@fullstack-starter/tools",
+  "version": "0.1.0",
+  "description": "CLI tools for fullstack-starter project",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "tools": "node dist/cli/main.js",
+    "session:info": "pnpm tools session info",
+    "session:agents": "pnpm tools session agents",
+    "session:tools": "pnpm tools session tools",
+    "session:files": "pnpm tools session files",
+    "session:conversation": "pnpm tools session conversation",
+    "session:bash": "pnpm tools session bash",
+    "session:export": "pnpm tools session export",
+    "session:list": "pnpm tools session list",
+    "logs:tail": "pnpm tools logs tail",
+    "logs:query": "pnpm tools logs query",
+    "logs:stats": "pnpm tools logs stats",
+    "logs:sources": "pnpm tools logs sources",
+    "logs:tools": "pnpm tools logs tools"
+  },
+  "bin": {
+    "tools": "./dist/cli/main.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.23",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "ora": "^8.1.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

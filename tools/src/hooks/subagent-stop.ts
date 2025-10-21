@@ -1,0 +1,241 @@
+#!/usr/bin/env node
+/**
+ * SubagentStop Hook
+ *
+ * Automatically commits changes made by Claude Code subagents when they complete.
+ * Uses the Agent SDK to invoke the /git:commit slash command with subagent context.
+ *
+ * Hook Configuration (in claude_desktop_config.json):
+ * {
+ *   "hooks": {
+ *     "SubagentStop": [
+ *       {
+ *         "type": "command",
+ *         "command": "node tools/dist/hooks/subagent-stop.js"
+ *       }
+ *     ]
+ *   }
+ * }
+ */
+
+import { execSync } from "node:child_process";
+import { query } from "@anthropic-ai/claude-agent-sdk";
+import { sessionAgents } from "../tools/session.js";
+import type { SubagentInvocation } from "../tools/session.js";
+import { createSubagentStopHook } from "../services/hook-input.js";
+import type { SubagentStopInput } from "../services/hook-input.js";
+import { createHookLogger } from "../services/logger.js";
+import type { Logger } from "../services/logger.js";
+
+// ============================================================================
+// Configuration
+// ============================================================================
+
+const REPO_ROOT = process.cwd();
+
+// ============================================================================
+// Git Operations
+// ============================================================================
+
+function gitCommand(command: string): string {
+  try {
+    return execSync(command, {
+      cwd: REPO_ROOT,
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+  } catch (error) {
+    return "";
+  }
+}
+
+function hasChanges(): boolean {
+  const status = gitCommand("git status --porcelain");
+  return !!status;
+}
+
+async function stageChanges(logger: Logger): Promise<void> {
+  try {
+    gitCommand("git add -A");
+    await logger.debug("Staged changes for commit");
+  } catch (error) {
+    const err = error as { stderr?: Buffer };
+    await logger.error("Failed to stage changes", {
+      error: err.stderr?.toString() || error,
+    });
+    throw new Error(
+      `Failed to stage changes: ${err.stderr?.toString() || error}`
+    );
+  }
+}
+
+async function commitWithAgent(
+  details: SubagentInvocation,
+  logger: Logger
+): Promise<boolean> {
+  try {
+    // Build the prompt for the Agent SDK with subagent context
+    const agentPrompt = `/git:commit
+
+Subagent context (from SubagentStop hook):
+- Agent: ${details.subagentType}
+- Session ID: ${details.sessionId}
+- Invocation ID: ${details.invocationId}
+
+Prompt:
+${details.prompt}
+
+Please analyze the staged changes and create an appropriate semantic commit message.
+Since this is from a hook, auto-approve and execute the commit without user interaction.`;
+
+    await logger.info("Invoking /git:commit via Agent SDK", {
+      subagentType: details.subagentType,
+      sessionId: details.sessionId,
+      invocationId: details.invocationId,
+    });
+
+    // Invoke the /git:commit command via Agent SDK
+    for await (const msg of query({
+      prompt: agentPrompt,
+      options: {
+        maxTurns: 100,
+        settingSources: ["project", "local"], // Enable slash commands
+      },
+    })) {
+      // Log all Agent SDK outputs
+      await logger.debug("Agent SDK message received", {
+        messageType: msg.type,
+        message: msg,
+      });
+
+      if (msg.type === "result") {
+        await logger.info("Agent SDK result received", {
+          subtype: msg.subtype,
+          isError: msg.is_error,
+          numTurns: msg.num_turns,
+          totalCostUsd: msg.total_cost_usd,
+        });
+
+        if (msg.is_error) {
+          await logger.error("Agent SDK execution error", {
+            subtype: msg.subtype,
+          });
+          return false;
+        }
+      }
+    }
+
+    return true;
+  } catch (error) {
+    await logger.error("Failed to commit via Agent SDK", { error });
+    return false;
+  }
+}
+
+// ============================================================================
+// Agent SDK Integration
+// ============================================================================
+
+// Commit logic moved to commitWithAgent() function above
+// Uses Agent SDK to invoke /git:commit slash command with subagent context
+
+// ============================================================================
+// Session Parsing
+// ============================================================================
+
+async function getLatestSubagentInvocation(
+  transcriptPath: string
+): Promise<SubagentInvocation | null> {
+  try {
+    const invocations = await sessionAgents(transcriptPath);
+
+    if (invocations.length === 0) {
+      return null;
+    }
+
+    // Return the most recent invocation
+    const latest = invocations[invocations.length - 1];
+    return latest ?? null;
+  } catch (error) {
+    console.error("Warning: Failed to parse session:", error);
+    return null;
+  }
+}
+
+// ============================================================================
+// Main Hook Handler
+// ============================================================================
+
+async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
+  // Initialize logger
+  const logger = createHookLogger(
+    "subagent-stop",
+    input.session_id,
+    input.transcript_path
+  );
+
+  await logger.info("SubagentStop hook invoked", {
+    sessionId: input.session_id,
+    transcriptPath: input.transcript_path,
+    cwd: input.cwd,
+  });
+
+  // Extract subagent details from session
+  const details = await getLatestSubagentInvocation(input.transcript_path);
+
+  await logger.info("Subagent details extracted", {
+    subagentType: details?.subagentType,
+    invocationId: details?.invocationId,
+  });
+
+  // Check if there are any changes to commit
+  if (!hasChanges()) {
+    await logger.info("No changes to commit, exiting");
+    return;
+  }
+
+  // If we couldn't extract subagent details, use fallback
+  const commitDetails: SubagentInvocation = details || {
+    subagentType: "unknown-agent",
+    description: "changes from unknown agent",
+    prompt: "No prompt information available",
+    timestamp: new Date().toISOString(),
+    sessionId: input.session_id,
+    invocationId: "unknown",
+    entryUuid: "unknown",
+  };
+
+  await logger.info("Preparing to commit changes", {
+    subagentType: commitDetails.subagentType,
+  });
+
+  // Stage changes
+  await stageChanges(logger);
+
+  // Commit the changes using Agent SDK
+  const success = await commitWithAgent(commitDetails, logger);
+
+  if (success) {
+    await logger.info("Successfully committed changes", {
+      subagentType: commitDetails.subagentType,
+    });
+    console.error(
+      `✓ Committed changes from subagent: ${commitDetails.subagentType}`
+    );
+  } else {
+    await logger.error("Failed to commit changes via Agent SDK");
+    console.error("✗ Failed to commit changes via Agent SDK");
+    process.exit(1);
+  }
+}
+
+// Create and run the hook
+const main = createSubagentStopHook(handleSubagentStop);
+main();
+
+export {
+  main,
+  handleSubagentStop,
+  getLatestSubagentInvocation,
+  commitWithAgent,
+};
