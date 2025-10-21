@@ -282,6 +282,12 @@ async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
     invocationId: details?.invocationId,
   });
 
+  // Exit early if we don't have valid subagent details
+  if (!details || !details.subagentType) {
+    await logger.info("No valid subagent details found, exiting (not a subagent invocation)");
+    return;
+  }
+
   // Check if there are any changes to commit
   if (!hasChanges()) {
     await logger.info("No changes to commit, exiting");
@@ -289,7 +295,7 @@ async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
   }
 
   // Check if agent has autoCommit enabled
-  const agentType = details?.subagentType || "unknown-agent";
+  const agentType = details.subagentType;
   const shouldCommit = await shouldAutoCommit(agentType, logger);
 
   if (!shouldCommit) {
@@ -302,16 +308,8 @@ async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
     return;
   }
 
-  // If we couldn't extract subagent details, use fallback
-  const commitDetails: SubagentInvocation = details || {
-    subagentType: "unknown-agent",
-    description: "changes from unknown agent",
-    prompt: "No prompt information available",
-    timestamp: new Date().toISOString(),
-    sessionId: input.session_id,
-    invocationId: "unknown",
-    entryUuid: "unknown",
-  };
+  // Use the valid subagent details
+  const commitDetails: SubagentInvocation = details;
 
   await logger.info("Preparing to commit changes", {
     subagentType: commitDetails.subagentType,

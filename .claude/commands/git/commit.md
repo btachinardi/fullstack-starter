@@ -33,35 +33,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
 
 ## Instructions
 
-### Phase 1: Check Git State
-
-**Objective:** Verify git status and prepare for analysis
-
-**Steps:**
-
-1. **Check Git Status**
-   ```bash
-   git status --porcelain
-   ```
-
-2. **Handle Unstaged Changes**
-   - If no staged changes but unstaged exist, ask user:
-     - Stage all changes: `git add -A`
-     - Stage specific files: provide list for selection
-     - Cancel operation
-
-3. **Verify Changes Exist**
-   - If no changes at all: inform user and exit
-   - If changes exist: proceed to Phase 2
-
-**Validation:**
-- [ ] Git status checked
-- [ ] Staged changes exist or user declined to stage
-- [ ] Ready to proceed with analysis
-
----
-
-### Phase 2: Delegate to commit-grouper
+### Phase 1: Delegate to commit-grouper
 
 **Objective:** Use specialized subagent to analyze changes and create logical commit groups
 
@@ -152,7 +124,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
 
 ---
 
-### Phase 3: Delegate to commit-message-generator (Parallel)
+### Phase 2: Delegate to commit-message-generator (Parallel)
 
 **Objective:** Generate semantic commit messages for each group using parallel subagent invocations
 
@@ -210,60 +182,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
    Closes #123
    ```
 
-4. **Present All Messages to User**
-
-   Show all generated commit messages for review:
-   ```
-   Generated commit messages:
-
-   Commit 1:
-   ─────────────────────────────────────
-   chore(deps): update dependencies to latest versions
-
-   Update all dependencies to latest compatible versions
-   including security patches.
-   ─────────────────────────────────────
-   Files: package.json, pnpm-lock.yaml
-
-   Commit 2:
-   ─────────────────────────────────────
-   feat(api): add JWT authentication endpoints
-
-   Implement secure authentication flow using JWT tokens.
-   Includes login, logout, and token refresh endpoints.
-
-   Closes #234
-   ─────────────────────────────────────
-   Files: apps/api/src/auth/controller.ts, apps/api/src/auth/service.ts, ...
-
-   Commit 3:
-   ─────────────────────────────────────
-   feat(web): add login UI components
-
-   Create login form with email/password validation
-   and integration with authentication API.
-   ─────────────────────────────────────
-   Files: apps/web/src/components/auth/LoginForm.tsx, ...
-   ```
-
-5. **Get User Approval**
-   - Ask: "Approve all commit messages? (Y/n)"
-   - If yes: proceed to Phase 4
-   - If no: offer to:
-     - Edit specific messages manually
-     - Regenerate specific messages (re-invoke subagent for that group)
-     - Cancel operation
-
-**Validation:**
-- [ ] All commit-message-generator subagents invoked in parallel
-- [ ] All messages received successfully
-- [ ] Messages follow semantic commit format
-- [ ] Messages presented clearly to user
-- [ ] User has approved all messages
-
----
-
-### Phase 4: Execute Commits
+### Phase 3: Execute Commits
 
 **Objective:** Execute the planned commits with generated messages in correct order
 
@@ -356,7 +275,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
 
 ---
 
-### Phase 5: SubagentStop Hook Integration (Optional)
+### IMPORTANT: SubagentStop Hook Integration
 
 **Objective:** Handle invocation from SubagentStop hook with agent metadata
 
@@ -364,13 +283,8 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
 
 1. **Detect Hook Context**
    - Check for subagent context (session_id, invocation_id, agent_type, prompt)
-   - If present: activate auto-commit mode
-   - If absent: use normal interactive mode (Phases 1-4)
 
-2. **Auto-Commit Mode Behavior**
-   - **Skip user prompts**: Auto-approve all decisions
-   - **Prefer single commit**: Invoke commit-grouper with "single-commit" strategy hint
-   - **Include agent metadata**: Ensure commit message footer includes:
+2. **Include agent metadata**: Ensure commit message footer includes:
      ```
      Agent: <subagent-type>
      Session-ID: <session-id>
@@ -382,42 +296,16 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
    - **Execute immediately**: Create commit without waiting for approval
    - **Log results**: Output to stderr for hook logging
 
-3. **Example Auto-Commit Flow**
-   ```
-   [git:commit] Detected SubagentStop hook invocation
-   [git:commit] Agent: subagent-creator
-   [git:commit] Analyzing changes...
-   [git:commit] Creating single commit with agent metadata...
-   ✓ Committed: a1b2c3d feat(agents): add commit-grouper subagent
-   ```
 
 **Validation:**
 - [ ] Hook context detected correctly
-- [ ] Auto-commit mode activated
-- [ ] Single commit strategy used
 - [ ] Agent metadata included in footer
-- [ ] Commit executed without prompts
 
 ---
 
 ## Output Format
 
-### Phase 1: Git Status Check
-
-```
-Checking git status...
-
-Found 8 staged files:
-M  apps/api/src/auth/controller.ts
-M  apps/api/src/auth/service.ts
-A  apps/web/src/components/LoginForm.tsx
-M  docs/auth.md
-...
-
-Proceeding with commit analysis.
-```
-
-### Phase 2: Commit Grouping (via commit-grouper)
+### Phase 1: Commit Grouping (via commit-grouper)
 
 ```
 Invoking commit-grouper subagent...
@@ -437,11 +325,9 @@ Group 2 (feat/web): Add login UI component
 Group 3 (docs): Document authentication flow
   Files: docs/auth.md
   Reason: Documentation changes should be separate
-
-Approve these commit groups? (Y/n):
 ```
 
-### Phase 3: Message Generation (via commit-message-generator)
+### Phase 2: Message Generation (via commit-message-generator)
 
 ```
 Generating commit messages (3 parallel subagents)...
@@ -479,7 +365,7 @@ Files: docs/auth.md
 Approve all commit messages? (Y/n):
 ```
 
-### Phase 4: Commit Execution
+### Phase 3: Commit Execution
 
 ```
 Creating commits...
@@ -494,17 +380,6 @@ Next steps:
 - Review: git log -3
 - Push: git push
 - Create PR if needed
-```
-
-### Phase 5: Hook Invocation (Auto-Commit Mode)
-
-```
-[git:commit] Detected SubagentStop hook invocation
-[git:commit] Agent: subagent-creator
-[git:commit] Invoking commit-grouper with single-commit strategy...
-[git:commit] Invoking commit-message-generator...
-[git:commit] Creating commit with agent metadata...
-✓ Committed: a1b2c3d feat(agents): add commit-grouper subagent
 ```
 
 ---
@@ -551,16 +426,13 @@ Next steps:
 ### Must Do
 - Delegate analysis and grouping to commit-grouper subagent
 - Delegate message generation to commit-message-generator subagents (in parallel)
-- Get user approval before executing commits (unless hook mode)
 - Verify each commit was created successfully
-- Provide clear feedback to user at each step
 - Handle subagent failures gracefully
 
 ### Must Not Do
 - Perform analysis/grouping directly (delegate to commit-grouper)
 - Generate commit messages directly (delegate to commit-message-generator)
 - Invoke message generators sequentially (must be parallel)
-- Commit without user approval (unless from hook)
 - Skip subagent invocation (don't implement logic inline)
 - Proceed if subagents fail without offering alternatives
 
@@ -569,7 +441,6 @@ Next steps:
 **In Scope:**
 - Orchestrating the commit workflow
 - Invoking specialized subagents
-- Managing user interaction and approval
 - Executing git commands (add, commit, reset)
 - Handling hook invocations with agent metadata
 - Presenting subagent results to user
@@ -595,12 +466,7 @@ Next steps:
 
 **User:** `/git:commit`
 
-**Phase 1: Check Git State**
-```
-Found 3 staged files
-```
-
-**Phase 2: Delegate to commit-grouper**
+**Phase 1: Delegate to commit-grouper**
 ```
 Invoking commit-grouper...
 
@@ -609,11 +475,9 @@ Proposed 1 commit group:
 Group 1 (feat/web): Add Button component
   Files: apps/web/src/components/Button.tsx, Button.test.tsx, Button.stories.tsx
   Reason: Single component implementation, all files tightly coupled
-
-Approve? Y
 ```
 
-**Phase 3: Delegate to commit-message-generator**
+**Phase 2: Delegate to commit-message-generator**
 ```
 Invoking commit-message-generator...
 
@@ -626,11 +490,9 @@ for primary, secondary, and tertiary styles.
 
 Includes comprehensive tests and Storybook stories.
 ─────────────────────────────────────
-
-Approve? Y
 ```
 
-**Phase 4: Execute Commits**
+**Phase 3: Execute Commits**
 ```
 ✓ Created commit: a1b2c3d feat(web): add Button component
 ```
@@ -641,12 +503,7 @@ Approve? Y
 
 **User:** `/git:commit`
 
-**Phase 1: Check Git State**
-```
-Found 7 staged files across multiple systems
-```
-
-**Phase 2: Delegate to commit-grouper**
+**Phase 1: Delegate to commit-grouper**
 ```
 Invoking commit-grouper with dependency-flow strategy...
 
@@ -672,19 +529,17 @@ Group 5 (docs): Add authentication setup guide
   Files: docs/auth/setup.md
   Reason: Documentation changes separate from code
 
-Approve? Y
 ```
 
-**Phase 3: Delegate to commit-message-generator (Parallel)**
+**Phase 2: Delegate to commit-message-generator (Parallel)**
 ```
 Generating commit messages (5 parallel subagents)...
 
 All messages generated successfully.
 
-Approve all? Y
 ```
 
-**Phase 4: Execute Commits**
+**Phase 3: Execute Commits**
 ```
 ✓ Commit 1: b2c3d4e chore(deps): add authentication dependencies
 ✓ Commit 2: c3d4e5f feat(types): add authentication types
@@ -695,7 +550,7 @@ Approve all? Y
 
 ---
 
-### Example 3: Agent Hook Invocation (Auto-Commit Mode)
+### Example 3: Agent Hook Invocation
 
 **Invoked from SubagentStop hook with context:**
 ```json
@@ -707,144 +562,18 @@ Approve all? Y
 }
 ```
 
-**Auto-Commit Flow:**
+**Append subagent metadata to the commit message:**
 ```
-[git:commit] Detected SubagentStop hook
-[git:commit] Agent: subagent-creator
-[git:commit] Invoking commit-grouper (single-commit strategy)...
-[git:commit] Invoking commit-message-generator...
-[git:commit] Creating commit with agent metadata...
+feat(api): add API performance analyzer
 
-✓ Committed: g7h8i9j feat(agents): add API performance analyzer subagent
+Implement API performance analyzer with metrics collection and visualization.
 
-Message included agent metadata in footer:
+Closes #123
+
 Agent: subagent-creator
 Session-ID: 1a7d9110-f81d-4bba-aa6f-2a1e017fbc2d
 Invocation-ID: toolu_01Sx5EFM4ViaXkqZECJ3Zgqu
+
+Prompt:
+Create a subagent that analyzes API performance...
 ```
-
----
-
-### Example 4: Parallel Performance Benefit
-
-**User:** `/git:commit`
-
-**Phase 2: commit-grouper identifies 7 commit groups**
-
-**Phase 3: Parallel message generation**
-```
-Generating commit messages (7 parallel subagents)...
-
-Subagent 1 (group-1): Started
-Subagent 2 (group-2): Started
-Subagent 3 (group-3): Started
-Subagent 4 (group-4): Started
-Subagent 5 (group-5): Started
-Subagent 6 (group-6): Started
-Subagent 7 (group-7): Started
-
-All 7 subagents completed in ~8 seconds
-(Sequential would have taken ~45-50 seconds)
-
-Performance gain: 6x faster
-```
-
----
-
-## Related Commands
-
-- `/git:status` - Show git status with enhanced formatting (if exists)
-- `/git:diff` - Show git diff with analysis (if exists)
-- `/git:squash` - Squash recent commits (if exists)
-- `/git:amend` - Amend previous commit (if exists)
-- `/format` - Format code before committing (if exists)
-- `/test` - Run tests before committing (if exists)
-
-## Related Subagents
-
-- `commit-grouper` - Analyzes git changes and creates logical commit groups
-- `commit-message-generator` - Generates semantic commit messages for a single group
-
----
-
-## Architecture Notes
-
-### Orchestrator Pattern Benefits
-
-1. **Separation of Concerns**
-   - Grouping logic isolated in commit-grouper subagent
-   - Message generation isolated in commit-message-generator subagent
-   - Orchestrator focuses on workflow and user interaction
-
-2. **Parallel Execution**
-   - All message generators run simultaneously (Phase 3)
-   - 3x-7x performance improvement for multi-commit scenarios
-   - Scales efficiently with number of commit groups
-
-3. **Maintainability**
-   - Each component is testable independently
-   - Easier to improve grouping or message generation separately
-   - Smaller, focused codebases for each subagent
-   - Clear boundaries and responsibilities
-
-4. **Reusability**
-   - commit-grouper can be used by other commands
-   - commit-message-generator can be invoked directly
-   - Components are composable and extensible
-
-### Performance Characteristics
-
-**Single Commit:**
-- Time: git operations + 1 grouper invocation + 1 message generator invocation
-- Overhead: ~2-3 seconds for subagent coordination
-
-**Multiple Commits (N groups):**
-- Time: git operations + 1 grouper invocation + max(N message generator invocations in parallel)
-- Overhead: ~2-3 seconds (grouper) + ~5-8 seconds (message generation)
-- **Sequential would be**: ~2-3 seconds + (N × 5-8 seconds)
-- **Parallel speedup**: 3x-7x for 3-7 commit groups
-
-### Error Handling
-
-If subagent fails:
-- Present error to user
-- Offer fallback options:
-  - Retry with different strategy
-  - Proceed with manual commit
-  - Cancel operation
-- Do not implement logic inline as fallback (maintain pattern)
-
----
-
-## Integration with Existing Hooks
-
-This command is designed to work alongside the existing `SubagentStop` hook:
-
-**Current Hook Behavior:**
-- `tools/src/hooks/subagent-stop.ts` auto-commits with basic `chore(agent)` message
-- Includes agent metadata in footer
-- Commits all changes without analysis
-
-**Enhanced Workflow with Orchestrator:**
-1. **Manual invocation**: Use `/git:commit` for full control
-   - Intelligent grouping via commit-grouper
-   - Parallel message generation
-   - User approval at each step
-
-2. **Hook invocation** (Phase 5): Auto-commit mode
-   - Detects SubagentStop context
-   - Uses single-commit strategy (simpler for agent work)
-   - Includes agent metadata in footer
-   - Skips user prompts for automation
-
-**Future Enhancement:**
-- Modify `subagent-stop.ts` to invoke `/git:commit` with subagent context
-- This would provide intelligent commits automatically
-- Requires hook to support slash command invocation
-
----
-
-**Command Version:** 2.0 (Orchestrator Pattern)
-**Last Updated:** 2025-10-20
-**Architecture:** Orchestrator with specialized subagents
-**Owner:** Platform Engineering
