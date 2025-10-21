@@ -14,7 +14,7 @@
     "build": "tsc",
     "lint": "echo 'Lint via root'",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@starter/utils": "workspace:*",

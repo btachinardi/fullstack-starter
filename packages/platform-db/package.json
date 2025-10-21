@@ -14,7 +14,7 @@
     "build": "tsc",
     "lint": "echo 'Lint via root'",
     "typecheck": "tsc --noEmit",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",

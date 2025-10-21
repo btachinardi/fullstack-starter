@@ -75,10 +75,11 @@ else
   echo ""
 fi
 
-if [ -f "package.json" ] && grep -q '"sbom"' package.json; then
+if command -v cyclonedx-node-pnpm &> /dev/null; then
   run_job "Security / SBOM" "pnpm sbom"
 else
-  echo -e "${YELLOW}⚠️  Skipping SBOM generation (not configured)${NC}"
+  echo -e "${YELLOW}⚠️  Skipping SBOM generation (cyclonedx-node-pnpm not installed)${NC}"
+  echo "   Install: npm install -g @cyclonedx/cyclonedx-npm"
   echo ""
 fi
 
