@@ -5,4 +5,4 @@ model: sonnet
 color: blue
 ---
 
-@ai/claude/agents/SUBAGENT_INSTRUCTIONS.md
+Before you start, you must read general subagent instructions at `ai/claude/agents/SUBAGENT_INSTRUCTIONS.md`

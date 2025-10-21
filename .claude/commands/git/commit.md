@@ -595,27 +595,42 @@ Next steps:
 
 **User:** `/git:commit`
 
-**Analysis:**
+**Phase 1: Check Git State**
 ```
-Staged files:
-- apps/web/src/components/Button.tsx
-- apps/web/src/components/Button.test.tsx
-- apps/web/src/components/Button.stories.tsx
+Found 3 staged files
 ```
 
-**Strategy:** Single commit (all related to one component)
-
-**Generated Message:**
+**Phase 2: Delegate to commit-grouper**
 ```
+Invoking commit-grouper...
+
+Proposed 1 commit group:
+
+Group 1 (feat/web): Add Button component
+  Files: apps/web/src/components/Button.tsx, Button.test.tsx, Button.stories.tsx
+  Reason: Single component implementation, all files tightly coupled
+
+Approve? Y
+```
+
+**Phase 3: Delegate to commit-message-generator**
+```
+Invoking commit-message-generator...
+
+Generated message:
+─────────────────────────────────────
 feat(web): add Button component
 
 Implement reusable Button component with variants
 for primary, secondary, and tertiary styles.
 
 Includes comprehensive tests and Storybook stories.
+─────────────────────────────────────
+
+Approve? Y
 ```
 
-**Execution:**
+**Phase 4: Execute Commits**
 ```
 ✓ Created commit: a1b2c3d feat(web): add Button component
 ```
@@ -626,41 +641,50 @@ Includes comprehensive tests and Storybook stories.
 
 **User:** `/git:commit`
 
-**Analysis:**
+**Phase 1: Check Git State**
 ```
-Staged files:
-- apps/api/src/auth/controller.ts (new)
-- apps/api/src/auth/service.ts (new)
-- apps/web/src/pages/login.tsx (new)
-- apps/web/src/hooks/useAuth.ts (new)
-- docs/auth/setup.md (new)
-- packages/types/src/auth.ts (modified)
-- package.json (modified - new deps)
+Found 7 staged files across multiple systems
 ```
 
-**Strategy:** Split into 4 commits
-
-**Commit Groups:**
+**Phase 2: Delegate to commit-grouper**
 ```
-Commit 1: chore(deps): add authentication dependencies
-- package.json
+Invoking commit-grouper with dependency-flow strategy...
 
-Commit 2: feat(types): add authentication types
-- packages/types/src/auth.ts
+Proposed 5 commit groups:
 
-Commit 3: feat(api): add authentication endpoints
-- apps/api/src/auth/controller.ts
-- apps/api/src/auth/service.ts
+Group 1 (chore/deps): Add authentication dependencies
+  Files: package.json
+  Reason: Dependencies must be committed before code that uses them
 
-Commit 4: feat(web): add login page and auth hook
-- apps/web/src/pages/login.tsx
-- apps/web/src/hooks/useAuth.ts
+Group 2 (feat/types): Add authentication types
+  Files: packages/types/src/auth.ts
+  Reason: Types are shared dependency for API and web apps
 
-Commit 5: docs: add authentication setup guide
-- docs/auth/setup.md
+Group 3 (feat/api): Add authentication endpoints
+  Files: apps/api/src/auth/controller.ts, apps/api/src/auth/service.ts
+  Reason: Backend implementation
+
+Group 4 (feat/web): Add login page and auth hook
+  Files: apps/web/src/pages/login.tsx, apps/web/src/hooks/useAuth.ts
+  Reason: Frontend implementation
+
+Group 5 (docs): Add authentication setup guide
+  Files: docs/auth/setup.md
+  Reason: Documentation changes separate from code
+
+Approve? Y
 ```
 
-**Execution:**
+**Phase 3: Delegate to commit-message-generator (Parallel)**
+```
+Generating commit messages (5 parallel subagents)...
+
+All messages generated successfully.
+
+Approve all? Y
+```
+
+**Phase 4: Execute Commits**
 ```
 ✓ Commit 1: b2c3d4e chore(deps): add authentication dependencies
 ✓ Commit 2: c3d4e5f feat(types): add authentication types
@@ -671,73 +695,58 @@ Commit 5: docs: add authentication setup guide
 
 ---
 
-### Example 3: Agent Hook Invocation
+### Example 3: Agent Hook Invocation (Auto-Commit Mode)
 
-**Context from SubagentStop:**
+**Invoked from SubagentStop hook with context:**
 ```json
 {
   "session_id": "1a7d9110-f81d-4bba-aa6f-2a1e017fbc2d",
   "agent_type": "subagent-creator",
   "prompt": "Create a subagent that analyzes API performance...",
-  "invocation_id": "toolu_01Sx5EFM4ViaXkqZECJ3Zgqu",
+  "invocation_id": "toolu_01Sx5EFM4ViaXkqZECJ3Zgqu"
 }
 ```
 
-**Analysis:**
+**Auto-Commit Flow:**
 ```
-Staged files:
-- .claude/agents/api-performance-analyzer.md
-```
+[git:commit] Detected SubagentStop hook
+[git:commit] Agent: subagent-creator
+[git:commit] Invoking commit-grouper (single-commit strategy)...
+[git:commit] Invoking commit-message-generator...
+[git:commit] Creating commit with agent metadata...
 
-**Scope Determination:**
-- File is in `.claude/agents/` → scope is `agents`
-- New file with new functionality → type is `feat`
+✓ Committed: g7h8i9j feat(agents): add API performance analyzer subagent
 
-**Generated Message:**
-```
-feat(agents): add API performance analyzer subagent
-
-Created specialized subagent for analyzing API performance
-metrics and identifying bottlenecks.
-
+Message included agent metadata in footer:
 Agent: subagent-creator
 Session-ID: 1a7d9110-f81d-4bba-aa6f-2a1e017fbc2d
 Invocation-ID: toolu_01Sx5EFM4ViaXkqZECJ3Zgqu
-
-Prompt:
-Create a subagent that analyzes API performance...
-```
-
-**Execution:**
-```
-[git:commit] Auto-committing from SubagentStop hook
-✓ Created: g7h8i9j feat(agents): add API performance analyzer subagent
 ```
 
 ---
 
-### Example 4: Fix with Issue Reference
+### Example 4: Parallel Performance Benefit
 
 **User:** `/git:commit`
 
-**Analysis:**
+**Phase 2: commit-grouper identifies 7 commit groups**
+
+**Phase 3: Parallel message generation**
 ```
-Staged files:
-- apps/web/src/components/Form.tsx
-- apps/web/src/components/Form.test.tsx
-```
+Generating commit messages (7 parallel subagents)...
 
-**Generated Message:**
-```
-fix(web): resolve form validation race condition
+Subagent 1 (group-1): Started
+Subagent 2 (group-2): Started
+Subagent 3 (group-3): Started
+Subagent 4 (group-4): Started
+Subagent 5 (group-5): Started
+Subagent 6 (group-6): Started
+Subagent 7 (group-7): Started
 
-Fix issue where rapid form submissions could bypass
-validation due to async validator race condition.
+All 7 subagents completed in ~8 seconds
+(Sequential would have taken ~45-50 seconds)
 
-Add debouncing to validation logic and ensure submit
-button is disabled during validation.
-
-Fixes #456
+Performance gain: 6x faster
 ```
 
 ---
