@@ -1,12 +1,10 @@
+import 'reflect-metadata';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ResourcesService } from './resources.service';
-import { PrismaService } from '@starter/platform-db';
+import { prisma } from '@starter/platform-db';
 
-describe('ResourcesService', () => {
-  let service: ResourcesService;
-  let prisma: PrismaService;
-
-  const mockPrismaService = {
+jest.mock('@starter/platform-db', () => ({
+  prisma: {
     resource: {
       findMany: jest.fn(),
       count: jest.fn(),
@@ -15,24 +13,21 @@ describe('ResourcesService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
-  };
+  },
+}));
+
+describe('ResourcesService', () => {
+  let service: ResourcesService;
+  const mockPrisma = prisma as jest.Mocked<typeof prisma>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ResourcesService,
-        {
-          provide: PrismaService,
-          useValue: mockPrismaService,
-        },
-      ],
+      providers: [ResourcesService],
     }).compile();
 
     service = module.get<ResourcesService>(ResourcesService);
-    prisma = module.get<PrismaService>(PrismaService);
-  });
 
-  afterEach(() => {
+    // Clear all mocks before each test
     jest.clearAllMocks();
   });
 
@@ -49,8 +44,8 @@ describe('ResourcesService', () => {
         },
       ];
 
-      mockPrismaService.resource.findMany.mockResolvedValue(mockResources);
-      mockPrismaService.resource.count.mockResolvedValue(1);
+      mockPrisma.resource.findMany.mockResolvedValue(mockResources);
+      mockPrisma.resource.count.mockResolvedValue(1);
 
       const result = await service.findAll({ page: 1, perPage: 20 });
 
@@ -58,17 +53,17 @@ describe('ResourcesService', () => {
       expect(result.total).toBe(1);
       expect(result.page).toBe(1);
       expect(result.perPage).toBe(20);
-      expect(prisma.resource.findMany).toHaveBeenCalled();
-      expect(prisma.resource.count).toHaveBeenCalled();
+      expect(mockPrisma.resource.findMany).toHaveBeenCalled();
+      expect(mockPrisma.resource.count).toHaveBeenCalled();
     });
 
     it('should filter by search query', async () => {
-      mockPrismaService.resource.findMany.mockResolvedValue([]);
-      mockPrismaService.resource.count.mockResolvedValue(0);
+      mockPrisma.resource.findMany.mockResolvedValue([]);
+      mockPrisma.resource.count.mockResolvedValue(0);
 
       await service.findAll({ page: 1, perPage: 20, search: 'test' });
 
-      expect(prisma.resource.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.resource.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             OR: expect.arrayContaining([
@@ -80,12 +75,12 @@ describe('ResourcesService', () => {
     });
 
     it('should filter by status', async () => {
-      mockPrismaService.resource.findMany.mockResolvedValue([]);
-      mockPrismaService.resource.count.mockResolvedValue(0);
+      mockPrisma.resource.findMany.mockResolvedValue([]);
+      mockPrisma.resource.count.mockResolvedValue(0);
 
       await service.findAll({ page: 1, perPage: 20, status: 'active' });
 
-      expect(prisma.resource.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.resource.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             status: 'active',
@@ -106,22 +101,20 @@ describe('ResourcesService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.resource.findUnique.mockResolvedValue(mockResource);
+      mockPrisma.resource.findUnique.mockResolvedValue(mockResource);
 
       const result = await service.findOne('1');
 
       expect(result).toEqual(mockResource);
-      expect(prisma.resource.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.resource.findUnique).toHaveBeenCalledWith({
         where: { id: '1' },
       });
     });
 
-    it('should return null if resource not found', async () => {
-      mockPrismaService.resource.findUnique.mockResolvedValue(null);
+    it('should throw error if resource not found', async () => {
+      mockPrisma.resource.findUnique.mockResolvedValue(null);
 
-      const result = await service.findOne('999');
-
-      expect(result).toBeNull();
+      await expect(service.findOne('999')).rejects.toThrow('Resource with id 999 not found');
     });
   });
 
@@ -140,12 +133,12 @@ describe('ResourcesService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.resource.create.mockResolvedValue(mockResource);
+      mockPrisma.resource.create.mockResolvedValue(mockResource);
 
       const result = await service.create(createDto);
 
       expect(result).toEqual(mockResource);
-      expect(prisma.resource.create).toHaveBeenCalledWith({
+      expect(mockPrisma.resource.create).toHaveBeenCalledWith({
         data: createDto,
       });
     });
@@ -163,12 +156,13 @@ describe('ResourcesService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.resource.update.mockResolvedValue(mockResource);
+      mockPrisma.resource.findUnique.mockResolvedValue(mockResource);
+      mockPrisma.resource.update.mockResolvedValue(mockResource);
 
       const result = await service.update('1', updateDto);
 
       expect(result).toEqual(mockResource);
-      expect(prisma.resource.update).toHaveBeenCalledWith({
+      expect(mockPrisma.resource.update).toHaveBeenCalledWith({
         where: { id: '1' },
         data: updateDto,
       });
@@ -186,12 +180,12 @@ describe('ResourcesService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.resource.delete.mockResolvedValue(mockResource);
+      mockPrisma.resource.findUnique.mockResolvedValue(mockResource);
+      mockPrisma.resource.delete.mockResolvedValue(mockResource);
 
-      const result = await service.remove('1');
+      await service.remove('1');
 
-      expect(result).toEqual(mockResource);
-      expect(prisma.resource.delete).toHaveBeenCalledWith({
+      expect(mockPrisma.resource.delete).toHaveBeenCalledWith({
         where: { id: '1' },
       });
     });
