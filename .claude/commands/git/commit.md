@@ -760,6 +760,60 @@ Performance gain: 6x faster
 - `/format` - Format code before committing (if exists)
 - `/test` - Run tests before committing (if exists)
 
+## Related Subagents
+
+- `commit-grouper` - Analyzes git changes and creates logical commit groups
+- `commit-message-generator` - Generates semantic commit messages for a single group
+
+---
+
+## Architecture Notes
+
+### Orchestrator Pattern Benefits
+
+1. **Separation of Concerns**
+   - Grouping logic isolated in commit-grouper subagent
+   - Message generation isolated in commit-message-generator subagent
+   - Orchestrator focuses on workflow and user interaction
+
+2. **Parallel Execution**
+   - All message generators run simultaneously (Phase 3)
+   - 3x-7x performance improvement for multi-commit scenarios
+   - Scales efficiently with number of commit groups
+
+3. **Maintainability**
+   - Each component is testable independently
+   - Easier to improve grouping or message generation separately
+   - Smaller, focused codebases for each subagent
+   - Clear boundaries and responsibilities
+
+4. **Reusability**
+   - commit-grouper can be used by other commands
+   - commit-message-generator can be invoked directly
+   - Components are composable and extensible
+
+### Performance Characteristics
+
+**Single Commit:**
+- Time: git operations + 1 grouper invocation + 1 message generator invocation
+- Overhead: ~2-3 seconds for subagent coordination
+
+**Multiple Commits (N groups):**
+- Time: git operations + 1 grouper invocation + max(N message generator invocations in parallel)
+- Overhead: ~2-3 seconds (grouper) + ~5-8 seconds (message generation)
+- **Sequential would be**: ~2-3 seconds + (N × 5-8 seconds)
+- **Parallel speedup**: 3x-7x for 3-7 commit groups
+
+### Error Handling
+
+If subagent fails:
+- Present error to user
+- Offer fallback options:
+  - Retry with different strategy
+  - Proceed with manual commit
+  - Cancel operation
+- Do not implement logic inline as fallback (maintain pattern)
+
 ---
 
 ## Integration with Existing Hooks
@@ -771,13 +825,17 @@ This command is designed to work alongside the existing `SubagentStop` hook:
 - Includes agent metadata in footer
 - Commits all changes without analysis
 
-**Enhanced Workflow Option:**
-1. **Keep current hook** for automatic commits (convenience)
-2. **Use `/git:commit` manually** when you want:
-   - More specific commit types (feat/fix instead of chore)
-   - Better commit messages (analyzed, not generic)
-   - Split multi-system changes into focused commits
-   - Full control over commit strategy
+**Enhanced Workflow with Orchestrator:**
+1. **Manual invocation**: Use `/git:commit` for full control
+   - Intelligent grouping via commit-grouper
+   - Parallel message generation
+   - User approval at each step
+
+2. **Hook invocation** (Phase 5): Auto-commit mode
+   - Detects SubagentStop context
+   - Uses single-commit strategy (simpler for agent work)
+   - Includes agent metadata in footer
+   - Skips user prompts for automation
 
 **Future Enhancement:**
 - Modify `subagent-stop.ts` to invoke `/git:commit` with subagent context
@@ -786,6 +844,7 @@ This command is designed to work alongside the existing `SubagentStop` hook:
 
 ---
 
-**Command Version:** 1.0
+**Command Version:** 2.0 (Orchestrator Pattern)
 **Last Updated:** 2025-10-20
+**Architecture:** Orchestrator with specialized subagents
 **Owner:** Platform Engineering
