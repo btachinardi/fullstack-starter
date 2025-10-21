@@ -23,18 +23,24 @@ We will provide a NestJS-based shell encapsulated by `@starter/platform-api`, `@
 ### 2.1 Goals
 
 1. **Encapsulated NestJS monolith** — Deliver an opinionated HTTP/worker shell via `@starter/platform-api` that wires Fastify, validation, logging, and lifecycle hooks automatically.
-2. **Prisma + database integration** — Provide migrations, seeding, and transactional helpers through `@starter/platform-db`, aligned to the shared env schema and List Endpoint contract.
-3. **List Endpoint reference implementation** — Ship a sample `Resource` module that satisfies the offset/limit List contract using only `@starter` abstractions and feeds `@starter/data-access` clients.
-4. **Auth & security baseline** — Integrate `@starter/auth/server` (Simple Auth wrapper) for request guards, session decoding, and role enforcement with minimum configuration.
-5. **Observability & operations** — Structured logging, metrics, tracing, health checks, and SBOM hooks delivered through shared packages and ready for CI automation.
-6. **Deployment-ready assets** — Dockerfile, docker-compose, queue workers, and Turborepo pipelines that align with PRD-05 release workflows.
-7. **Package-only imports enforced** — ESLint boundaries and TypeScript aliases prevent direct usage of `@nestjs/*`, `prisma`, `bullmq`, `ioredis`, or `simple-auth` inside `apps/api`.
+2. **Prisma + database integration** — Provide migrations, seeding, and transactional helpers through `@starter/platform-db`, aligned to the shared env schema.
+3. **REST API contract definition** — Define authoritative List Endpoint contract (offset/limit pagination) and other REST patterns; document request/response schemas, validation rules, and error taxonomy.
+4. **OpenAPI specification generation** — Generate OpenAPI spec from NestJS controllers via `@starter/platform-api` utilities; emit to `dist/openapi.json` for consumption by PRD-02's `@starter/data-access`.
+5. **Reference implementation** — Ship sample `Resource` module implementing the List Endpoint contract using only `@starter/*` abstractions; serves as template for domain resources.
+6. **Auth & security baseline** — Integrate `@starter/auth/server` (Simple Auth wrapper) for request guards, session decoding, and role enforcement with minimum configuration.
+7. **Observability & operations** — Structured logging, metrics, tracing, health checks, and SBOM hooks delivered through shared packages and ready for CI automation.
+8. **Background jobs** — BullMQ worker examples demonstrating queue processing, retries, DLQ handling, and integration with database transactions.
+9. **Application examples** — Reference implementations in `examples/nest-resource` showing complete CRUD resource patterns.
+10. **Deployment-ready assets** — Dockerfile, docker-compose, queue workers, and Turborepo pipelines that align with PRD-05 release workflows.
+11. **Package-only imports enforced** — ESLint boundaries and TypeScript aliases prevent direct usage of `@nestjs/*`, `prisma`, `bullmq`, `ioredis`, or `simple-auth` inside `apps/api`.
 
 ### 2.2 Non-goals
 
-* Implementing domain-specific business logic beyond the sample `Resource` module and worker.
+* Implementing domain-specific business logic beyond sample templates (Resource module, worker examples only).
 * Providing multi-tenant or microservice orchestration (future ADR if needed).
 * Managing production database provisioning, vault integration, or infra rollout (covered by platform initiatives).
+* Creating platform abstraction packages (PRD-02 responsibility).
+* Building frontend applications or UI components (PRD-03 responsibility).
 
 ---
 
@@ -42,8 +48,9 @@ We will provide a NestJS-based shell encapsulated by `@starter/platform-api`, `@
 
 | Role              | Scenario                                       | Success criteria                                                                                       |
 | ----------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Backend engineer  | Adds a new resource module.                    | Generates module via CLI; extends `@starter/platform-api` scaffold; passes tests and CI without third-party imports. |
-| Fullstack engineer| Needs background job processing.               | Configures queue worker using `@starter/platform-queue`; retries, logging, and metrics work out of the box. |
+| Backend engineer  | Adds a new resource module.                    | Follows example in `examples/nest-resource`; generates module via CLI; implements List contract; OpenAPI auto-updates; passes tests without third-party imports. |
+| Fullstack engineer| Integrates frontend with API.                  | Backend generates OpenAPI spec; PRD-02 consumes it to generate clients; frontend (PRD-03) uses clients seamlessly. |
+| Fullstack engineer| Needs background job processing.               | Follows worker example; configures queue using `@starter/platform-queue`; retries, logging, metrics work out of the box. |
 | QA automation     | Validates API contract.                        | Contract tests use generated OpenAPI spec; endpoints conform to List contract and shared error taxonomy. |
 | Security engineer | Reviews service compliance.                    | Env validation enforced, SBOM generated, request logging includes trace IDs and PII redaction.          |
 | SRE               | Monitors service health.                       | `/health` and `/ready` endpoints plus Prometheus metrics and tracing exporters available by default.     |
@@ -67,26 +74,89 @@ We will provide a NestJS-based shell encapsulated by `@starter/platform-api`, `@
 * Sample `Resource` model demonstrates pagination-ready fields (`id`, `createdAt`, `updatedAt`), search indexes, and audit columns. Seed script populates sample data for smoke tests.
 * Database connections respect pool sizing defaults; preview environments use ephemeral Postgres via docker-compose defined in the package.
 
-### 4.3 REST controllers & validation (`@starter/platform-api`)
+### 4.3 REST API contract definition (owned by PRD-04)
 
-* `createResourceModule` scaffold exposes CRUD endpoints; List handler implements the offset/limit contract using query builders from `@starter/platform-db`.
-* Request/response schemas derive from shared Zod definitions in `@starter/data-access` and are converted to Nest DTOs automatically; teams extend via additive Zod refinements.
-* Error handling maps to shared taxonomy defined in `@starter/node-utils/errors`; HTTP exceptions are wrapped before leaving the controller.
-* OpenAPI spec generated with `@starter/platform-api/openapi` (backed by `@nestjs/swagger`) during build; emitted to `dist/openapi.json` for consumption by PRD-02 generators.
+#### 4.3.1 List Endpoint Contract (offset/limit, MVP)
 
-### 4.4 Authentication & authorization (`@starter/auth/server`)
+* **Purpose:** Standard pagination pattern for list endpoints; simpler MVP across Nest + Prisma + UI; clear mental model; works for admin/data-heavy screens.
+* **Request (GET):**
+  ```
+  GET /:resource?search=&page=&perPage=&sort=&order=&filters[foo]=bar&filters[baz]=qux
+  ```
+  * `search`: Optional full-text search string
+  * `page`: Page number (default: 1, minimum: 1)
+  * `perPage`: Items per page (default: 20, minimum: 1, maximum: 200)
+  * `sort`: Comma-separated fields with optional `-` prefix for descending (e.g., `name,-createdAt`)
+  * `order`: Deprecated (use `sort` instead); enum: `asc`, `desc`
+  * `filters[key]`: Deep object query params for field-specific filters
+* **Response (200):**
+  ```json
+  {
+    "items": [],
+    "page": 1,
+    "perPage": 20,
+    "total": 0,
+    "summary": {},
+    "meta": {
+      "queryId": "uuid",
+      "generatedAt": "2025-10-19T00:00:00Z"
+    }
+  }
+  ```
+  * `items`: Array of resource objects
+  * `page`: Current page number
+  * `perPage`: Items per page
+  * `total`: Total count of items matching filters
+  * `summary`: Optional aggregates (e.g., sum, avg, min, max)
+  * `meta`: Request metadata (query ID for tracing, generation timestamp)
+* **Sorting rules:**
+  * Multi-field sorting via comma-separated `sort` param
+  * Descending sort via `-` prefix
+  * Stability: API must add secondary sort key (e.g., `id ASC`) to prevent pagination drift
+* **Filter semantics:**
+  * Exact match: `filters[status]=active`
+  * Future: Range operators, IN clauses, etc. (post-MVP via ADR)
+* **Error responses:**
+  * 400: Invalid parameters (validation errors)
+  * 401: Unauthorized (missing/invalid auth)
+  * 403: Forbidden (insufficient permissions)
+  * 429: Rate limit exceeded
+  * 500: Internal server error
+  * Error body follows shared taxonomy from `@starter/node-utils/errors`
+* **Upgrade path (post-GA):** Optional cursor-based pagination behind feature flag (not default).
+
+#### 4.3.2 REST controllers & validation
+
+* `createResourceModule` scaffold exposes CRUD endpoints; List handler implements the offset/limit contract above using query builders from `@starter/platform-db`.
+* Request/response DTOs defined using NestJS class-validator decorators; validation happens automatically via Nest pipes.
+* Error handling maps to shared taxonomy defined in `@starter/node-utils/errors`; HTTP exceptions wrapped before leaving controller.
+* All endpoints documented with `@ApiOperation`, `@ApiResponse` decorators for OpenAPI generation.
+
+### 4.4 OpenAPI specification generation (owned by PRD-04)
+
+* **Generation:** OpenAPI spec generated automatically during build via `@starter/platform-api/openapi` (backed by `@nestjs/swagger`).
+* **Output:** Spec emitted to `dist/openapi.json` and versioned alongside application code.
+* **Consumption:** PRD-02's `@starter/data-access` package reads this spec to generate typed clients, Zod validators, and MSW mocks.
+* **Governance:**
+  * CODEOWNERS protection on spec changes requires review
+  * Breaking changes require major version bump per Changesets
+  * CI validates spec against contract tests
+* **Documentation:** Spec includes descriptions, examples, schemas for all endpoints; serves as source of truth for API contracts.
+* **Tooling:** Optional Swagger UI available at `/api-docs` in development for manual exploration.
+
+### 4.5 Authentication & authorization (`@starter/auth/server`)
 
 * Simple Auth integration handles session validation, token exchange, and role claims; `AuthGuard`, `RoleGuard`, and decorator helpers (`@CurrentUser`) come from the package.
 * Default implementation supports mock provider for local dev and JWT bearer for previews; additional adapters follow ADR process.
 * Queue workers and HTTP handlers access identity context via `AuthContext` service exported by `@starter/auth/server`.
 
-### 4.5 Background jobs (`@starter/platform-queue` & `@starter/platform-cache`)
+### 4.6 Background jobs (`@starter/platform-queue` & `@starter/platform-cache`)
 
 * BullMQ configuration, connection pools, and worker lifecycle managed by `@starter/platform-queue`; queue names, retry/backoff defaults, and telemetry derived from configuration package.
 * Sample worker `ResourceDigestWorker` demonstrates job processing, retries, DLQ handling, and instrumentation; integration tests run against embedded Redis provided by the package or docker-compose fallback.
 * Shared cache helpers (Redis) expose typed get/set/invalidation APIs; queue processors consume them for idempotency and scheduling.
 
-### 4.6 Observability, security, and operations
+### 4.7 Observability, security, and operations
 
 * Logging uses `@starter/node-utils/logging` (pino wrapper) with correlation IDs, redaction list, and request lifecycle hooks set up automatically during bootstrap.
 * Metrics and health endpoints provided by `@starter/platform-api/metrics` and `/health` & `/ready` modules; Prometheus exporter on `/metrics` and optional `/livez` for k8s probes.
@@ -94,14 +164,31 @@ We will provide a NestJS-based shell encapsulated by `@starter/platform-api`, `@
 * Security middleware (helmet, CORS, rate limiting) configured by `@starter/platform-api/security`; default CSP and request size limits documented.
 * SBOM generation triggered during build via `pnpm api:build --sbom`, producing CycloneDX documents stored as CI artifacts (PRD-05 requirement).
 
-### 4.7 Testing & documentation
+### 4.8 Testing & documentation
 
 * Vitest (node preset) configured through `@starter/jest-config/node`; integration harness from `@starter/platform-api/testing` spins up Postgres/Redis using Testcontainers or docker-compose.
 * Contract tests run `pnpm api:contract` which boots the app against the generated OpenAPI client from `@starter/data-access` and fails on mismatches.
 * Coverage target ≥ 85% statements/branches for HTTP modules and queue workers; thresholds enforced in CI.
 * `/docs/api-shell.md` explains architecture, module factories, auth integration, and extension patterns referencing playbook workflows.
 
-### 4.8 Deployment assets
+### 4.9 Application examples
+
+* **Primary example:** `examples/nest-resource` — Complete resource module implementation showing:
+  * List Endpoint contract implementation with offset/limit pagination
+  * CRUD operations (Create, Read, Update, Delete)
+  * Prisma query builders from `@starter/platform-db`
+  * Request validation with DTOs
+  * Error handling with shared taxonomy
+  * OpenAPI decorators for documentation
+  * Unit and integration tests
+  * Contract tests validating OpenAPI compliance
+* **Additional examples:**
+  * `examples/background-worker` — BullMQ worker processing with retries, DLQ, idempotency
+  * `examples/batch-operations` — Bulk create/update/delete with transaction handling
+  * `examples/file-upload` — Multipart upload, validation, storage integration
+* **Example structure:** Each example is a standalone module demonstrating specific patterns; fully working, tested, and documented.
+
+### 4.10 Deployment assets
 
 * Dockerfile authored once under `apps/api` but consumes `@starter/platform-api/docker` stage definitions to ensure consistent node/pnpm versions and healthcheck commands.
 * `docker-compose.yml` (for local) and optional Terraform/Helm snippets live under `infrastructure/` and reference environment variables defined by `@starter/config-env`.
@@ -112,20 +199,24 @@ We will provide a NestJS-based shell encapsulated by `@starter/platform-api`, `@
 ## 5. Technical approach
 
 1. **Single import surface** — All NestJS, Prisma, BullMQ, Redis, and Simple Auth dependencies reside in `packages/platform-*`; `apps/api` consumes typed facades, enabling future substrate swaps.
-2. **Contract-first design** — Shared schemas originate in `@starter/data-access`; backend and frontend generate code from the same source to avoid drift.
-3. **Configuration as code** — Env parsing, queue settings, and database URLs flow through `@starter/config-env`, ensuring consistent validation and defaults across environments.
-4. **Operational parity** — Local docker-compose mirrors CI preview; bootstrap scripts seed databases, run migrations, and start workers automatically.
-5. **Security baked-in** — Simple Auth integration, rate limiting, redaction, SBOM, and secret scanning enforced by packages and PRD-05 workflows.
+2. **Contract-first design** — API defines contracts via OpenAPI decorators; PRD-04 generates OpenAPI spec; PRD-02 consumes spec to generate clients; ensures backend/frontend alignment.
+3. **Reference implementation strategy** — `apps/api` is the canonical example; `examples/*` provide focused demonstrations of specific patterns.
+4. **Configuration as code** — Env parsing, queue settings, and database URLs flow through `@starter/config-env`, ensuring consistent validation and defaults across environments.
+5. **Operational parity** — Local docker-compose mirrors CI preview; bootstrap scripts seed databases, run migrations, and start workers automatically.
+6. **Security baked-in** — Simple Auth integration, rate limiting, redaction, SBOM, and secret scanning enforced by packages and PRD-05 workflows.
+7. **Documentation as code** — OpenAPI spec serves as API documentation; examples are runnable, tested modules; `/docs/api-shell.md` ties everything together.
 
 ---
 
 ## 6. Metrics & success criteria
 
-* **Time to first endpoint:** ≤ 45 minutes to scaffold new resource module, run migrations, expose REST endpoints, and pass CI using provided commands.
-* **Contract fidelity:** 0 contract test failures on `main`; OpenAPI regeneration requires CODEOWNERS review.
+* **Time to first endpoint:** ≤ 45 minutes to scaffold new resource module following `examples/nest-resource`, run migrations, expose REST endpoints, and pass CI.
+* **Contract fidelity:** 0 contract test failures on `main`; OpenAPI spec changes require CODEOWNERS review; generated clients from PRD-02 match backend exactly.
 * **Coverage:** ≥ 85% statements/branches for HTTP modules and queue workers.
+* **OpenAPI compliance:** 100% of endpoints documented in OpenAPI spec; spec validates against contract schemas; no manual client adjustments needed in PRD-03.
 * **Operational readiness:** Health endpoints, metrics, and tracing verified in preview deployment; logs include correlation IDs.
-* **Adoption:** 100% backend features rely on `@starter/*` packages without direct third-party imports.
+* **Adoption:** 100% backend features rely on `@starter/*` packages without direct third-party imports; new resources follow List Endpoint contract.
+* **Documentation quality:** Developers can implement new resources without asking questions; examples + docs + OpenAPI cover 90% of use cases.
 
 ---
 
@@ -147,15 +238,23 @@ We will provide a NestJS-based shell encapsulated by `@starter/platform-api`, `@
    * Implement `bootstrapApi`, module factories, env validation, health checks, and logging.
    * Finalize Prisma schema in `@starter/platform-db`; set up migrations, seeds, docker-compose services.
 
-2. **Phase 2 — Feature reference**
-   * Build `Resource` module + queue worker using shared packages; generate OpenAPI spec and client to validate contract.
+2. **Phase 2 — Contract definition & OpenAPI**
+   * Define List Endpoint contract with request/response schemas, validation rules, error taxonomy.
+   * Configure OpenAPI generation via `@starter/platform-api/openapi`; emit spec to `dist/openapi.json`.
+   * Validate spec can be consumed by PRD-02's client generator.
+
+3. **Phase 3 — Reference implementation**
+   * Build sample `Resource` module in `apps/api` implementing List Endpoint contract.
+   * Create `examples/nest-resource` demonstrating complete CRUD pattern.
    * Integrate `@starter/auth/server` with mock provider and preview JWT adapter.
 
-3. **Phase 3 — Quality & docs**
-   * Author Vitest + integration harness, contract tests, coverage instrumentation, and `/docs/api-shell.md`.
-   * Add SBOM generation and security scanning steps referenced in PRD-05.
+4. **Phase 4 — Background jobs & examples**
+   * Build sample worker in `apps/api`; create `examples/background-worker`.
+   * Add contract tests validating OpenAPI compliance; integration tests with Testcontainers.
 
-4. **Phase 4 — Preview & deployment assets**
+5. **Phase 5 — Quality, docs, & deployment**
+   * Author `/docs/api-shell.md` with quick-start guide, contract reference, examples index.
+   * Add SBOM generation and security scanning steps referenced in PRD-05.
    * Produce Dockerfile, preview workflow integration, and infrastructure snippets.
    * Run smoke tests in CI/previews; capture metrics and iterate on performance budgets.
 
@@ -164,26 +263,74 @@ We will provide a NestJS-based shell encapsulated by `@starter/platform-api`, `@
 ## 9. Acceptance tests (definition of done)
 
 1. `pnpm dev:api` starts HTTP server + worker using docker-compose; `/health`, `/ready`, and `/metrics` respond 200.
-2. Running `pnpm test --filter apps/api...` passes unit + integration suites with coverage ≥ 85%.
-3. Contract test hitting `/resources` matches schema from generated OpenAPI; mismatches fail CI.
-4. ESLint boundary test fails when importing `@nestjs/common` or `prisma` directly from `apps/api`.
-5. Preview deployment publishes Docker image, runs migrations via `@starter/platform-db`, and exposes authenticated endpoints with Simple Auth mock credentials.
-6. SBOM artifact generated during `pnpm api:build` and attached to CI run alongside logs/metrics.
+2. OpenAPI spec generated to `dist/openapi.json` with List Endpoint contract documented; spec validates against JSON Schema.
+3. `examples/nest-resource` runs independently via `pnpm example:api`; demonstrates complete CRUD pattern; all tests pass.
+4. Contract test hitting `/resources` validates response matches OpenAPI schema; mismatches fail CI.
+5. PRD-02's `@starter/data-access` successfully consumes `dist/openapi.json` and generates typed clients without errors.
+6. Running `pnpm test --filter apps/api...` passes unit + integration suites with coverage ≥ 85%.
+7. ESLint boundary test fails when importing `@nestjs/common` or `prisma` directly from `apps/api`.
+8. Preview deployment publishes Docker image, runs migrations via `@starter/platform-db`, exposes authenticated endpoints, and serves OpenAPI spec.
+9. SBOM artifact generated during `pnpm api:build` and attached to CI run alongside logs/metrics.
+10. Documentation in `/docs/api-shell.md` references List Endpoint contract, examples, and OpenAPI spec; "Build Your First Resource" guide completable in ≤45 minutes.
 
 ---
 
 ## 10. Dependencies & out of scope
 
-* Depends on PRD-01 for workspace bootstrap and env management; PRD-02 for shared packages; PRD-05 for CI/CD pipelines and release automation.
-* Out of scope: GraphQL endpoints, event-driven architecture, multi-region deployments, or managed secrets lifecycle (future PRDs).
+* Depends on PRD-01 for workspace bootstrap, environment validation, and Dev Container setup.
+* Depends on PRD-02 for all `@starter/platform-*` packages (API, DB, Queue, Cache, Auth abstractions).
+* Depends on PRD-05 for CI/CD pipelines, preview deployments, and release automation.
+* **Provides to PRD-02:** OpenAPI specification in `dist/openapi.json` for client generation.
+* **Provides to PRD-03:** API endpoints implementing contracts that web application consumes.
+* Out of scope:
+  * GraphQL endpoints, event-driven architecture, multi-region deployments (future PRDs).
+  * Creating platform abstraction packages (PRD-02 responsibility).
+  * Building frontend applications (PRD-03 responsibility).
 
 ---
 
 ## 11. Appendix
 
-* **Reference templates:** NestJS Fastify starter, Prisma enterprise patterns, BullMQ best practices, Simple Auth server blueprints.
-* **Playbook alignment:**
-  * Definition of Ready — env templates, queue requirements, migration plan documented, auth adapters selected.
-  * Definition of Done — endpoints implemented, tests + coverage meet thresholds, OpenAPI updated, preview deployed with telemetry.
-* **Future enhancements:** cursor pagination mode, gRPC adapters, automated admin scaffolds leveraging `@starter/ui`, multi-tenant connection management.
+### 11.1 List Endpoint contract reference
+
+See Section 4.3.1 for complete specification including:
+* Request parameters (search, page, perPage, sort, filters)
+* Response schema (items, page, perPage, total, summary, meta)
+* Sorting rules and stability requirements
+* Error response formats
+* Future cursor pagination upgrade path
+
+### 11.2 Example resources
+
+* `examples/nest-resource` — Complete CRUD implementation with List contract
+* `examples/background-worker` — BullMQ worker with retries and DLQ
+* `examples/batch-operations` — Bulk operations with transactions
+* `examples/file-upload` — Multipart upload handling
+
+### 11.3 OpenAPI generation workflow
+
+```
+apps/api (NestJS controllers)
+  ↓ @ApiOperation, @ApiResponse decorators
+@starter/platform-api/openapi
+  ↓ Build-time generation via @nestjs/swagger
+dist/openapi.json
+  ↓ Consumed by PRD-02
+@starter/data-access (generated clients)
+  ↓ Used by PRD-03
+apps/web (frontend application)
+```
+
+### 11.4 Playbook alignment
+
+* **Definition of Ready:** Env templates, queue requirements, migration plan documented, auth adapters selected, API contract defined, OpenAPI decorators added.
+* **Definition of Done:** Endpoints implemented following List contract, tests + coverage meet thresholds, OpenAPI spec updated and validated, contract tests pass, preview deployed with telemetry.
+
+### 11.5 Future enhancements
+
+* Cursor-based pagination mode (behind feature flag)
+* gRPC adapters for high-performance internal services
+* Automated admin scaffolds leveraging `@starter/ui`
+* Multi-tenant connection management and row-level security
+* Event-driven architecture with message bus integration
 

@@ -29,19 +29,20 @@ This PRD defines the packages, contracts, and the **end-to-end pattern** pairing
 ### 2.1 Goals
 
 1. **Drop-in config packages** — `@starter/eslint-config`, `@starter/prettier-config`, `@starter/tsconfig`, `@starter/jest-config`, `@starter/playwright-config`, `@starter/storybook-config`, `@starter/vite-config` used as-is by apps.
-2. **Single UI package** — `@starter/ui` includes **all Shadcn/UI components**, tokens, typography, layout shells, hooks, and **opinionated composites** (including **DataTable**).
+2. **Single UI package** — `@starter/ui` includes **all Shadcn/UI components**, tokens, typography, layout shells, hooks, and **reusable composites** (including **DataTable** component).
 3. **Encapsulated runtime primitives** — Apps consume TanStack Query/Router/Store/DevTools, Simple Auth, Vite plugins, Prisma, BullMQ, and Redis strictly through `@starter/*` packages (no direct third-party imports allowed in `apps/*`).
-4. **Complete list/table pattern** — Out-of-the-box DataTable (pagination, filters, sorting, search, URL state) that targets a **standard REST List Endpoint**.
-5. **Typed utilities** — `@starter/utils` (web) and `@starter/node-utils` (server) for logging, flags, errors, date/time, and resilience helpers.
-6. **REST + OpenAPI data-access** — `@starter/data-access` generates typed React Query clients from **OpenAPI**, with Zod validation, MSW mocks, and a typed error taxonomy.
-7. **Versioned, tested, published** — ESM builds with `.d.ts`, tests & coverage, Changesets releases, `/docs/packages/*` documentation.
-8. **Storybook as the showroom** — Stories for components **and** page compositions (scenes) to demonstrate real usage and copy-paste recipes.
+4. **Typed utilities** — `@starter/utils` (web) and `@starter/node-utils` (server) for logging, flags, errors, date/time, and resilience helpers.
+5. **REST + OpenAPI data-access** — `@starter/data-access` consumes OpenAPI specs from PRD-04 to generate typed React Query clients, Zod validation, MSW mocks, and a typed error taxonomy.
+6. **Versioned, tested, published** — ESM builds with `.d.ts`, tests & coverage, Changesets releases, `/docs/packages/*` documentation.
+7. **Component documentation** — Storybook stories for all UI components demonstrating props, states, variants, and accessibility.
 
 ### 2.2 Non-goals
 
 * Alternative UI kits, transports, or DBs.
 * Component library beyond Shadcn/UI plus minimal house-style wrappers (only where necessary).
 * GraphQL/gRPC/RPC variants — **REST + OpenAPI only**.
+* Application-level demonstrations, Storybook Scenes, or complete page examples (owned by PRD-03).
+* Defining API endpoint contracts or response schemas (owned by PRD-04).
 
 ---
 
@@ -49,11 +50,11 @@ This PRD defines the packages, contracts, and the **end-to-end pattern** pairing
 
 | Role                | Scenario                         | Success criteria                                                                                                                  |
 | ------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Frontend engineer   | Builds a list page with filters. | Uses `@starter/ui` DataTable + `@starter/data-access` against `/resources`; page shippable in ≤ **30 minutes**.                   |
-| Backend engineer    | Adds a new resource.             | Implements Nest controller/service with our **List Endpoint Contract**; OpenAPI generates clients; contract tests pass first try. |
-| QA automation       | Runs contract/UI tests.          | MSW fixtures from OpenAPI; Playwright + Storybook test runner align; uniform reporters/thresholds.                                |
-| Design systems lead | Reviews UI tokens & a11y.        | Tokens/preset applied, a11y checks pass in CI, compositions documented in Storybook.                                              |
-| DevEx lead          | Maintains packages.              | Changesets publishes; adoption high; no local overrides required.                                                                 |
+| Frontend engineer   | Uses UI components.              | Imports from `@starter/ui`; components work with tokens/theme; Storybook shows all variants.                   |
+| Backend engineer    | Uses platform packages.          | Imports from `@starter/platform-*`; no direct NestJS/Prisma imports needed; types flow correctly. |
+| QA automation       | Uses testing packages.           | MSW mocks generated from OpenAPI; test configs work via `@starter/config-*`; coverage thresholds enforced.                                |
+| Design systems lead | Reviews UI tokens & a11y.        | Tokens/preset applied across components; a11y checks pass in CI; component variants documented in Storybook.                                              |
+| DevEx lead          | Maintains packages.              | Changesets publishes; adoption high; no local overrides required; updates isolated to packages.                                                                 |
 
 ---
 
@@ -90,11 +91,14 @@ This PRD defines the packages, contracts, and the **end-to-end pattern** pairing
 * **Hooks:** a11y helpers (focus rings, ARIA), react-i18next helpers, form utilities.
 * **Composites:**
 
-  * **`DataTable`** (TanStack Table + Shadcn table + toolbar) with pagination, multi-column sort, column filters, global search, column visibility, selection, server-mode wiring, virtualization (optional).
-  * Loading/empty/error states standardized; skeletons align with tokens.
+  * **`DataTable`** component (TanStack Table + Shadcn table + toolbar) with configurable props for pagination, multi-column sort, column filters, global search, column visibility, selection, server-mode support, virtualization (optional).
+  * Loading/empty/error state components standardized; skeleton components align with tokens.
 * **Storybook:**
 
-  * Per-component stories **and** **Scenes**: complete pages (list with filters, bulk actions, settings forms), showing composition patterns and code recipes.
+  * Per-component stories demonstrating all props, states, and variants.
+  * Accessibility checks via axe addon.
+  * Interactive controls for exploring component APIs.
+  * Application-level Scenes and page compositions are provided by PRD-03.
 
 ### 4.4 Runtime utilities & auth
 
@@ -114,32 +118,21 @@ This PRD defines the packages, contracts, and the **end-to-end pattern** pairing
 
 ### 4.6 Data-access — `@starter/data-access` (REST + OpenAPI only)
 
-* **Source of truth:** OpenAPI emitted by Nest (via `@starter/platform-api` utilities built on `@nestjs/swagger`).
+* **Source of truth:** OpenAPI spec generated by PRD-04 (`apps/api` via `@starter/platform-api` utilities built on `@nestjs/swagger`).
+* **Consumption:** Build step reads OpenAPI spec from PRD-04's `dist/openapi.json` output.
 * **Generation:** Types + Zod validators from OpenAPI; typed TanStack Query hooks (queries/mutations); **MSW handlers** generated from the same schemas.
-* **Error taxonomy:** `{ code, httpStatus, isRetryable, isAuthError, message, cause? }`, thrown consistently.
+* **Error taxonomy:** `{ code, httpStatus, isRetryable, isAuthError, message, cause? }`, thrown consistently and aligned with backend responses.
 * **Resilience:** timeouts; AbortController cancellation; retries (exponential backoff + jitter); idempotency keys for mutations; tracing headers (X-Request-Id).
 * **Query keys:** `queryKeyFactory.resource.list(params)` for caching and invalidation consistency.
+* **Contract compliance:** Generated clients match API contracts defined in PRD-04; contract tests validate parity.
 
-### 4.7 Standard List Endpoint Contract (offset/limit, MVP)
+### 4.7 Client generation contract expectations
 
-* **Why:** simpler MVP across Nest + Prisma + UI; clear mental model; works for admin/data-heavy screens.
-* **Request (GET):**
-  `/:resource?search=&page=&perPage=&sort=&order=&filters[foo]=bar&filters[baz]=qux`
-* **Response (200):**
-
-  ```json
-  {
-    "items": [],
-    "page": 1,
-    "perPage": 20,
-    "total": 0,
-    "summary": {},
-    "meta": { "queryId": "uuid", "generatedAt": "2025-10-19T00:00:00Z" }
-  }
-  ```
-* **Sorting:** single or multi via `sort=field1,-field2` (descending via `-`).
-* **Stability:** API must add a secondary sort key (e.g., `id ASC`) to avoid duplicates/omissions.
-* **Upgrade path (post-GA):** optional **cursor mode** behind a feature flag (not part of MVP).
+* **Contract definition:** List Endpoint and other API contracts are defined by PRD-04 (API Application Shell).
+* **Schema consumption:** `@starter/data-access` reads OpenAPI schemas and generates clients that match backend contracts exactly.
+* **Type safety:** TypeScript types flow from OpenAPI definitions; request/response validation via generated Zod schemas.
+* **Testing support:** MSW handlers generated from same OpenAPI schemas ensure frontend tests align with real API contracts.
+* **Upgrade path:** When PRD-04 evolves contracts (e.g., adding cursor pagination), regenerating clients automatically provides new capabilities.
 
 ### 4.8 Environment & secrets
 
@@ -163,9 +156,13 @@ This PRD defines the packages, contracts, and the **end-to-end pattern** pairing
 
 ### 4.11 Documentation & adoption
 
-* `/docs/packages/*` with quick-start recipes, especially **“Build a List Page”** (DataTable ↔ List Endpoint end-to-end).
-* `examples/with-vite-web` (list page) and `examples/nest-resource` (resource implementing the contract).
-* Storybook **Scenes** catalog (dashboards, settings, wizard, list pages with filters/bulk actions).
+* `/docs/packages/*` with package-specific documentation:
+  * Configuration packages: setup, extension patterns, available rules
+  * UI package: component APIs, token system, theming, composition patterns
+  * Platform packages: abstraction APIs, migration guides, extension points
+  * Data-access: client generation workflow, query key patterns, MSW usage
+* Storybook component stories with interactive examples and API documentation.
+* Application-level examples and integration demonstrations are provided by PRD-03 and PRD-04.
 
 ### 4.12 Governance & enforcement
 
@@ -175,12 +172,12 @@ This PRD defines the packages, contracts, and the **end-to-end pattern** pairing
 
 ---
 
-## 5. Backend alignment (authoritative)
+## 5. Integration with application shells
 
-* **NestJS** exposes the **List Endpoint Contract** for each resource; DTOs/validators enforce filter/sort safety.
-* **Prisma** models define canonical fields for filters/sorts; pagination via offset/limit for MVP, stabilized by secondary sort.
-* **OpenAPI** generated at build, versioned; CI requires CODEOWNERS approval for spec changes.
-* **BullMQ + Redis** for background jobs; status endpoints documented in OpenAPI where needed.
+* **PRD-03 (Web Application Shell):** Imports `@starter/ui`, `@starter/platform-*`, and `@starter/data-access` to build features; demonstrates integration patterns.
+* **PRD-04 (API Application Shell):** Imports `@starter/platform-api`, `@starter/platform-db`, `@starter/platform-queue`, and `@starter/auth/server`; generates OpenAPI specs consumed by data-access package.
+* **Dependency flow:** PRD-04 generates OpenAPI → PRD-02 generates clients → PRD-03 uses clients.
+* **Enforcement:** ESLint boundaries prevent apps from importing third-party libs directly; all access flows through `@starter/*` packages.
 
 ---
 
@@ -188,20 +185,21 @@ This PRD defines the packages, contracts, and the **end-to-end pattern** pairing
 
 1. **Shadcn/UI integration** — Vendor **all** Shadcn components in `@starter/ui`, standardized to our tokens/preset; keep generators and patches tracked for reproducible upgrades.
 2. **Tokens** — Single tokens JSON → CSS variables, Tailwind preset, TS typings via a simple build step; forbid ad-hoc colors/utilities that bypass tokens.
-3. **DataTable composite** — TanStack Table for state; Shadcn table for UI; TanStack Router for URL state; TanStack Query binding; typed column/filter definitions.
-4. **OpenAPI → client** — Build step generates Zod schemas, types, MSW handlers, and React Query hooks; no global singletons; clients are tree-shakable.
+3. **DataTable component** — TanStack Table for state management; Shadcn table primitives for UI; configurable props for pagination, sorting, filtering; consumers (PRD-03) handle URL state and API integration.
+4. **OpenAPI → client generation** — Build step consumes OpenAPI from PRD-04; generates Zod schemas, TypeScript types, MSW handlers, and React Query hooks; no global singletons; clients are tree-shakable.
 5. **Error & resilience** — Shared helpers (timeouts, retry/backoff, idempotency, tracing headers) live in `@starter/utils`/`@starter/node-utils`; enforced at client boundary.
-6. **Storybook** — Vite builder with `@starter/storybook-config`; stories include comps + scenes, a11y checks, interactive controls, and copy-paste recipes.
+6. **Storybook** — Vite builder with `@starter/storybook-config`; component stories with a11y checks, interactive controls, and prop documentation.
 
 ---
 
 ## 7. Metrics & success criteria
 
-* **Adoption:** ≥ **90%** of new list pages use `@starter/ui` DataTable + the List Endpoint by the first sprint post-GA.
-* **Time to first list page:** ≤ **30 minutes** from scaffold to page hitting the real API.
+* **Adoption:** ≥ **95%** of applications use `@starter/*` packages exclusively; zero direct third-party imports in `apps/*`.
+* **Package usage:** All config packages extended without local overrides; UI components imported from `@starter/ui` only.
 * **Defect reduction:** ≥ **70%** drop in config/UI boilerplate issues vs. baseline quarter.
-* **Coverage:** UI ≥ 85%, utils ≥ 90%, data-access ≥ 90%.
-* **Bundle budgets:** ≥ **95%** of components under budget; exceptions documented in ADR.
+* **Coverage:** UI components ≥ 85%, utils ≥ 90%, data-access ≥ 90%.
+* **Bundle budgets:** ≥ **95%** of components under budget (≤ 10KB gzip for primitives, ≤ 20KB for composites); exceptions documented in ADR.
+* **Documentation:** 100% of public package APIs documented in Storybook or `/docs/packages/*`.
 
 ---
 
@@ -220,131 +218,100 @@ This PRD defines the packages, contracts, and the **end-to-end pattern** pairing
 
 **Phase A (Weeks 1–2, MVP)**
 
-* `@starter/ui`: import **all Shadcn** comps; tokens + Tailwind preset; typography; **DataTable** (local data, full UI states).
-* `@starter/data-access`: OpenAPI → types/Zod/MSW/hooks; error taxonomy; resilience.
-* `config-*`: ESLint/Prettier/TS/Jest/Playwright/Storybook ready; Storybook per-component stories.
+* `config-*`: ESLint/Prettier/TS/Jest/Playwright/Storybook packages ready; enforce boundaries.
+* `@starter/ui`: import **all Shadcn** components; tokens + Tailwind preset; typography; layout shells.
+* `@starter/platform-*`: Runtime wrappers for TanStack, NestJS, Prisma, BullMQ, Redis.
 
 **Phase B (Weeks 3–4)**
 
-* Wire DataTable to **offset/limit** List Endpoint (Nest + Prisma template).
-* URL state with TanStack Router; query key factory; server-driven sort/filter parity.
-* Storybook **Scenes** (list page with filters, bulk actions) + docs & examples.
+* `@starter/ui`: DataTable component with configurable props; loading/empty/error states.
+* `@starter/data-access`: OpenAPI consumption pipeline; types/Zod/MSW/hooks generation; error taxonomy.
+* `@starter/utils` and `@starter/node-utils`: Logging, flags, resilience helpers.
 
 **Phase C (Week 5+)**
 
-* Table virtualization; optional aggregates (`summary`); advanced filter DSL.
-* Optional **cursor mode** behind a flag (not default).
-* Expand a11y automation; design token theming presets.
+* Storybook stories for all components with a11y checks and interactive controls.
+* Advanced DataTable features: virtualization, column resizing, advanced filtering props.
+* Changesets workflow; documentation in `/docs/packages/*`; published to internal registry.
 
 ---
 
 ## 10. Acceptance tests (definition of done)
 
-1. **Config adoption:** `apps/web` extends config packages with < 5 lines and passes `lint`/`typecheck`/`test` without overrides.
-2. **UI completeness:** `@starter/ui` exports all Shadcn comps; tokens/preset present; Storybook shows each with docs and a11y checks green.
-3. **DataTable E2E:** With a Nest resource implementing the List Contract, a page using **only** `@starter/ui` (DataTable composite) + `@starter/data-access` lists, paginates, sorts, filters, searches, and URL-syncs state.
-4. **Client generation:** Changing OpenAPI regenerates types/schemas/hooks; mismatches fail CI in consuming apps.
-5. **Error taxonomy:** A 429/5xx yields a typed error; retries follow policy and are test-verified.
-6. **Budgets & coverage:** Bundle budgets and coverage thresholds met; exceptions require ADR.
+1. **Config adoption:** Applications extend config packages with minimal lines and pass `lint`/`typecheck`/`test` without overrides.
+2. **UI completeness:** `@starter/ui` exports all Shadcn components; tokens/preset present; Storybook shows each with docs and a11y checks green.
+3. **Platform encapsulation:** ESLint boundaries successfully block direct imports of TanStack, NestJS, Prisma, etc. from `apps/*`.
+4. **Client generation:** Consuming OpenAPI from PRD-04 regenerates types/schemas/hooks; mismatches caught during build.
+5. **Error taxonomy:** Generated clients throw typed errors matching taxonomy; retries follow policy and are test-verified.
+6. **Budgets & coverage:** Bundle budgets and coverage thresholds met for all packages; exceptions require ADR.
+7. **Package publishing:** Changesets workflow creates versioned releases; packages consumable via internal registry.
 
 ---
 
 ## 11. Dependencies & out of scope
 
-* Depends on **PRD-01** (bootstrap, pipelines, env validation, Dev Container).
+* Depends on **PRD-01** (workspace bootstrap, pipelines, env validation, Dev Container, remote cache).
+* Depends on **PRD-04** to generate OpenAPI specifications consumed by `@starter/data-access`.
 * Design Systems Guild supplies initial token values/brand guidance.
-* Domain teams provide Prisma models & Nest DTOs aligned with the contract.
-* Not in scope: alternative transports/clients; non-Shadcn component sets.
+* Not in scope:
+  * Alternative UI frameworks, transports, or database clients.
+  * Application-level demonstrations or complete page examples (PRD-03 responsibility).
+  * API endpoint contract definitions or backend implementations (PRD-04 responsibility).
 
 ---
 
-## 12. Final decisions (answering former “open questions”)
+## 12. Final decisions
 
 * **All UI in one package:** Yes — `@starter/ui` (components, tokens, composites, layouts, hooks).
-* **Pagination mode for v1:** **Offset/limit only**; stable secondary sort (e.g., `id ASC`). Cursor mode can come later behind a flag.
+* **Package scope:** Provide reusable, tested primitives; applications (PRD-03/04) demonstrate integration.
 * **Browser support (evergreen):** Desktop Chrome/Edge **115+**, Firefox **115 ESR+**, Safari **16.4+**; Mobile iOS Safari **16.4+**, Chrome for Android **115+**. Minimal polyfills (Intl/AbortController) only if needed.
-* **Transport strategy:** **REST + OpenAPI only** (no alternatives).
+* **Transport strategy:** **REST + OpenAPI only** (no alternatives); contracts defined by PRD-04.
+* **Storybook scope:** Component stories only; application Scenes provided by PRD-03.
 
 ---
 
 ## 13. Appendix
 
-### 13.1 OpenAPI snippet — List Endpoint Contract (MVP)
+### 13.1 Package architecture diagram
 
-```yaml
-openapi: 3.0.3
-info:
-  title: Starter API
-  version: 1.0.0
-paths:
-  /{resource}:
-    get:
-      summary: List resources (offset/limit)
-      parameters:
-        - in: path
-          name: resource
-          required: true
-          schema: { type: string }
-        - in: query
-          name: search
-          schema: { type: string }
-        - in: query
-          name: page
-          schema: { type: integer, minimum: 1, default: 1 }
-        - in: query
-          name: perPage
-          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
-        - in: query
-          name: sort
-          description: Comma-separated fields, prefix with '-' for desc (e.g., name,-createdAt)
-          schema: { type: string }
-        - in: query
-          name: order
-          description: Deprecated (prefer "sort")
-          schema: { type: string, enum: [asc, desc] }
-        - in: query
-          name: filters
-          style: deepObject
-          explode: true
-          schema:
-            type: object
-            additionalProperties: { type: string }
-      responses:
-        '200':
-          description: Paged result
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [items, page, perPage, total]
-                properties:
-                  items:
-                    type: array
-                    items: { $ref: '#/components/schemas/Resource' } # replaced per resource
-                  page: { type: integer }
-                  perPage: { type: integer }
-                  total: { type: integer }
-                  summary:
-                    type: object
-                    additionalProperties: {}
-                  meta:
-                    type: object
-                    properties:
-                      queryId: { type: string, format: uuid }
-                      generatedAt: { type: string, format: date-time }
-components:
-  schemas:
-    Resource:
-      type: object
-      additionalProperties: true
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Applications (PRD-03: apps/web, PRD-04: apps/api)           │
+│ Import ONLY from @starter/* packages                        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ uses
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ PRD-02: Shared Packages (@starter/*)                        │
+│                                                              │
+│ ┌─────────────┐  ┌──────────────┐  ┌────────────────┐      │
+│ │ config-*    │  │ ui           │  │ platform-*     │      │
+│ │ (ESLint,    │  │ (Shadcn,     │  │ (TanStack,     │      │
+│ │  TS, etc.)  │  │  tokens,     │  │  NestJS,       │      │
+│ │             │  │  DataTable)  │  │  Prisma)       │      │
+│ └─────────────┘  └──────────────┘  └────────────────┘      │
+│                                                              │
+│ ┌─────────────┐  ┌──────────────┐  ┌────────────────┐      │
+│ │ data-access │  │ utils        │  │ auth           │      │
+│ │ (Generated  │  │ (Helpers,    │  │ (Simple Auth   │      │
+│ │  clients)   │  │  flags)      │  │  wrappers)     │      │
+│ └─────────────┘  └──────────────┘  └────────────────┘      │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ wraps
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Third-party Dependencies                                     │
+│ TanStack, Shadcn, NestJS, Prisma, BullMQ, Simple Auth       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 13.2 UI DataTable bindings (contracted props)
+### 13.2 DataTable component API
 
-* `queryKey = queryKeyFactory.resource.list(params)`
-* `queryFn = api.resource.list(params)` (generated client)
-* `columns: ColumnDef<Resource>[]` with `meta.filter`, `meta.sortable` hints
-* `state ↔ URL` via TanStack Router (search params: `page`, `perPage`, `sort`, `filters.*`)
+* **Component:** Reusable table primitive with TanStack Table integration
+* **Props:** `data`, `columns`, `onPaginationChange`, `onSortingChange`, `onFilterChange`, etc.
+* **Integration:** Consumers (PRD-03) wire to URL state and API queries
+* **States:** Loading, empty, error states via component props
+* **Customization:** Column definitions, filter components, toolbar actions configurable
 
 ---
 
