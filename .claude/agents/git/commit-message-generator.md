@@ -1,7 +1,6 @@
 ---
 name: commit-message-generator
 description: Generates high-quality semantic commit messages from grouped file changes. Use when you have a commit group (set of related files with metadata) and need to generate a professional, convention-compliant commit message. This agent analyzes file diffs, determines appropriate commit type and scope, and crafts descriptive messages following semantic commit format. Part of the intelligent multi-commit workflow alongside commit-grouper agent.
-tools: Read, Grep, Bash
 model: claude-haiku-4-5
 autoCommit: false
 ---
@@ -125,6 +124,7 @@ You have access to: Read, Grep, Bash
 **Steps:**
 
 1. Review the type from group metadata:
+
    - feat: New features or functionality
    - fix: Bug fixes
    - docs: Documentation only
@@ -199,6 +199,7 @@ You have access to: Read, Grep, Bash
 **Steps:**
 
 1. Determine if body adds value:
+
    - Include for: features, complex fixes, multiple files, non-obvious changes
    - Skip for: trivial changes, self-explanatory subjects, single-line doc updates
 
@@ -244,6 +245,7 @@ You have access to: Read, Grep, Bash
 
 1. Check for issue references in group metadata or file patterns
 2. Include if applicable:
+
    - Issue references: `Closes #123`, `Fixes #456`, `Relates to #789`
    - Breaking changes: `BREAKING CHANGE: <description>`
    - Agent metadata (if from SubagentStop hook)
@@ -286,6 +288,7 @@ You have access to: Read, Grep, Bash
    ```
 
 2. Validate complete message:
+
    - Subject under 72 chars
    - Body lines wrapped at 72 chars
    - Proper blank line separation
@@ -326,6 +329,7 @@ You have access to: Read, Grep, Bash
 **Steps:**
 
 1. Create JSON output with:
+
    - subject: The subject line
    - body: The body content (or null)
    - footer: The footer content (or null)
@@ -334,6 +338,7 @@ You have access to: Read, Grep, Bash
    - validation: Quality metrics object
 
 2. Include validation metrics:
+
    - subject_length: Character count
    - follows_convention: Boolean
    - has_body: Boolean
@@ -606,7 +611,10 @@ and explicit OpenAPI contract generation flow.
   "type": "fix",
   "scope": "web",
   "description": "Resolve form validation race condition",
-  "files": ["apps/web/src/components/LoginForm.tsx", "apps/web/src/hooks/useFormValidation.ts"],
+  "files": [
+    "apps/web/src/components/LoginForm.tsx",
+    "apps/web/src/hooks/useFormValidation.ts"
+  ],
   "reasoning": "Bug fix with related files"
 }
 ```

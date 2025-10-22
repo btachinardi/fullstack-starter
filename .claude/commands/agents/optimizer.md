@@ -1,6 +1,5 @@
 ---
 description: Systematically analyze and optimize Claude Code slash commands and subagents following research-backed best practices
-allowed-tools: Task, TodoWrite, Read
 model: claude-sonnet-4-5
 ---
 
@@ -11,6 +10,7 @@ Systematically analyze and optimize Claude Code slash commands and subagents fol
 ## When to Use This Command
 
 Use `/agents:optimizer` when you need to:
+
 - Optimize an existing slash command or subagent for clarity, maintainability, and token efficiency
 - Apply latest agent optimization best practices to legacy agents
 - Generate comprehensive analysis and optimization roadmap
@@ -30,6 +30,7 @@ This command executes a 6-phase optimization pipeline:
 6. **Validation**: Measures improvements, validates quality, generates report
 
 **Key Features:**
+
 - 95% time savings (6-8 hours manual → 15-25 min automated)
 - 100% adherence to AGENT_PRD_GUIDELINES.md best practices
 - Measurable improvements (10-15% token reduction, +0.3-0.5 quality score)
@@ -50,6 +51,7 @@ This command executes a 6-phase optimization pipeline:
 ## Prerequisites & Context
 
 ### Environment Requirements
+
 - Git repository initialized
 - Target agent exists in `.claude/commands/` or `.claude/agents/`
 - Guidelines and research documents available:
@@ -57,6 +59,7 @@ This command executes a 6-phase optimization pipeline:
   - `ai/docs/agent-optimization-research.md`
 
 ### Supporting Documents Required
+
 - **PRD Guidelines:** Structure and patterns for PRDs
 - **Research:** Best practices for agent optimization (85KB document)
 - **Templates:** SUBAGENT_TEMPLATE.md for subagents
@@ -64,38 +67,47 @@ This command executes a 6-phase optimization pipeline:
 ### Specialized Subagents Used
 
 **Phase 1 - Analysis:**
+
 - `agent-analyzer`: Systematic evaluation against best practices checklist
 
 **Phase 2 - Planning:**
+
 - `optimization-planner`: Creates prioritized optimization roadmap
 
 **Phase 3 - PRD Generation (Commands Only):**
+
 - Built-in PRD writing capability
 
 **Phase 4 - Implementation:**
+
 - Built-in slash-command-writer: Optimizes slash commands
 - Built-in subagent-writer: Optimizes subagents
 
 **Phase 5 - Validation:**
+
 - `optimization-validator`: Measures improvements and validates quality
 
 **Phase 6 - Documentation:**
+
 - Built-in documentation updating capability
 
 ### Input Format
 
 **Invocation:**
+
 ```
 /agents:optimizer <target_file_path>
 ```
 
 **Examples:**
+
 ```
 /agents:optimizer .claude/commands/dev/debug.md
 /agents:optimizer .claude/agents/git/commit-grouper.md
 ```
 
 **Target File Requirements:**
+
 - Must exist and be readable
 - Must be in `.claude/commands/` (for commands) or `.claude/agents/` (for subagents)
 - Must have YAML frontmatter (commands) or markdown structure (subagents)
@@ -107,6 +119,7 @@ This command executes a 6-phase optimization pipeline:
 ### Quick Decision Guide
 
 **When to optimize:**
+
 - Agent is >6 months old (may not follow latest best practices)
 - Token count >80K (may benefit from compression)
 - Mixed strategy structure (some use "When/What/Why", others don't)
@@ -115,12 +128,14 @@ This command executes a 6-phase optimization pipeline:
 - Unclear phase transitions or validation gates
 
 **What to expect:**
+
 - **Time:** 15-25 minutes for complete optimization
 - **Token Reduction:** 10-15% average (well-structured agents: 5-10%, verbose agents: 20-30%)
 - **Quality Improvement:** +0.3-0.5 score increase (0-5 scale)
 - **Approval Required:** Yes, after optimization plan (Phase 2)
 
 **Common optimization patterns:**
+
 - Standardize strategy documentation ("When/What/Why/Priority")
 - Enhance examples (80-120 lines with decision-making)
 - Extract tool abstractions (repeated bash → `pnpm tools`)
@@ -181,6 +196,7 @@ Present Success Summary
 ### Time Savings
 
 **Manual Optimization:**
+
 - Research: 1-2 hours
 - Analysis: 2-3 hours
 - Planning: 30-60 min
@@ -189,6 +205,7 @@ Present Success Summary
 - **Total:** 6-8 hours
 
 **Automated Optimization:**
+
 - All phases: 15-25 minutes
 - **Savings:** 95% time reduction
 
@@ -207,6 +224,7 @@ Present Success Summary
    Load the agent file specified by user.
 
    **Action:**
+
    ```
    Read(file_path=<user_provided_path>)
    ```
@@ -219,6 +237,7 @@ Present Success Summary
    Identify if target is a command or subagent based on path.
 
    **Logic:**
+
    - Path contains `/commands/` → Command (requires PRD in Phase 3)
    - Path contains `/agents/` → Subagent (skip PRD, direct optimization)
 
@@ -229,6 +248,7 @@ Present Success Summary
    Load guidelines and research for analysis context.
 
    **Action:**
+
    ```
    Read(file_path="ai/agents/AGENT_PRD_GUIDELINES.md")
    Read(file_path="ai/docs/agent-optimization-research.md")
@@ -242,18 +262,21 @@ Present Success Summary
    Initialize tracking for 6-phase pipeline.
 
    **Action:**
+
    ```
    TodoWrite with 6 phase items (Phase 1-6)
    Mark Phase 0 complete, Phase 1 in_progress
    ```
 
 **Success Criteria:**
+
 - [ ] Target file loaded successfully
 - [ ] Agent type determined (command or subagent)
 - [ ] Guidelines and research loaded
 - [ ] Todo list initialized
 
 **Failure Handling:**
+
 - **If:** File not found → **Then:** Report error, suggest valid path
 - **If:** Not in `.claude/` directory → **Then:** Explain scope restriction
 - **If:** Supporting docs missing → **Then:** Report which docs missing
@@ -275,6 +298,7 @@ Present Success Summary
    Invoke specialist for comprehensive evaluation.
 
    **Action:**
+
    ```
    Task(
      subagent_type="agent-analyzer",
@@ -319,6 +343,7 @@ Present Success Summary
    Show user high-level findings.
 
    **Format:**
+
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Agent Analysis: <agent-name>
@@ -365,12 +390,14 @@ Present Success Summary
    Mark Phase 1 complete, Phase 2 in progress.
 
    **Action:**
+
    ```
    TodoWrite - Update Phase 1 status to "done"
    TodoWrite - Update Phase 2 status to "in_progress"
    ```
 
 **Success Criteria:**
+
 - [ ] All 7 patterns evaluated with scores (0-5)
 - [ ] At least 3 strengths identified with line references
 - [ ] At least 3 weaknesses identified with specifics
@@ -380,6 +407,7 @@ Present Success Summary
 - [ ] Token reduction potential estimated
 
 **Failure Handling:**
+
 - **If:** Analyzer fails → **Then:** Retry with more specific prompt
 - **If:** Analysis incomplete → **Then:** Request missing sections
 - **If:** No weaknesses found → **Then:** Mark as "already optimized", minimal recommendations
@@ -403,6 +431,7 @@ Present Success Summary
    Invoke specialist for roadmap creation.
 
    **Action:**
+
    ```
    Task(
      subagent_type="optimization-planner",
@@ -442,6 +471,7 @@ Present Success Summary
    Show comprehensive plan for user review.
 
    **Format:**
+
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Agent Optimization Plan: <agent-name>
@@ -505,6 +535,7 @@ Present Success Summary
    ```
 
    **User Options:**
+
    - **1:** Proceed with all phases → Continue to Phase 3 (or Phase 4 if subagent)
    - **2:** Select phases → Show phase menu, user chooses subset
    - **3:** Cancel → Save analysis report, exit gracefully
@@ -516,15 +547,18 @@ Present Success Summary
    Capture user choice and proceed accordingly.
 
    **If Option 1 (Proceed):**
+
    - Continue to Phase 3 (if command) or Phase 4 (if subagent)
 
    **If Option 2 (Select phases):**
+
    - Show phase selection menu
    - User selects subset (e.g., "1,3")
    - Update plan with selected phases only
    - Continue to Phase 3 or 4
 
    **If Option 3 (Cancel):**
+
    - Save analysis report to `ai/docs/optimizations/<name>-analysis-<date>.md`
    - Thank user, exit gracefully
 
@@ -533,12 +567,14 @@ Present Success Summary
    Mark Phase 2 complete, Phase 3/4 in progress.
 
    **Action:**
+
    ```
    TodoWrite - Update Phase 2 status to "done"
    TodoWrite - Update Phase 3 (if command) or Phase 4 (if subagent) to "in_progress"
    ```
 
 **Success Criteria:**
+
 - [ ] All recommendations assigned to phases
 - [ ] Effort estimates for each phase (hours)
 - [ ] Impact estimates for each phase (tokens %, quality)
@@ -548,6 +584,7 @@ Present Success Summary
 - [ ] User approval received
 
 **Failure Handling:**
+
 - **If:** Planner fails → **Then:** Retry or create manual plan
 - **If:** Recommendations conflict → **Then:** Resolve conflicts, document trade-offs
 - **If:** User declines → **Then:** Save analysis, exit
@@ -573,6 +610,7 @@ Present Success Summary
    Verify if this phase should execute.
 
    **Logic:**
+
    - If agent_type == "command" → Proceed with PRD generation
    - If agent_type == "subagent" → Skip to Phase 4
 
@@ -584,6 +622,7 @@ Present Success Summary
 
    **Action:**
    Using built-in PRD writing capability, generate a PRD that includes:
+
    - All required sections per AGENT_PRD_GUIDELINES.md
    - Current command functionality
    - Optimization improvements from plan
@@ -604,6 +643,7 @@ Present Success Summary
    Ensure PRD follows guidelines.
 
    **Check:**
+
    - [ ] Metadata section present (status, version, owner, implementation)
    - [ ] Executive summary present
    - [ ] Problem statement defined
@@ -621,6 +661,7 @@ Present Success Summary
    Inform user of PRD creation.
 
    **Format:**
+
    ```
    ✓ PRD Generated: ai/agents/<category>/<name>.prd.md
 
@@ -646,12 +687,14 @@ Present Success Summary
    Mark Phase 3 complete, Phase 4 in progress.
 
    **Action:**
+
    ```
    TodoWrite - Update Phase 3 status to "done"
    TodoWrite - Update Phase 4 status to "in_progress"
    ```
 
 **Success Criteria:**
+
 - [ ] PRD file created in correct location (ai/agents/<category>/<name>.prd.md)
 - [ ] All required sections present (per AGENT_PRD_GUIDELINES.md)
 - [ ] Task decomposition into 3-7 phases
@@ -661,6 +704,7 @@ Present Success Summary
 - [ ] PRD passes validation checklist
 
 **Failure Handling:**
+
 - **If:** PRD generation fails → **Then:** Retry with more specific instructions
 - **If:** Validation fails → **Then:** Identify missing sections, regenerate
 - **If:** Sub-agent specs incomplete → **Then:** Expand specifications
@@ -684,6 +728,7 @@ Present Success Summary
    Choose writer based on agent type.
 
    **Logic:**
+
    - If agent_type == "command" → Use built-in slash-command-writer
    - If agent_type == "subagent" → Use built-in subagent-writer
 
@@ -695,6 +740,7 @@ Present Success Summary
 
    **Action:**
    Using built-in slash-command-writer capability:
+
    - Provide PRD as specification
    - Request command following PRD structure exactly
    - Apply all optimization recommendations
@@ -717,6 +763,7 @@ Present Success Summary
 
    **Action:**
    Using built-in subagent-writer capability:
+
    - Provide optimization plan and recommendations
    - Request subagent following SUBAGENT_TEMPLATE.md
    - Apply all optimization recommendations
@@ -737,6 +784,7 @@ Present Success Summary
    Confirm optimized file exists and is valid.
 
    **Check:**
+
    - [ ] Optimized file exists at correct location
    - [ ] Original backed up as `.bak`
    - [ ] File has valid YAML frontmatter
@@ -751,6 +799,7 @@ Present Success Summary
    Show user what changed.
 
    **Format:**
+
    ```
    ✓ Implementation Complete
 
@@ -776,12 +825,14 @@ Present Success Summary
    Mark Phase 4 complete, Phase 5 in progress.
 
    **Action:**
+
    ```
    TodoWrite - Update Phase 4 status to "done"
    TodoWrite - Update Phase 5 status to "in_progress"
    ```
 
 **Success Criteria:**
+
 - [ ] Optimized file created in correct location
 - [ ] Original preserved as `.bak`
 - [ ] All recommendations applied
@@ -791,6 +842,7 @@ Present Success Summary
 - [ ] File syntactically valid (markdown + frontmatter)
 
 **Failure Handling:**
+
 - **If:** Writer fails → **Then:** Retry with clearer instructions
 - **If:** Syntax errors introduced → **Then:** Validate, fix, regenerate
 - **If:** Recommendations not fully applied → **Then:** Review, request reimplementation
@@ -814,6 +866,7 @@ Present Success Summary
    Invoke specialist for comprehensive validation.
 
    **Action:**
+
    ```
    Task(
      subagent_type="optimization-validator",
@@ -858,6 +911,7 @@ Present Success Summary
    Show user before/after comparison.
 
    **Format:**
+
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Optimization Validation Results
@@ -901,6 +955,7 @@ Present Success Summary
    Determine if optimization succeeded.
 
    **Logic:**
+
    - If overall_assessment == "PASSED" → Continue to Phase 6
    - If overall_assessment == "FAILED" → Report failure, consider revert
    - If overall_assessment == "NEEDS_REVIEW" → Report issues, ask user to review
@@ -912,11 +967,13 @@ Present Success Summary
    If validation did not pass, take corrective action.
 
    **If FAILED:**
+
    - Present detailed issues to user
    - Offer options: Revert to original, Fix issues manually, Re-optimize
    - Do NOT proceed to Phase 6 until validation passes
 
    **If NEEDS_REVIEW:**
+
    - Present issues to user
    - Ask if acceptable to proceed
    - User choice: Proceed (accept trade-offs) or Fix issues
@@ -926,12 +983,14 @@ Present Success Summary
    Mark Phase 5 complete, Phase 6 in progress.
 
    **Action:**
+
    ```
    TodoWrite - Update Phase 5 status to "done"
    TodoWrite - Update Phase 6 status to "in_progress"
    ```
 
 **Success Criteria:**
+
 - [ ] All validation checks pass
 - [ ] Token reduction ≥ target (or within ±5%)
 - [ ] Quality score improved (no regressions)
@@ -940,6 +999,7 @@ Present Success Summary
 - [ ] Comparison report generated
 
 **Failure Handling:**
+
 - **If:** Validation fails → **Then:** Identify specific issues, fix or revert
 - **If:** Token reduction below target → **Then:** Acceptable if quality improved significantly
 - **If:** Quality regression detected → **Then:** Investigate, revert if necessary
@@ -965,8 +1025,10 @@ Present Success Summary
 
    **Action:**
    Add entry to agent's `## Changelog` section:
+
    ```markdown
    **Version <new_version>** (<date>)
+
    - Optimized following agents-optimizer PRD
    - <list key changes>
    - Token reduction: <percent>%
@@ -982,6 +1044,7 @@ Present Success Summary
    Fix any broken references or add new tool docs.
 
    **Check:**
+
    - If new tools created → Document in `tools/README.md`
    - If command references changed → Update docs
    - If PRD generated → Ensure linked from command
@@ -998,6 +1061,7 @@ Present Success Summary
    Create file: `ai/docs/optimizations/<agent-name>-optimization-<YYYYMMDD>.md`
 
    **Content:**
+
    ```markdown
    # <agent-name> Optimization Summary
 
@@ -1041,6 +1105,7 @@ Present Success Summary
    Recommend follow-up actions.
 
    **Suggestions:**
+
    - Manual review areas (if applicable)
    - Testing recommendations (if command has examples)
    - Follow-up optimizations (if any deferred)
@@ -1055,6 +1120,7 @@ Present Success Summary
    Mark Phase 6 complete.
 
    **Action:**
+
    ```
    TodoWrite - Update Phase 6 status to "done"
    TodoWrite - Mark entire workflow as "complete"
@@ -1065,6 +1131,7 @@ Present Success Summary
    Show comprehensive completion report (see Output Format section).
 
 **Success Criteria:**
+
 - [ ] Changelog entry added to agent file
 - [ ] Related docs updated (tools, references)
 - [ ] Optimization summary created
@@ -1072,6 +1139,7 @@ Present Success Summary
 - [ ] All documentation consistent
 
 **Failure Handling:**
+
 - **If:** Changelog update fails → **Then:** Manually add entry, note in summary
 - **If:** Docs update fails → **Then:** Note in summary, request manual update
 
@@ -1313,6 +1381,7 @@ Your agent is now optimized and ready to use!
 ## Constraints & Boundaries
 
 ### Must Do
+
 - Validate all inputs before processing
 - Present optimization plan for user approval
 - Generate PRD for commands before optimization
@@ -1322,6 +1391,7 @@ Your agent is now optimized and ready to use!
 - Verify validation passes before marking complete
 
 ### Must Not Do
+
 - Optimize without user approval
 - Skip phases (all required for quality)
 - Modify files outside `.claude/` directory
@@ -1330,6 +1400,7 @@ Your agent is now optimized and ready to use!
 - Skip backup creation
 
 ### In Scope
+
 - Commands in `.claude/commands/`
 - Subagents in `.claude/agents/`
 - Analysis, planning, implementation, validation, documentation
@@ -1337,6 +1408,7 @@ Your agent is now optimized and ready to use!
 - PRD generation for commands
 
 ### Out of Scope
+
 - Creating new agents from scratch (use templates)
 - Optimizing files outside `.claude/`
 - Real-time optimization during execution
@@ -1357,6 +1429,7 @@ Your agent is now optimized and ready to use!
 ## Changelog
 
 **Version 1.0** (2025-10-22)
+
 - Initial implementation following agents-optimizer.prd.md
 - 6-phase optimization pipeline (validation → analysis → planning → PRD → implementation → validation → documentation)
 - 3 specialized subagents (agent-analyzer, optimization-planner, optimization-validator)
@@ -1367,6 +1440,7 @@ Your agent is now optimized and ready to use!
 - 10-15% token reduction, +0.3-0.5 quality score improvement
 
 **Implementation Status:**
+
 - Main command: ✅ Complete
 - agent-analyzer: 🔄 To be implemented
 - optimization-planner: 🔄 To be implemented

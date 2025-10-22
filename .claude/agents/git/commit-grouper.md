@@ -1,7 +1,6 @@
 ---
 name: commit-grouper
 description: Analyzes git changes (staged and unstaged) and clusters them into logical commit groups based on system scope, change nature, and dependencies. First phase of intelligent multi-commit workflow.
-tools: Read, Bash, Grep, Glob
 model: claude-haiku-4-5
 autoCommit: false
 ---
@@ -99,6 +98,7 @@ You have access to: Read, Bash, Grep, Glob
 **Steps:**
 
 1. **Categorize by System/Scope** (analyze file paths):
+
    - `apps/web/` → Frontend (web app)
    - `apps/api/` → Backend (API server)
    - `packages/ui/` → UI library (shared)
@@ -115,6 +115,7 @@ You have access to: Read, Bash, Grep, Glob
    - Test files: `*.test.*`, `*.spec.*`, `__tests__/`
 
 2. **Categorize by Change Nature** (analyze diffs):
+
    - **New feature**: New files + new functionality in existing files
    - **Bug fix**: Fixing broken behavior (look for "fix", "bug" in diffs)
    - **Refactoring**: Improving structure without changing behavior
@@ -125,6 +126,7 @@ You have access to: Read, Bash, Grep, Glob
    - **Performance**: Optimization changes
 
 3. **Identify Coupling** (files that must stay together):
+
    - Component + test + story files
    - Config file + code depending on that config
    - API endpoint + client code + types
@@ -158,6 +160,7 @@ You have access to: Read, Bash, Grep, Glob
 **Steps:**
 
 1. **Analyze the changeset characteristics**:
+
    - How many systems are affected?
    - How many change natures present?
    - Are there clear dependencies?
@@ -166,6 +169,7 @@ You have access to: Read, Bash, Grep, Glob
 2. **Select grouping strategy**:
 
    **Strategy 1: Single-Concern (Default)**
+
    - Best for: Mixed changes across multiple systems
    - Principle: Each commit has one clear purpose
    - Rules:
@@ -175,6 +179,7 @@ You have access to: Read, Bash, Grep, Glob
      - Maximum 20 files per group (split if larger)
 
    **Strategy 2: Dependency-Flow**
+
    - Best for: Changes with clear dependency chains
    - Principle: Commit in order of dependencies
    - Rules:
@@ -186,6 +191,7 @@ You have access to: Read, Bash, Grep, Glob
      - Within each layer: apply single-concern grouping
 
    **Strategy 3: File-Type**
+
    - Best for: Simple updates across many files of same type
    - Principle: Group by file type/location
    - Rules:
@@ -218,6 +224,7 @@ You have access to: Read, Bash, Grep, Glob
 2. **For each group, determine**:
 
    **Commit Type** (semantic commit convention):
+
    - `feat` - New features or functionality
    - `fix` - Bug fixes
    - `docs` - Documentation only
@@ -230,29 +237,35 @@ You have access to: Read, Bash, Grep, Glob
    - `build` - Build system changes
 
    **Scope** (what area is affected):
+
    - Examples: `api`, `web`, `ui`, `db`, `config`, `docs`, `ci`, `tools`, `agents`, `commands`
    - Use specific package names: `data-access`, `config-eslint`
    - Omit if change is truly global or affects everything
 
    **Description** (brief, clear purpose):
+
    - What this group accomplishes
    - Keep it concise (will be refined by commit-message-generator)
 
    **Files** (list of file paths):
+
    - All files in this group
    - Use glob patterns for large directories if >10 files
 
    **Reasoning** (why these files are grouped):
+
    - Explain the logic
    - Note coupling or dependencies
    - Highlight any special considerations
 
    **Size** (estimate):
+
    - `small`: 1-5 files
    - `medium`: 6-20 files
    - `large`: 21+ files (consider splitting)
 
    **Dependencies** (group IDs this depends on):
+
    - List other groups that must be committed first
    - Empty if no dependencies
 
@@ -261,29 +274,35 @@ You have access to: Read, Bash, Grep, Glob
 4. **Handle special cases**:
 
    **Large refactoring** (100+ files):
+
    - Group by module/package
    - Keep related changes together
    - Don't create 100 tiny commits
 
    **Dependency updates** (package.json changes):
+
    - All package.json + lock files together
    - Type: `chore`, Scope: `deps`
 
    **Documentation** (many .md files):
+
    - Group related docs together
    - Separate templates from content
    - Separate from code changes
 
    **Configuration** (multiple config files):
+
    - Group by tool (eslint configs together, prettier configs together)
    - Separate from feature code
 
    **Single file, multiple concerns**:
+
    - Keep together (can't split a file)
    - Note mixed concerns in reasoning
    - Suggest future refactoring
 
    **New directory structures**:
+
    - Group entire directory together
    - Include related docs/tests with directory
 
@@ -308,6 +327,7 @@ You have access to: Read, Bash, Grep, Glob
 **Steps:**
 
 1. **Validate group quality**:
+
    - [ ] Each group has clear single purpose (no mixed concerns)
    - [ ] No overlap between groups (each file in exactly one group)
    - [ ] Groups are independently committable (can work alone)
@@ -317,6 +337,7 @@ You have access to: Read, Bash, Grep, Glob
    - [ ] Scopes are specific and meaningful
 
 2. **Check for issues**:
+
    - Groups too large (>20 files) → suggest splitting
    - Over-granular (1 file per commit when they're related) → suggest merging
    - Circular dependencies → flag as error, needs user resolution
@@ -380,12 +401,14 @@ You have access to: Read, Bash, Grep, Glob
    ```
 
 2. **Provide user options**:
+
    - **Approve**: Proceed with these groups → pass to commit-message-generator
    - **Modify**: Merge groups, split groups, reorder, change files
    - **Change strategy**: Apply different strategy and regenerate
    - **Cancel**: Abort operation
 
 3. **If modifications requested**:
+
    - Apply user changes
    - Re-validate groups
    - Present updated plan
@@ -528,12 +551,14 @@ Analyzed [N] changed files across [M] systems and created [X] logical commit gro
 ### Grouping Intelligence Standards
 
 - **Keep together:**
+
   - Files modified for same feature
   - Tightly coupled code (component + test + story)
   - Config + code depending on it
   - Related documentation for same change
 
 - **Split apart:**
+
   - Different systems (frontend vs backend)
   - Different change types (feature vs fix vs docs)
   - Independent features that can work alone
@@ -661,7 +686,12 @@ Changed files: 45
       "type": "chore",
       "scope": "deps",
       "description": "Add Zod validation library",
-      "files": ["package.json", "apps/web/package.json", "apps/api/package.json", "pnpm-lock.yaml"],
+      "files": [
+        "package.json",
+        "apps/web/package.json",
+        "apps/api/package.json",
+        "pnpm-lock.yaml"
+      ],
       "reasoning": "Dependency added needed by auth feature, must be committed first",
       "size": "small",
       "dependencies": []

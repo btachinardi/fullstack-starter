@@ -1,7 +1,6 @@
 ---
 name: build-system-debugger
 description: Diagnose and fix webpack, Vite, TypeScript, and module resolution issues in modern JavaScript/TypeScript build systems. Use when encountering webpack compilation errors, module resolution failures, TypeScript outDir/rootDir issues, nested dist folder problems, CommonJS/ESM conflicts, or external dependencies not bundling correctly.
-tools: Read, Grep, Glob, WebSearch, WebFetch, Bash
 model: claude-sonnet-4-5
 ---
 
@@ -110,6 +109,7 @@ You have access to: Read, Grep, Glob, WebSearch, WebFetch, Bash
 **Steps:**
 
 1. Categorize the error type:
+
    - **Module resolution error**: Cannot find module, import path issues
    - **TypeScript compiler error**: outDir/rootDir misconfiguration, type errors
    - **Webpack configuration error**: Loader, plugin, externals, output config
@@ -118,6 +118,7 @@ You have access to: Read, Grep, Glob, WebSearch, WebFetch, Bash
    - **Source map error**: Source map generation or path issues
 
 2. For module resolution errors:
+
    - Check TypeScript `moduleResolution` setting (Node16, Bundler, Node10)
    - Verify import paths match file structure
    - Check `baseUrl`, `paths`, `rootDir` in tsconfig.json
@@ -125,6 +126,7 @@ You have access to: Read, Grep, Glob, WebSearch, WebFetch, Bash
    - Verify package.json "exports" field if importing from packages
 
 3. For TypeScript compiler errors:
+
    - Analyze `outDir` and `rootDir` interaction
    - Check if `composite: true` is causing issues
    - Verify `include` and `exclude` patterns
@@ -132,6 +134,7 @@ You have access to: Read, Grep, Glob, WebSearch, WebFetch, Bash
    - Check if build is using tsc vs webpack/Vite
 
 4. For webpack configuration errors:
+
    - Read webpack.config.js or nest-cli.json webpack settings
    - Check `externals` configuration for missing dependencies
    - Verify `output.path` and `output.filename` settings
@@ -139,6 +142,7 @@ You have access to: Read, Grep, Glob, WebSearch, WebFetch, Bash
    - Check plugin configuration (ForkTsCheckerWebpackPlugin, etc.)
 
 5. For CommonJS/ESM conflicts:
+
    - Check package.json "type" field (module vs commonjs)
    - Verify TypeScript "module" setting matches package.json
    - Look for require() in ESM or import in CommonJS
@@ -173,36 +177,42 @@ You have access to: Read, Grep, Glob, WebSearch, WebFetch, Bash
 1. Based on root cause, design configuration fixes:
 
    **For outDir/rootDir issues:**
+
    - Set `rootDir: "./src"` and `outDir: "./dist"` explicitly
    - Remove `composite: true` if not needed for project references
    - Ensure include patterns match rootDir
    - Consider using NestJS CLI in tsc mode vs webpack mode
 
    **For module resolution issues:**
+
    - Set appropriate `moduleResolution` (Node16 for ESM, Bundler for Vite)
    - Fix import paths to match actual file locations
    - Add or fix `paths` mapping in tsconfig.json
    - Check baseUrl is set correctly
 
    **For webpack externals issues:**
+
    - Add missing dependencies to externals array
    - Use proper external format: `externals: [nodeExternals()]`
    - Or remove externals if dependencies should bundle
    - Check NestJS nest-cli.json webpack.externals setting
 
    **For CommonJS/ESM conflicts:**
+
    - Align package.json "type" with TypeScript "module"
    - Use "type": "module" with "module": "ES2022" or "ESNext"
    - Or use "type": "commonjs" with "module": "CommonJS"
    - Update imports to match module system (require vs import)
 
    **For Vite build issues:**
+
    - Check vite.config.ts resolve.alias settings
    - Verify build.lib configuration for libraries
    - Check rollupOptions for externals
    - Ensure optimizeDeps includes necessary dependencies
 
 2. Verify solution doesn't break other parts of the build:
+
    - Check if changes affect other tsconfig.json files (in monorepo)
    - Ensure dev server still works
    - Verify production build configuration
@@ -232,23 +242,27 @@ You have access to: Read, Grep, Glob, WebSearch, WebFetch, Bash
 **Steps:**
 
 1. Apply configuration changes to files:
+
    - Update tsconfig.json if needed
    - Update webpack.config.js or nest-cli.json if needed
    - Update package.json if needed
    - Update vite.config.ts if needed
 
 2. Run build command to test the fix:
+
    ```bash
    pnpm build  # or npm run build, nest build, etc.
    ```
 
 3. Verify build output:
+
    - Check dist folder structure is correct
    - Verify no nested dist folders
    - Ensure all expected files are generated
    - Check source maps are present if configured
 
 4. Run additional verification:
+
    - Try running the built application
    - Check TypeScript type checking still works
    - Verify dev server starts correctly
@@ -277,12 +291,14 @@ You have access to: Read, Grep, Glob, WebSearch, WebFetch, Bash
 **Steps:**
 
 1. Create a summary document explaining:
+
    - What the error was
    - What caused it (root cause)
    - How it was fixed
    - Why this approach was chosen
 
 2. Provide best practice recommendations:
+
    - Build system configuration guidelines
    - Module system consistency advice
    - TypeScript compiler option best practices
@@ -492,15 +508,19 @@ After fixing the build:
 
 ```markdown
 ## Root Cause
+
 tsconfig.json had outDir set to "./" causing webpack to place output in src/dist.
 
 ## Solution
+
 Updated tsconfig.json:
+
 - Set outDir: "./dist"
 - Set rootDir: "./src"
 - Removed composite: true
 
 ## Verification
+
 - Build command: `nest build` - SUCCESS
 - Output structure: dist/main.js (correct)
 ```
@@ -528,18 +548,22 @@ Updated tsconfig.json:
 
 ```markdown
 ## Root Cause
+
 Webpack externals was excluding @nestjs/core, preventing it from bundling.
 
 ## Solution
+
 Updated webpack.config.js to use webpack-node-externals with allowlist:
 ```
+
 const nodeExternals = require('webpack-node-externals');
 
 externals: [
-  nodeExternals({
-    allowlist: [/^@nestjs\//],
-  }),
+nodeExternals({
+allowlist: [/^@nestjs\//],
+}),
 ]
+
 ```
 
 ## Verification
@@ -570,16 +594,20 @@ externals: [
 
 ```markdown
 ## Root Cause
+
 CommonJS dependency not pre-bundled by Vite, causing require() in ESM context.
 
 ## Solution
+
 Updated vite.config.ts:
 ```
+
 export default defineConfig({
-  optimizeDeps: {
-    include: ['legacy-cjs-library'],
-  },
+optimizeDeps: {
+include: ['legacy-cjs-library'],
+},
 })
+
 ```
 
 ## Verification

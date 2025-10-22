@@ -2,26 +2,33 @@
   "name": "@starter/db",
   "version": "0.1.0",
   "description": "Prisma database wrapper for fullstack-starter",
-  "type": "commonjs",
-  "main": "./src/index.js",
-  "types": "./src/index.d.ts",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.d.ts",
-      "default": "./src/index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./client": {
-      "types": "./src/client.d.ts",
-      "default": "./src/client.js"
-    }
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "require": "./dist/client.cjs"
+    },
+    "./package.json": "./package.json"
   },
-  "files": ["src", "dist", "prisma"],
+  "files": ["dist", "prisma"],
+  "sideEffects": false,
   "scripts": {
-    "build": "tsc",
+    "build": "tsup src/index.ts src/client.ts --dts --format esm,cjs --clean",
+    "dev": "tsup src/index.ts src/client.ts --dts --format esm,cjs --watch",
     "postinstall": "prisma generate",
     "lint": "biome check .",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests",
+    "clean": "rm -rf dist",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
@@ -35,6 +42,7 @@
     "@types/node": "^22.10.2",
     "jest": "^29.7.0",
     "prisma": "^6.2.1",
+    "tsup": "^8.5.0",
     "typescript": "^5.7.2"
   }
 }

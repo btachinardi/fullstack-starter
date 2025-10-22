@@ -1,6 +1,5 @@
 ---
 description: Run pnpm dev and systematically fix all errors until applications are running successfully
-allowed-tools: Task, TodoWrite
 model: claude-sonnet-4-5
 ---
 
@@ -11,6 +10,7 @@ Run `pnpm dev` and systematically fix all errors until development servers are r
 ## When to Use This Command
 
 Invoke `/dev:debug` when:
+
 - Development servers fail to start
 - Startup errors are preventing compilation or runtime
 - You need systematic error diagnosis and fixing
@@ -79,21 +79,25 @@ Invoke `/dev:debug` when:
 ### Available Subagents
 
 **Built-In:**
+
 - **lint-debugger** - Fixes TypeScript and linting errors systematically
 
 **Analysis Specialists (Research & Guidance):**
 
 - **root-cause-analyst**
+
   - **When:** Stuck >15 min, tried 2-3 solutions, considering hacks
   - **What:** Analyzes root cause, suggests 3-5 alternatives, ranks by best practices
   - **Use for:** Complex bugs, unclear root cause, evaluating solution approaches
 
 - **stack-trace-analyzer**
+
   - **When:** Complex multi-file stack traces, unclear error origin
   - **What:** Parses traces, identifies call sequence, pinpoints exact error location
   - **Use for:** NestJS dependency errors, async errors, webpack trace parsing
 
 - **common-error-researcher**
+
   - **When:** Unfamiliar error, framework-specific issue, need community solutions
   - **What:** Searches GitHub issues, Stack Overflow, finds proven solutions
   - **Use for:** Error messages you haven't seen, known framework bugs
@@ -106,6 +110,7 @@ Invoke `/dev:debug` when:
 **Domain Specialists (Configuration & Fixes):**
 
 - **monorepo-specialist**
+
   - **When:** PNPM workspace issues, package resolution, build output problems
   - **What:** Expert in NestJS + Turborepo + PNPM integration
   - **Use for:** Module resolution, workspace packages, monorepo build issues
@@ -122,6 +127,7 @@ Invoke `/dev:debug` when:
 When encountering errors, use this decision tree for strategy selection:
 
 **Basic Strategies:**
+
 1. **Port conflict?** → A (kill process or change port)
 2. **Module not found / dependency error?** → B (install packages)
 3. **Prisma error?** → C (generate client, validate schema)
@@ -130,16 +136,11 @@ When encountering errors, use this decision tree for strategy selection:
 6. **Import resolution / "Cannot find module"?** → F (fix paths)
 7. **Runtime crash / exception?** → G (analyze stack, fix code)
 
-**Advanced Strategies (when stuck):**
-8. **Error unclear / complex stack?** → L (stack-trace-analyzer)
-9. **Configuration question?** → I-B (best-practices-researcher)
-10. **Known error but unfamiliar?** → I (common-error-researcher)
-11. **Monorepo issue?** → J (monorepo-specialist)
-12. **Build problem?** → K (build-system-debugger)
-13. **Still stuck after multiple attempts?** → H (root-cause-analyst)
+**Advanced Strategies (when stuck):** 8. **Error unclear / complex stack?** → L (stack-trace-analyzer) 9. **Configuration question?** → I-B (best-practices-researcher) 10. **Known error but unfamiliar?** → I (common-error-researcher) 11. **Monorepo issue?** → J (monorepo-specialist) 12. **Build problem?** → K (build-system-debugger) 13. **Still stuck after multiple attempts?** → H (root-cause-analyst)
 
 **Multi-Specialist Pattern (when comprehensive analysis needed):**
 Invoke 3-4 specialists in PARALLEL (single response):
+
 - Stack Trace Analyzer (understand error)
 - Common Error Researcher (find solutions)
 - Best Practices Researcher (validate official docs)
@@ -193,6 +194,7 @@ Success → Monitoring commands
 ```
 
 **Execution Pattern:**
+
 - Phases execute sequentially (0 → 1 → 2 → 3)
 - Basic strategies (A-G) apply in priority order
 - Advanced strategies (H-L) invoked in parallel when stuck
@@ -211,6 +213,7 @@ Success → Monitoring commands
 1. **Check Prerequisites**
 
    Verify required tools installed:
+
    ```bash
    node --version    # Must be ≥ 20.18.0
    pnpm --version    # Must be ≥ 9.15.0
@@ -225,11 +228,13 @@ Success → Monitoring commands
 2. **Check Running Processes**
 
    Scan for existing dev server processes:
+
    ```bash
    ps aux | grep -E "(vite|nest)" | grep -v grep
    ```
 
    **If processes found:**
+
    - Present to user: "Dev servers appear to be running. Kill and restart? (Y/n)"
    - Yes: `kill -9 <PID>` for each process
    - No: Exit with message to stop servers manually
@@ -241,6 +246,7 @@ Success → Monitoring commands
 3. **Check Dependencies**
 
    Verify node_modules and lockfile:
+
    ```bash
    test -d node_modules && test -f pnpm-lock.yaml
    ```
@@ -252,12 +258,14 @@ Success → Monitoring commands
    **Validation:** [ ] Dependencies installed
 
 **Success Criteria:**
+
 - [ ] Node 20.18.0+ and PNPM 9.15.0+ installed
 - [ ] No conflicting dev server processes
 - [ ] Dependencies exist (`node_modules/` and `pnpm-lock.yaml`)
 - [ ] Environment ready to start dev servers
 
 **Failure Handling:**
+
 - **If:** Prerequisites missing → **Then:** Report error, exit (cannot proceed)
 - **If:** User declines to kill processes → **Then:** Exit with manual stop instructions
 - **If:** `pnpm install` fails → **Then:** Report error, exit (cannot proceed without deps)
@@ -279,11 +287,13 @@ Success → Monitoring commands
 1. **Start Development Servers with Monitoring**
 
    Execute monitored startup tool:
+
    ```bash
    pnpm tools dev:start-monitored --log /tmp/dev-output.log --pid /tmp/dev-pid.txt
    ```
 
    **NOTE:** This tool needs to be implemented. It should:
+
    - Start `pnpm dev` in background
    - Redirect stdout + stderr to log file
    - Save process ID to PID file
@@ -296,11 +306,13 @@ Success → Monitoring commands
 2. **Monitor Initial Startup**
 
    Wait for compilation and error detection:
+
    ```bash
    sleep 30
    ```
 
    Allow time for:
+
    - Initial compilation
    - Module resolution
    - TypeScript checking
@@ -313,6 +325,7 @@ Success → Monitoring commands
 3. **Categorize Errors**
 
    Parse log file and categorize errors:
+
    ```bash
    pnpm tools dev:categorize-errors /tmp/dev-output.log --format json
    ```
@@ -326,6 +339,7 @@ Success → Monitoring commands
 4. **Assess Server Health**
 
    Check process and HTTP endpoint status:
+
    ```bash
    pnpm tools dev:health-check --format json
    ```
@@ -339,6 +353,7 @@ Success → Monitoring commands
 5. **Create Error Summary**
 
    Aggregate results for user presentation:
+
    - Total error count
    - Breakdown by category
    - Most critical issues (blocking errors)
@@ -352,6 +367,7 @@ Success → Monitoring commands
 6. **Present to User (Approval Gate 1)**
 
    Show comprehensive error report:
+
    ```
    Development Server Debug - Error Summary
 
@@ -382,6 +398,7 @@ Success → Monitoring commands
    ```
 
    **User Options:**
+
    - Y: Continue to Phase 2
    - n: Exit (manual debugging)
    - Timeout (30s): Default yes
@@ -391,6 +408,7 @@ Success → Monitoring commands
 7. **Stop Dev Servers**
 
    Clean shutdown for fixing:
+
    ```bash
    kill $(cat /tmp/dev-pid.txt 2>/dev/null) 2>/dev/null
    ```
@@ -400,6 +418,7 @@ Success → Monitoring commands
    **Validation:** [ ] Servers stopped
 
 **Success Criteria:**
+
 - [ ] Dev servers started (even with errors)
 - [ ] All errors captured in log file
 - [ ] Errors categorized into 7 categories
@@ -409,11 +428,13 @@ Success → Monitoring commands
 - [ ] User informed and approved
 
 **Failure Handling:**
+
 - **If:** Dev servers crash immediately → **Then:** Report to user, attempt recovery in Phase 2
 - **If:** Log file empty → **Then:** Use stderr as fallback
 - **If:** User declines fixes → **Then:** Exit gracefully
 
 **Tools Used:**
+
 - `pnpm tools dev:start-monitored` (NOTE: To be implemented)
 - `pnpm tools dev:categorize-errors` (NOTE: To be implemented)
 - `pnpm tools dev:health-check` (NOTE: To be implemented)
@@ -435,6 +456,7 @@ Success → Monitoring commands
 Apply fixes in **strict priority order** based on error categories. This order ensures dependencies are resolved before dependent systems:
 
 **Priority Order:**
+
 1. Port Conflicts (A) - CRITICAL: Blocks all startups
 2. Dependencies (B) - HIGH: Required before code runs
 3. Prisma (C) - HIGH: Required for API functionality
@@ -444,6 +466,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 7. Runtime (G) - LOW: Happens after startup
 
 **Delegation Strategy:**
+
 - **Basic strategies (A-G):** Handle standard, well-understood error types
 - **Advanced strategies (H-L):** Invoke specialists when stuck (>15 min OR 3 failed attempts)
 - **Parallel invocation:** All advanced specialists invoked simultaneously for 8x efficiency
@@ -461,6 +484,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 **Priority:** 1 (CRITICAL - must fix first)
 
 **Steps:**
+
 1. Identify conflicting process: `lsof -i :3000 -i :3001 | grep LISTEN`
 2. Present options to user:
    - **Option A:** Kill process: `kill -9 [PID]`
@@ -469,6 +493,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 4. Verify ports free: `lsof -i :3000 -i :3001` (should return empty)
 
 **Validation:**
+
 - [ ] Port 3000 is free
 - [ ] Port 3001 is free
 - [ ] No conflicting processes remain
@@ -488,6 +513,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 **Priority:** 2 (HIGH - required before code runs)
 
 **Steps:**
+
 1. Extract missing package names from error messages
 2. Determine workspace context (which app needs dependency)
 3. Install missing packages:
@@ -497,6 +523,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 5. Verify: `pnpm install --frozen-lockfile` (should succeed)
 
 **Validation:**
+
 - [ ] All missing packages installed
 - [ ] No version conflicts remain
 - [ ] `pnpm install --frozen-lockfile` succeeds
@@ -517,6 +544,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 **Priority:** 3 (HIGH - API cannot function without Prisma)
 
 **Steps:**
+
 1. Validate schema: `cd apps/api && pnpm prisma validate`
    - If invalid: Fix schema syntax, re-validate
 2. Generate client: `pnpm prisma generate`
@@ -524,6 +552,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 4. Verify DB connection: `pnpm prisma db pull` (if needed)
 
 **Validation:**
+
 - [ ] Schema valid (`prisma validate` succeeds)
 - [ ] Client generated (files in `packages/db/node_modules/.prisma/client/`)
 - [ ] No migration errors
@@ -544,6 +573,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 **Priority:** 4 (MEDIUM - required for configuration)
 
 **Steps:**
+
 1. Identify missing variables from error messages
 2. Check for `.env.example`: `find . -name ".env.example"`
 3. Create/update `.env`:
@@ -553,6 +583,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 5. Validate: Check if env errors resolved
 
 **Validation:**
+
 - [ ] All required `.env` files exist
 - [ ] All required variables set
 - [ ] Values valid for dev environment
@@ -575,6 +606,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 **Steps:**
 
 **If >10 TypeScript errors (DELEGATE):**
+
 1. Invoke lint-debugger subagent via Task tool:
    ```
    Task(
@@ -587,6 +619,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 3. Review fixes, verify zero errors
 
 **If <10 TypeScript errors (MANUAL):**
+
 1. Run: `pnpm typecheck 2>&1 | tee /tmp/typecheck-errors.log`
 2. For each error:
    - Read file at error location
@@ -596,6 +629,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 3. Verify: `pnpm typecheck` (repeat until zero errors)
 
 **Validation:**
+
 - [ ] Zero TypeScript errors
 - [ ] Type safety standards followed (no `any`, no `!`)
 - [ ] Type guards used instead of assertions
@@ -611,11 +645,12 @@ Apply fixes in **strict priority order** based on error categories. This order e
 
 **What it does:** Fixes import paths, updates tsconfig path mappings, resolves module resolution
 
-**Why use this:** Import errors prevent bundling. Common in monorepos with workspace:* and path mappings.
+**Why use this:** Import errors prevent bundling. Common in monorepos with workspace:\* and path mappings.
 
 **Priority:** 6 (MEDIUM - prevents bundling)
 
 **Steps:**
+
 1. For each "module not found":
    - Verify file exists at path
    - Check path correctness (relative vs absolute vs alias)
@@ -628,6 +663,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 4. Verify: `pnpm typecheck` should resolve imports
 
 **Validation:**
+
 - [ ] All import paths resolve
 - [ ] No "Cannot find module" errors
 - [ ] tsconfig paths align with structure
@@ -648,6 +684,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 **Priority:** 7 (LOW - only after compilation succeeds)
 
 **Steps:**
+
 1. Analyze stack trace from `/tmp/dev-output.log`
    - Identify error message
    - Find file and line number
@@ -662,6 +699,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 5. Test: Restart dev server, monitor for resolution
 
 **Validation:**
+
 - [ ] Runtime error no longer in logs
 - [ ] Server starts and stays running
 - [ ] Null/undefined handled
@@ -686,6 +724,7 @@ Apply fixes in **strict priority order** based on error categories. This order e
 **Priority:** HIGH (when stuck)
 
 **Invocation:**
+
 ```
 Task(
   subagent_type="root-cause-analyst",
@@ -709,6 +748,7 @@ Task(
 **Expected Output:** Diagnostic report with ranked solutions and trade-off analysis
 
 **Validation:**
+
 - [ ] Root cause identified (not symptoms)
 - [ ] Solution aligns with best practices
 - [ ] No technical debt introduced
@@ -726,6 +766,7 @@ Task(
 **Priority:** MEDIUM (use early when error recognizable but unfamiliar)
 
 **Invocation:**
+
 ```
 Task(
   subagent_type="common-error-researcher",
@@ -752,6 +793,7 @@ Task(
 **Expected Output:** Top 5 solutions with sources, dates, success indicators
 
 **Validation:**
+
 - [ ] Solution from credible source
 - [ ] Stack versions match
 - [ ] Not a one-off workaround
@@ -769,6 +811,7 @@ Task(
 **Priority:** MEDIUM (use when configuration questions arise)
 
 **Invocation:**
+
 ```
 Task(
   subagent_type="best-practices-researcher",
@@ -795,6 +838,7 @@ Task(
 **Expected Output:** Official recommendations with source URLs
 
 **Validation:**
+
 - [ ] All claims have official URLs
 - [ ] Versions compatible
 - [ ] Official pattern understood
@@ -812,6 +856,7 @@ Task(
 **Priority:** HIGH (when monorepo errors detected)
 
 **Invocation:**
+
 ```
 Task(
   subagent_type="monorepo-specialist",
@@ -842,8 +887,9 @@ Task(
 **Expected Output:** Configuration fixes (package.json, tsconfig, webpack)
 
 **Validation:**
+
 - [ ] package.json exports correct
-- [ ] workspace:* dependencies resolve
+- [ ] workspace:\* dependencies resolve
 - [ ] tsconfig paths aligned
 - [ ] Webpack externals configured
 
@@ -860,6 +906,7 @@ Task(
 **Priority:** HIGH (when build errors persist)
 
 **Invocation:**
+
 ```
 Task(
   subagent_type="build-system-debugger",
@@ -891,6 +938,7 @@ Task(
 **Expected Output:** Build configuration fixes
 
 **Validation:**
+
 - [ ] Config follows patterns
 - [ ] Compiler options correct
 - [ ] Module system consistent
@@ -909,6 +957,7 @@ Task(
 **Priority:** MEDIUM (use early when trace complex)
 
 **Invocation:**
+
 ```
 Task(
   subagent_type="stack-trace-analyzer",
@@ -937,6 +986,7 @@ Task(
 **Expected Output:** File:line, call sequence, root cause identification
 
 **Validation:**
+
 - [ ] Exact location identified
 - [ ] Root cause understood
 - [ ] Call sequence makes sense
@@ -963,6 +1013,7 @@ All run in parallel, results compared, consensus synthesized.
 ---
 
 **Success Criteria:**
+
 - [ ] Appropriate strategies selected
 - [ ] Fixes applied in priority order
 - [ ] Each fix validated before next
@@ -972,6 +1023,7 @@ All run in parallel, results compared, consensus synthesized.
 - [ ] Zero blocking errors remain
 
 **Failure Handling:**
+
 - **If:** Fix fails validation → Try alternative, escalate if stuck 3 times
 - **If:** Advanced strategies fail → Report to user, manual intervention
 - **If:** >3 consecutive failures → Halt, report state
@@ -993,6 +1045,7 @@ All run in parallel, results compared, consensus synthesized.
 1. **Clear Previous State**
 
    Remove old logs and temporary files:
+
    ```bash
    rm -f /tmp/dev-output.log /tmp/dev-pid.txt
    ```
@@ -1004,6 +1057,7 @@ All run in parallel, results compared, consensus synthesized.
 2. **Restart Development Servers**
 
    Fresh startup with monitoring:
+
    ```bash
    pnpm tools dev:start-monitored --log /tmp/dev-output.log --pid /tmp/dev-pid.txt
    ```
@@ -1015,6 +1069,7 @@ All run in parallel, results compared, consensus synthesized.
 3. **Monitor Startup (60 seconds)**
 
    Wait for complete startup (longer than Phase 1 for thorough validation):
+
    ```bash
    sleep 60
    ```
@@ -1026,6 +1081,7 @@ All run in parallel, results compared, consensus synthesized.
 4. **Comprehensive Health Validation**
 
    Check all health indicators:
+
    ```bash
    pnpm tools dev:health-check --format json
    ```
@@ -1039,17 +1095,20 @@ All run in parallel, results compared, consensus synthesized.
 5. **Scan for Errors**
 
    Search log for error patterns:
+
    ```bash
    grep -iE "(error|exception|fail|critical)" /tmp/dev-output.log | tail -n 20
    ```
 
    **If errors found:**
+
    - Categorize new errors
    - Return to Phase 2
    - Apply additional fixes
    - Iterate until clean
 
    **If no errors:**
+
    - Proceed to success reporting
 
    **Expected Output:** Empty result OR error list
@@ -1059,11 +1118,13 @@ All run in parallel, results compared, consensus synthesized.
 6. **Verify Compilation Success**
 
    Check for success messages:
+
    ```bash
    grep -E "(Compiled successfully|successfully started)" /tmp/dev-output.log
    ```
 
    Look for:
+
    - Web: "Compiled successfully", "ready in [time]"
    - API: "Nest application successfully started"
 
@@ -1074,6 +1135,7 @@ All run in parallel, results compared, consensus synthesized.
 7. **Optional: Test Hot Reload**
 
    Validate watch mode:
+
    ```bash
    touch apps/web/src/App.tsx
    sleep 5
@@ -1081,6 +1143,7 @@ All run in parallel, results compared, consensus synthesized.
    ```
 
    Check for:
+
    - Change detected
    - Recompilation
    - No errors
@@ -1100,6 +1163,7 @@ All run in parallel, results compared, consensus synthesized.
 9. **Provide Monitoring Instructions**
 
    Tell user how to monitor servers:
+
    ```
    Monitoring Commands:
    - View logs: tail -f /tmp/dev-output.log
@@ -1122,6 +1186,7 @@ All run in parallel, results compared, consensus synthesized.
     **Validation:** [ ] Servers left running
 
 **Success Criteria:**
+
 - [ ] Dev servers restarted successfully
 - [ ] Both web and API accessible
 - [ ] Zero errors in last 60 seconds
@@ -1133,12 +1198,14 @@ All run in parallel, results compared, consensus synthesized.
 - [ ] Servers left running
 
 **Failure Handling:**
+
 - **If:** Errors found → Return to Phase 2 with error details
 - **If:** Health checks fail → Investigate failure (process crash, port, compilation)
 - **If:** Hot reload broken → Not blocking, report but mark success if servers running
 - **If:** Validation fails 3 times → Halt, report persistent issues
 
 **Tools Used:**
+
 - `pnpm tools dev:start-monitored` (NOTE: To be implemented)
 - `pnpm tools dev:health-check` (NOTE: To be implemented)
 
@@ -1317,6 +1384,7 @@ Your development environment is ready!
 ## Quality Standards
 
 ### Error Detection
+
 - All error types captured from output
 - Errors categorized correctly (7 categories)
 - Error counts accurate
@@ -1324,6 +1392,7 @@ Your development environment is ready!
 - No errors missed or ignored
 
 ### Fix Quality
+
 - Fixes minimal and targeted
 - Root causes addressed (not symptoms)
 - Code follows project conventions
@@ -1332,12 +1401,14 @@ Your development environment is ready!
 - No regressions introduced
 
 ### Delegation Quality
+
 - Appropriate delegation to lint-debugger for extensive TS errors
 - Clear communication with delegated agents
 - Agent results validated before proceeding
 - Fallback to manual if delegation fails
 
 ### Verification Thoroughness
+
 - Both web and API apps verified
 - Health checks on endpoints
 - Log output scanned for errors
@@ -1345,6 +1416,7 @@ Your development environment is ready!
 - Servers left running after success
 
 ### Communication Quality
+
 - Clear progress updates during each phase
 - Error summaries actionable
 - Fix strategies explained
@@ -1356,6 +1428,7 @@ Your development environment is ready!
 ## Constraints & Boundaries
 
 ### Must Do
+
 - Run initial assessment before fixing
 - Categorize all errors by type
 - Apply fixes in priority order (A → B → C → D → E → F → G)
@@ -1365,6 +1438,7 @@ Your development environment is ready!
 - Provide monitoring instructions
 
 ### Must Not Do
+
 - Skip error assessment (need full picture)
 - Fix errors randomly without prioritization
 - Make config changes without understanding
@@ -1374,6 +1448,7 @@ Your development environment is ready!
 - Proceed if verification fails without re-fixing
 
 ### In Scope
+
 - Starting and monitoring dev servers
 - Analyzing error output
 - Fixing TS, build, dependency, Prisma, env errors
@@ -1384,6 +1459,7 @@ Your development environment is ready!
 - Providing monitoring guidance
 
 ### Out of Scope
+
 - Test failures (use `test-debugger`)
 - Full CI pipeline (use `/dev:validate`)
 - Committing fixes (suggest `/git:commit`)
@@ -1406,6 +1482,7 @@ Your development environment is ready!
 ## Changelog
 
 **Version 2.0** (2025-10-22)
+
 - Optimized structure following comprehensive PRD
 - Standardized all strategies with "When/What/Why/Priority" pattern
 - Introduced tool abstractions (dev:start-monitored, dev:categorize-errors, dev:health-check)
@@ -1417,5 +1494,6 @@ Your development environment is ready!
 - Changed allowed-tools to Task and TodoWrite only (strategic orchestration)
 
 **Version 1.0** (2025-10-21)
+
 - Initial implementation with Phase 0 advanced strategies
 - 6 specialized subagents, 4 phases, 12 strategies

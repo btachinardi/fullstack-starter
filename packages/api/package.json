@@ -2,25 +2,32 @@
   "name": "@starter/api",
   "version": "0.1.0",
   "description": "NestJS utilities for fullstack-starter",
-  "type": "commonjs",
-  "main": "./dist/index.js",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./dtos": {
       "types": "./dist/dtos/index.d.ts",
-      "default": "./dist/dtos/index.js"
-    }
+      "import": "./dist/dtos/index.js",
+      "require": "./dist/dtos/index.cjs"
+    },
+    "./package.json": "./package.json"
   },
-  "files": ["src", "dist"],
+  "files": ["dist"],
+  "sideEffects": false,
   "scripts": {
-    "build": "tsc",
+    "build": "tsup src/index.ts src/dtos/index.ts --dts --format esm,cjs --clean",
+    "dev": "tsup src/index.ts src/dtos/index.ts --dts --format esm,cjs --watch",
     "lint": "biome check .",
     "typecheck": "tsc --noEmit",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
@@ -33,6 +40,7 @@
     "@types/node": "^22.10.2",
     "jest": "^29.7.0",
     "reflect-metadata": "^0.2.2",
+    "tsup": "^8.5.0",
     "typescript": "^5.7.2"
   }
 }

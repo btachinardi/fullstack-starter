@@ -1,6 +1,5 @@
 ---
 description: Orchestrate all validation agents to check and systematically fix all project issues until CI passes
-allowed-tools: Bash(pnpm *:*), Task, Read
 model: claude-sonnet-4-5
 ---
 
@@ -15,6 +14,7 @@ Run comprehensive validation across the entire project and systematically fix al
 ## Context & Prerequisites
 
 **Project Context:**
+
 - CI pipeline validates: bootstrap, lint, typecheck, test, build, security
 - Specialized agents handle validation systematically:
   - `ci-debugger`: Full CI orchestration (recommended)
@@ -24,11 +24,13 @@ Run comprehensive validation across the entire project and systematically fix al
 - Project may be monorepo or single-project setup
 
 **Specialized Validation Agents:**
+
 - **ci-debugger**: Runs full CI pipeline, delegates to lint/test agents as needed, handles bootstrap/build/security
 - **lint-debugger**: Fixes linting errors and type-checking failures
 - **test-debugger**: Debugs and fixes test failures systematically
 
 **Prerequisites:**
+
 - Git repository initialized
 - `pnpm-lock.yaml` exists (will be created if missing)
 - Validation agent definitions exist in `.claude/agents/validation/`
@@ -45,17 +47,20 @@ Run comprehensive validation across the entire project and systematically fix al
 1. **Quick Status Check**
 
    Run a fast assessment of project health:
+
    ```bash
    pnpm ci:local
    ```
 
    If `pnpm-lock.yaml` is missing:
+
    - Run `pnpm install` first to bootstrap dependencies
    - Then run `pnpm ci:local`
 
 2. **Parse CI Results**
 
    Analyze the output to identify which jobs are failing:
+
    - Setup / Bootstrap: Dependency resolution issues
    - Lint: Code style violations (ESLint, Prettier)
    - Type Check: TypeScript compilation errors
@@ -66,6 +71,7 @@ Run comprehensive validation across the entire project and systematically fix al
 3. **Count Total Issues**
 
    For each failing job type, count:
+
    - Total errors in lint job
    - Total type-checking errors
    - Total test failures
@@ -75,6 +81,7 @@ Run comprehensive validation across the entire project and systematically fix al
 4. **Present Assessment to User**
 
    Show summary:
+
    ```
    Validation Assessment:
    - Bootstrap: [PASS/FAIL] - [Details]
@@ -90,12 +97,14 @@ Run comprehensive validation across the entire project and systematically fix al
 5. **Determine Strategy**
 
    Choose validation approach:
+
    - **Default (Recommended)**: Use ci-debugger for comprehensive CI pipeline validation
    - **Alternative**: Use individual agents for faster iteration during development
 
    Present both options to user if there are multiple failure types.
 
 **Validation:**
+
 - [ ] Initial CI run completed
 - [ ] All failing jobs identified
 - [ ] Error counts captured
@@ -115,6 +124,7 @@ Run comprehensive validation across the entire project and systematically fix al
 #### **Option A: Full CI Validation (RECOMMENDED)**
 
 **When to use:**
+
 - Before pushing to GitHub
 - Before creating a PR
 - When ensuring complete CI pipeline health
@@ -126,6 +136,7 @@ Run comprehensive validation across the entire project and systematically fix al
 1. **Invoke ci-debugger Agent**
 
    Use the Task tool to delegate complete CI validation:
+
    ```
    Task(
      subagent_type="ci-debugger",
@@ -137,6 +148,7 @@ Run comprehensive validation across the entire project and systematically fix al
 2. **Wait for ci-debugger Completion**
 
    The ci-debugger will:
+
    - Run complete CI pipeline
    - Fix bootstrap issues first (dependencies)
    - Fix type-checking errors (may delegate to lint-debugger)
@@ -149,6 +161,7 @@ Run comprehensive validation across the entire project and systematically fix al
 3. **Review ci-debugger Results**
 
    The agent will return:
+
    - Complete CI job status (all should be PASS)
    - Summary of all fixes applied
    - Files modified by category
@@ -160,6 +173,7 @@ Run comprehensive validation across the entire project and systematically fix al
    Once ci-debugger reports 100% CI success, move to final validation.
 
 **Delegation Summary:**
+
 - ci-debugger handles complete orchestration
 - Automatically delegates to lint-debugger when: >50 lint errors OR >20 type errors
 - Automatically delegates to test-debugger when: >10 test failures
@@ -170,6 +184,7 @@ Run comprehensive validation across the entire project and systematically fix al
 #### **Option B: Individual Agent Validation (FASTER ITERATION)**
 
 **When to use:**
+
 - During active development
 - When only specific job types are failing
 - For faster iteration cycles
@@ -180,6 +195,7 @@ Run comprehensive validation across the entire project and systematically fix al
 1. **Fix Linting and Type-Checking First** (if failing)
 
    If lint or typecheck jobs failed in Phase 1:
+
    ```
    Task(
      subagent_type="lint-debugger",
@@ -193,6 +209,7 @@ Run comprehensive validation across the entire project and systematically fix al
 2. **Fix Test Failures** (if tests failed)
 
    If test job failed in Phase 1:
+
    ```
    Task(
      subagent_type="test-debugger",
@@ -206,11 +223,13 @@ Run comprehensive validation across the entire project and systematically fix al
 3. **Validate Build** (if not yet validated)
 
    Run build manually to ensure compilation succeeds:
+
    ```bash
    pnpm build
    ```
 
    If build fails:
+
    - Check error messages for missing imports or configuration issues
    - Fix build configuration or missing dependencies
    - Re-run build until successful
@@ -218,6 +237,7 @@ Run comprehensive validation across the entire project and systematically fix al
 4. **Handle Security Issues** (if present)
 
    If security jobs failed:
+
    - Review Gitleaks output for exposed secrets
    - Remove secrets or add to `.gitleaksignore` if false positives
    - Update vulnerable dependencies: `pnpm update [package]`
@@ -228,6 +248,7 @@ Run comprehensive validation across the entire project and systematically fix al
    Once all individual agents report success, move to final validation.
 
 **Delegation Summary:**
+
 - lint-debugger fixes linting and type-checking
 - test-debugger fixes test failures
 - Manual intervention for build and security (no specialized agents)
@@ -236,6 +257,7 @@ Run comprehensive validation across the entire project and systematically fix al
 ---
 
 **Validation:**
+
 - [ ] Appropriate validation strategy executed
 - [ ] All delegated agents completed successfully
 - [ ] Fixes applied systematically
@@ -253,11 +275,13 @@ Run comprehensive validation across the entire project and systematically fix al
 1. **Run Complete CI Pipeline**
 
    Execute final validation to confirm all jobs pass:
+
    ```bash
    pnpm ci:local
    ```
 
    This runs all jobs in sequence:
+
    - Setup / Bootstrap Check
    - Lint
    - Type Check
@@ -269,6 +293,7 @@ Run comprehensive validation across the entire project and systematically fix al
 2. **Verify 100% Success Rate**
 
    Check that ALL jobs pass:
+
    - ✅ Setup / Bootstrap: PASSED
    - ✅ Lint: PASSED (0 errors, 0 warnings)
    - ✅ Type Check: PASSED (0 TypeScript errors)
@@ -280,10 +305,12 @@ Run comprehensive validation across the entire project and systematically fix al
 3. **Compile Summary of Changes**
 
    If using ci-debugger (Option A):
+
    - Use summary from ci-debugger output
    - Include delegation details
 
    If using individual agents (Option B):
+
    - Compile summaries from lint-debugger and test-debugger
    - Add build and security fixes performed manually
 
@@ -294,11 +321,13 @@ Run comprehensive validation across the entire project and systematically fix al
 5. **Suggest Next Steps**
 
    Based on project state:
+
    - If validation was invoked before commit: Suggest `/git:commit`
    - If validation was for PR readiness: Confirm ready to push
    - If validation was for CI debugging: Confirm CI will pass in GitHub Actions
 
 **Validation:**
+
 - [ ] Final CI run executed
 - [ ] All jobs passing (100% success)
 - [ ] No errors or warnings in any job
@@ -337,6 +366,7 @@ Proceeding with [chosen approach]...
 ### Phase 2: Validation Execution
 
 **Option A Output:**
+
 ```
 Invoking ci-debugger agent for comprehensive CI validation...
 
@@ -357,6 +387,7 @@ ci-debugger Summary:
 ```
 
 **Option B Output:**
+
 ```
 Invoking individual validation agents...
 
@@ -433,6 +464,7 @@ Your project is now validated and ready! 🚀
 ## Quality Standards
 
 ### Orchestration Quality
+
 - Appropriate validation strategy selected based on assessment
 - Correct agents delegated for each failure type
 - All delegated agents complete successfully
@@ -440,6 +472,7 @@ Your project is now validated and ready! 🚀
 - User informed at key decision points
 
 ### Validation Completeness
+
 - All CI jobs pass with exit code 0
 - Bootstrap: Dependencies resolved
 - Lint: 0 errors, 0 warnings
@@ -449,6 +482,7 @@ Your project is now validated and ready! 🚀
 - Security: No issues detected (or gracefully skipped if tools missing)
 
 ### Fix Quality
+
 - Fixes are minimal and targeted (delegated agents ensure this)
 - Code follows project conventions
 - Functionality preserved during fixes
@@ -456,6 +490,7 @@ Your project is now validated and ready! 🚀
 - Build artifacts are functional
 
 ### Communication Quality
+
 - Clear progress updates during validation
 - Assessment summary before fixing
 - Delegation transparency (which agents used)
@@ -467,6 +502,7 @@ Your project is now validated and ready! 🚀
 ## Constraints & Boundaries
 
 ### Must Do
+
 - Run initial CI assessment before fixing
 - Choose appropriate validation strategy (default to ci-debugger)
 - Delegate to specialized agents for their domains
@@ -475,6 +511,7 @@ Your project is now validated and ready! 🚀
 - Suggest `/git:commit` after successful validation
 
 ### Must Not Do
+
 - Skip initial assessment (need to know what's broken)
 - Attempt to fix issues directly (delegate to agents)
 - Proceed if agents fail without reporting to user
@@ -485,6 +522,7 @@ Your project is now validated and ready! 🚀
 ### Scope Management
 
 **In Scope:**
+
 - Orchestrating validation workflow
 - Running initial CI assessment
 - Invoking appropriate validation agents
@@ -493,6 +531,7 @@ Your project is now validated and ready! 🚀
 - Suggesting next steps
 
 **Out of Scope:**
+
 - Fixing issues directly (delegate to ci-debugger, lint-debugger, test-debugger)
 - Analyzing specific error messages (agents handle this)
 - Determining fix strategies (agents decide)
@@ -509,6 +548,7 @@ Your project is now validated and ready! 🚀
 **User:** `/dev:validate`
 
 **Phase 1: Assessment**
+
 ```
 Running validation assessment...
 
@@ -527,6 +567,7 @@ Proceeding with ci-debugger...
 ```
 
 **Phase 2: Validation**
+
 ```
 Invoking ci-debugger agent...
 
@@ -544,6 +585,7 @@ ci-debugger complete:
 ```
 
 **Phase 3: Final Report**
+
 ```
 ✅ Validation Complete
 
@@ -570,6 +612,7 @@ Next Steps:
 **User:** `/dev:validate`
 
 **Phase 1: Assessment**
+
 ```
 Running validation assessment...
 
@@ -592,6 +635,7 @@ Proceeding with Option B (Individual Agents)...
 ```
 
 **Phase 2: Validation**
+
 ```
 Invoking lint-debugger for targeted fix...
 
@@ -604,6 +648,7 @@ lint-debugger complete: Fixed 12 errors across 4 files
 ```
 
 **Phase 3: Final Report**
+
 ```
 ✅ Validation Complete
 
@@ -626,6 +671,7 @@ Next Steps:
 **User:** `/dev:validate`
 
 **Phase 1: Assessment**
+
 ```
 Running validation assessment...
 
@@ -645,6 +691,7 @@ No fixes needed - project is already in a clean state.
 ```
 
 **Early Exit - No Phase 2 or Phase 3 needed**
+
 ```
 ✅ Validation Complete
 
@@ -681,6 +728,7 @@ Next Steps:
 **Typical Usage Pattern:**
 
 1. **During Development:**
+
    ```
    [Make changes]
    /dev:validate  (quick check, use Option B for speed)
@@ -689,6 +737,7 @@ Next Steps:
    ```
 
 2. **Before PR:**
+
    ```
    /dev:validate  (full CI validation, use Option A)
    /git:commit
