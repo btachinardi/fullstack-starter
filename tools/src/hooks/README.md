@@ -116,8 +116,8 @@ The `hook-input.ts` service provides strongly-typed parsing of hook inputs.
 ### Quick Usage
 
 ```typescript
-import { createSubagentStopHook } from "../services/hook-input";
-import type { SubagentStopInput } from "../services/hook-input";
+import { createSubagentStopHook } from '../services/hook-input"';
+import type { SubagentStopInput } from '../services/hook-input"';
 
 async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
   console.log("Session ID:", input.session_id);
@@ -171,8 +171,8 @@ UserPromptSubmitInput {
 ### Using the HookHandler Base Class
 
 ```typescript
-import { HookHandler } from "../services/hook-input";
-import type { SubagentStopInput } from "../services/hook-input";
+import { HookHandler } from '../services/hook-input"';
+import type { SubagentStopInput } from '../services/hook-input"';
 
 class MySubagentHook extends HookHandler<SubagentStopInput> {
   validateInput(input: HookInput): input is SubagentStopInput {
@@ -196,8 +196,8 @@ handler.run();
 
 ```typescript
 #!/usr/bin/env node
-import { createSubagentStopHook } from "../services/hook-input";
-import type { SubagentStopInput } from "../services/hook-input";
+import { createSubagentStopHook } from '../services/hook-input"';
+import type { SubagentStopInput } from '../services/hook-input"';
 
 async function handleHook(input: SubagentStopInput): Promise<void> {
   // Your strongly-typed hook logic
@@ -215,8 +215,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 ```typescript
 #!/usr/bin/env node
-import { HookHandler, HookInputParser } from "../services/hook-input";
-import type { PreToolUseInput } from "../services/hook-input";
+import { HookHandler, HookInputParser } from '../services/hook-input"';
+import type { PreToolUseInput } from '../services/hook-input"';
 
 class MyToolHook extends HookHandler<PreToolUseInput> {
   validateInput(input: HookInput): input is PreToolUseInput {
@@ -239,7 +239,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 ```typescript
 #!/usr/bin/env node
-import { HookInputParser } from "../services/hook-input";
+import { HookInputParser } from '../services/hook-input"';
 
 async function main() {
   const input = await HookInputParser.parseStdin();
@@ -332,8 +332,8 @@ pnpm logs:tools
 ### Using Logging in Hooks
 
 ```typescript
-import { createHookLogger } from "../services/logger";
-import type { SubagentStopInput } from "../services/hook-input";
+import { createHookLogger } from '../services/logger"';
+import type { SubagentStopInput } from '../services/hook-input"';
 
 async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
   // Create logger with session context
@@ -445,9 +445,9 @@ echo '{
 ### Example: Tool Usage Logger
 
 ```typescript
-import { createPostToolUseHook } from "../services/hook-input";
-import type { PostToolUseInput } from "../services/hook-input";
-import { appendFile } from "node:fs/promises";
+import { createPostToolUseHook } from '../services/hook-input"';
+import type { PostToolUseInput } from '../services/hook-input"';
+import { appendFile } from 'node:fs/promises"';
 
 async function logToolUsage(input: PostToolUseInput): Promise<void> {
   const log = `${new Date().toISOString()} | ${input.tool_name} | ${
@@ -462,8 +462,8 @@ const main = createPostToolUseHook(logToolUsage);
 ### Example: Bash Command Validator
 
 ```typescript
-import { createPreToolUseHook } from "../services/hook-input";
-import type { PreToolUseInput } from "../services/hook-input";
+import { createPreToolUseHook } from '../services/hook-input"';
+import type { PreToolUseInput } from '../services/hook-input"';
 
 async function validateBashCommand(input: PreToolUseInput): Promise<void> {
   if (input.tool_name !== "Bash") return;

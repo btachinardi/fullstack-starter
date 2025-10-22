@@ -58,7 +58,7 @@ interface AgentFrontmatter {
  */
 async function parseAgentFrontmatter(
   agentType: string,
-  logger: Logger,
+  logger: Logger
 ): Promise<AgentFrontmatter | null> {
   const agentsDir = join(REPO_ROOT, '.claude', 'agents');
 
@@ -149,7 +149,7 @@ async function shouldAutoCommit(agentType: string, logger: Logger): Promise<bool
 
   if (!frontmatter) {
     await logger.warn(
-      `No agent file found for ${agentType}, defaulting to autoCommit: false (safe default)`,
+      `No agent file found for ${agentType}, defaulting to autoCommit: false (safe default)`
     );
     return false; // Safe default: do not commit if we can't find the agent file
   }
@@ -269,7 +269,7 @@ Since this is from a hook, auto-approve and execute the commit without user inte
 // ============================================================================
 
 async function getLatestSubagentInvocation(
-  transcriptPath: string,
+  transcriptPath: string
 ): Promise<SubagentInvocation | null> {
   try {
     const invocations = await sessionAgents(transcriptPath);

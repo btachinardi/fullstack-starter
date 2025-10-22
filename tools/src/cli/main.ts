@@ -68,10 +68,10 @@ session
       console.log(`${chalk.cyan('Input Tokens:')}        ${result.tokens.input.toLocaleString()}`);
       console.log(`${chalk.cyan('Output Tokens:')}       ${result.tokens.output.toLocaleString()}`);
       console.log(
-        `${chalk.cyan('Cache Creation:')}      ${result.tokens.cacheCreation.toLocaleString()}`,
+        `${chalk.cyan('Cache Creation:')}      ${result.tokens.cacheCreation.toLocaleString()}`
       );
       console.log(
-        `${chalk.cyan('Cache Read:')}          ${result.tokens.cacheRead.toLocaleString()}`,
+        `${chalk.cyan('Cache Read:')}          ${result.tokens.cacheRead.toLocaleString()}`
       );
       console.log(`${chalk.cyan('Total:')}               ${result.tokens.total.toLocaleString()}`);
     } catch (error) {
@@ -99,7 +99,7 @@ session
 
       if ('toolUsage' in result) {
         spinner.succeed(
-          `Found ${result.toolUsage.reduce((sum, t) => sum + t.count, 0)} tool use(s)`,
+          `Found ${result.toolUsage.reduce((sum, t) => sum + t.count, 0)} tool use(s)`
         );
         console.log(chalk.bold('\n🔧 Tool Usage\n'));
         for (const { toolName, count } of result.toolUsage) {
@@ -181,7 +181,7 @@ session
         console.error(chalk.red(getErrorMessage(error)));
         process.exit(1);
       }
-    },
+    }
   );
 
 // ----------------------------------------------------------------------------
@@ -345,7 +345,7 @@ session
   .option(
     '--max-output-length <chars>',
     'Maximum output length before truncation (default: no limit)',
-    '10000',
+    '10000'
   )
   .option('--truncate', 'Enable output truncation')
   .action(
@@ -358,7 +358,7 @@ session
         systemMessages?: boolean;
         maxOutputLength?: string;
         truncate?: boolean;
-      },
+      }
     ) => {
       const spinner = ora('Converting session to markdown...').start();
 
@@ -381,7 +381,7 @@ session
 
           const subagentCount = result.subagentFiles.length;
           spinner.succeed(
-            `Exported to ${options.output}${subagentCount > 0 ? ` (+ ${subagentCount} subagent thread${subagentCount > 1 ? 's' : ''})` : ''}`,
+            `Exported to ${options.output}${subagentCount > 0 ? ` (+ ${subagentCount} subagent thread${subagentCount > 1 ? 's' : ''})` : ''}`
           );
         } else {
           // When printing to stdout, use simple markdown export
@@ -403,7 +403,7 @@ session
         console.error(chalk.red(getErrorMessage(error)));
         process.exit(1);
       }
-    },
+    }
   );
 
 // ----------------------------------------------------------------------------
@@ -421,7 +421,7 @@ session
   .option(
     '--max-output-length <chars>',
     'Maximum output length before truncation (default: no limit)',
-    '10000',
+    '10000'
   )
   .option('--truncate', 'Enable output truncation')
   .action(
@@ -482,7 +482,7 @@ session
             const subagentCount = result.subagentFiles.length;
 
             exportSpinner.succeed(
-              `Exported: ${session.fileName}.md${subagentCount > 0 ? ` (+ ${subagentCount} subagent thread${subagentCount > 1 ? 's' : ''})` : ''}`,
+              `Exported: ${session.fileName}.md${subagentCount > 0 ? ` (+ ${subagentCount} subagent thread${subagentCount > 1 ? 's' : ''})` : ''}`
             );
             successCount++;
           } catch (error) {
@@ -493,14 +493,14 @@ session
         }
 
         console.log(
-          chalk.bold(`\n✓ Export complete: ${successCount} succeeded, ${failureCount} failed`),
+          chalk.bold(`\n✓ Export complete: ${successCount} succeeded, ${failureCount} failed`)
         );
       } catch (error) {
         spinner.fail('Failed to export sessions');
         console.error(chalk.red(getErrorMessage(error)));
         process.exit(1);
       }
-    },
+    }
   );
 
 // ----------------------------------------------------------------------------
@@ -534,8 +534,8 @@ session
 
         console.log(
           `${chalk.cyan(session.index.toString().padStart(2))}. ${chalk.gray(
-            `[${dateStr} ${timeStr}]`,
-          )} ${session.title}`,
+            `[${dateStr} ${timeStr}]`
+          )} ${session.title}`
         );
         console.log(`    ${chalk.gray(`[${session.fileName}]`)}`);
       }
@@ -543,7 +543,7 @@ session
       // Interactive mode - ask user to select a session
       if (options.interactive !== false) {
         console.log(
-          chalk.bold('\nEnter a session number to view details (or press Ctrl+C to exit):'),
+          chalk.bold('\nEnter a session number to view details (or press Ctrl+C to exit):')
         );
 
         const { createInterface } = await import('node:readline');
@@ -584,10 +584,10 @@ session
               console.log(`${chalk.cyan('Git Branch:')}    ${result.gitBranch}`);
             }
             console.log(
-              `${chalk.cyan('Start Time:')}    ${new Date(result.startTime).toLocaleString()}`,
+              `${chalk.cyan('Start Time:')}    ${new Date(result.startTime).toLocaleString()}`
             );
             console.log(
-              `${chalk.cyan('End Time:')}      ${new Date(result.endTime).toLocaleString()}`,
+              `${chalk.cyan('End Time:')}      ${new Date(result.endTime).toLocaleString()}`
             );
 
             console.log(chalk.bold('\n📈 Statistics\n'));
@@ -601,21 +601,21 @@ session
 
             console.log(chalk.bold('\n💰 Token Usage\n'));
             console.log(
-              `${chalk.cyan('Input Tokens:')}        ${result.tokens.input.toLocaleString()}`,
+              `${chalk.cyan('Input Tokens:')}        ${result.tokens.input.toLocaleString()}`
             );
             console.log(
-              `${chalk.cyan('Output Tokens:')}       ${result.tokens.output.toLocaleString()}`,
+              `${chalk.cyan('Output Tokens:')}       ${result.tokens.output.toLocaleString()}`
             );
             console.log(
               `${chalk.cyan(
-                'Cache Creation:',
-              )}      ${result.tokens.cacheCreation.toLocaleString()}`,
+                'Cache Creation:'
+              )}      ${result.tokens.cacheCreation.toLocaleString()}`
             );
             console.log(
-              `${chalk.cyan('Cache Read:')}          ${result.tokens.cacheRead.toLocaleString()}`,
+              `${chalk.cyan('Cache Read:')}          ${result.tokens.cacheRead.toLocaleString()}`
             );
             console.log(
-              `${chalk.cyan('Total:')}               ${result.tokens.total.toLocaleString()}`,
+              `${chalk.cyan('Total:')}               ${result.tokens.total.toLocaleString()}`
             );
           } catch (error) {
             detailSpinner.fail('Failed to load session details');
@@ -723,7 +723,7 @@ logs
         console.error(chalk.red(getErrorMessage(error)));
         process.exit(1);
       }
-    },
+    }
   );
 
 // ----------------------------------------------------------------------------
@@ -856,8 +856,8 @@ function formatLogEntries(entries: LogEntry[]): void {
 
     console.log(
       `${chalk.gray(`[${time}]`)} ${levelColor(
-        entry.level.toUpperCase().padEnd(6),
-      )} ${chalk.cyan(entry.source)}`,
+        entry.level.toUpperCase().padEnd(6)
+      )} ${chalk.cyan(entry.source)}`
     );
     console.log(`  ${entry.message}`);
 
@@ -992,7 +992,7 @@ tasks
         });
 
         spinner.succeed(
-          `Found ${result.tasks.length} task(s) in ${result.document.frontmatter.title}`,
+          `Found ${result.tasks.length} task(s) in ${result.document.frontmatter.title}`
         );
 
         if (result.tasks.length === 0) {
@@ -1032,15 +1032,15 @@ tasks
           chalk.gray(
             `Total: ${result.tasks.length} tasks (${Object.entries(statusCounts)
               .map(([s, c]) => `${c} ${s}`)
-              .join(', ')})`,
-          ),
+              .join(', ')})`
+          )
         );
       } catch (error) {
         spinner.fail('Failed to list tasks');
         console.error(chalk.red(getErrorMessage(error)));
         process.exit(1);
       }
-    },
+    }
   );
 
 // ----------------------------------------------------------------------------
@@ -1275,7 +1275,7 @@ tasks
         console.error(chalk.red(getErrorMessage(error)));
         process.exit(1);
       }
-    },
+    }
   );
 
 // ----------------------------------------------------------------------------
@@ -1346,7 +1346,7 @@ tasks
 async function updateTaskStatusCommand(
   taskId: string,
   newStatus: TaskStatus,
-  docOption?: string,
+  docOption?: string
 ): Promise<void> {
   const spinner = ora(`Updating task ${taskId}...`).start();
 

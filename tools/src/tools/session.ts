@@ -147,7 +147,7 @@ export async function sessionInfo(filePath: string): Promise<SessionInfoResult> 
  */
 export async function sessionTools(
   filePath: string,
-  options: { includeCount: boolean } = { includeCount: false },
+  options: { includeCount: boolean } = { includeCount: false }
 ): Promise<{ tools: string[] } | { toolUsage: ToolUsage[] }> {
   const parser = new SessionParser();
   await parser.load(filePath);
@@ -180,7 +180,7 @@ export async function sessionFiles(
     filterRead?: boolean;
     filterWritten?: boolean;
     filterEdited?: boolean;
-  } = {},
+  } = {}
 ): Promise<FileAccessResult | { files: string[] }> {
   const parser = new SessionParser();
   await parser.load(filePath);
@@ -233,7 +233,7 @@ export async function sessionAgents(filePath: string): Promise<SubagentInvocatio
  */
 export async function sessionConversation(
   filePath: string,
-  options: { limit?: number } = {},
+  options: { limit?: number } = {}
 ): Promise<ConversationMessage[]> {
   const parser = new SessionParser();
   await parser.load(filePath);
@@ -262,7 +262,7 @@ export async function sessionBash(filePath: string): Promise<BashCommand[]> {
  */
 export async function sessionExport(
   filePath: string,
-  options: { pretty?: boolean } = {},
+  options: { pretty?: boolean } = {}
 ): Promise<string> {
   const parser = new SessionParser();
   const session = await parser.load(filePath);
@@ -275,7 +275,7 @@ export async function sessionExport(
  */
 export async function sessionToMarkdown(
   filePath: string,
-  options: SessionMarkdownOptions = {},
+  options: SessionMarkdownOptions = {}
 ): Promise<string> {
   const parser = new SessionParser();
   const session = await parser.load(filePath);
@@ -313,7 +313,7 @@ export async function sessionToMarkdown(
       includeToolDetails,
       includeSystemMessages,
       maxOutputLength,
-      noTruncate,
+      noTruncate
     );
   }
 
@@ -400,7 +400,7 @@ function formatToolInput(
   toolName: string,
   input: Record<string, unknown>,
   maxOutputLength: number,
-  noTruncate: boolean,
+  noTruncate: boolean
 ): string {
   // Format tool inputs in a readable way based on tool type
   switch (toolName) {
@@ -450,7 +450,7 @@ function formatReadInput(input: Record<string, unknown>): string {
 function formatWriteInput(
   input: Record<string, unknown>,
   maxOutputLength: number,
-  noTruncate: boolean,
+  noTruncate: boolean
 ): string {
   const filePath = input.file_path as string;
   const content = input.content as string;
@@ -470,7 +470,7 @@ function formatWriteInput(
     if (truncated) {
       md += `\n\n... (truncated, ${content.length - maxOutputLength} more characters)`;
     }
-    md += '\n\`\`\`\n';
+    md += '\n```\n';
   }
 
   return md;
@@ -479,7 +479,7 @@ function formatWriteInput(
 function formatEditInput(
   input: Record<string, unknown>,
   maxOutputLength: number,
-  noTruncate: boolean,
+  noTruncate: boolean
 ): string {
   const filePath = input.file_path as string;
   const oldString = input.old_string as string | undefined;
@@ -500,7 +500,7 @@ function formatEditInput(
     if (truncated) {
       md += `\n\n... (truncated, ${oldString.length - maxOutputLength} more characters)`;
     }
-    md += '\n\`\`\`\n';
+    md += '\n```\n';
   }
 
   // Show new string (with truncation if needed)
@@ -516,7 +516,7 @@ function formatEditInput(
     if (truncated) {
       md += `\n\n... (truncated, ${newString.length - maxOutputLength} more characters)`;
     }
-    md += '\n\`\`\`\n';
+    md += '\n```\n';
   }
 
   return md;
@@ -593,7 +593,7 @@ export async function sessionList(projectPath?: string): Promise<SessionListItem
         });
       } catch (error) {
         console.log(
-          `Failed to parse session ${file}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Failed to parse session ${file}: ${error instanceof Error ? error.message : 'Unknown error'}`
         );
       }
     }
@@ -609,7 +609,7 @@ export async function sessionList(projectPath?: string): Promise<SessionListItem
     return sessionItems;
   } catch (error) {
     console.log(
-      `Failed to read sessions directory: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `Failed to read sessions directory: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
     return [];
   }
@@ -620,7 +620,7 @@ export async function sessionList(projectPath?: string): Promise<SessionListItem
  */
 export async function sessionToEnrichedMarkdown(
   filePath: string,
-  options: SessionMarkdownOptions & { outputDir?: string } = {},
+  options: SessionMarkdownOptions & { outputDir?: string } = {}
 ): Promise<{
   mainMarkdown: string;
   subagentFiles: Array<{ filename: string; content: string; subagentType: string }>;
@@ -664,7 +664,7 @@ export async function sessionToEnrichedMarkdown(
       includeToolDetails,
       includeSystemMessages,
       maxOutputLength,
-      noTruncate,
+      noTruncate
     );
   }
 
@@ -680,7 +680,7 @@ export async function sessionToEnrichedMarkdown(
       includeToolDetails,
       includeSystemMessages,
       maxOutputLength,
-      noTruncate,
+      noTruncate
     );
 
     const filename = `${sessionPrefix}-subagent-${thread.subagentType}-${invocationId.substring(0, 8)}.md`;
@@ -734,7 +734,7 @@ function formatDomainMessage(
   includeToolDetails: boolean,
   includeSystemMessages: boolean,
   maxOutputLength: number,
-  noTruncate: boolean,
+  noTruncate: boolean
 ): string {
   let md = '';
   const timestamp = new Date(msg.timestamp).toLocaleTimeString();
@@ -783,7 +783,7 @@ function formatDomainMessage(
       contextBadges,
       includeToolDetails,
       maxOutputLength,
-      noTruncate,
+      noTruncate
     );
   } else if (isSubagentInvocationMessage(msg)) {
     md += formatSubagentInvocation(
@@ -791,7 +791,7 @@ function formatDomainMessage(
       sessionPrefix,
       timestamp,
       contextBadges,
-      includeToolDetails,
+      includeToolDetails
     );
   } else if (isSystemMessage(msg) && includeSystemMessages) {
     const emoji = msg.level === 'error' ? '❌' : msg.level === 'warning' ? '⚠️' : '📊';
@@ -813,7 +813,7 @@ function formatToolCall(
   contextBadges: string,
   includeDetails: boolean,
   maxOutputLength: number,
-  noTruncate: boolean,
+  noTruncate: boolean
 ): string {
   let md = `## 🔧 Tool: ${msg.toolUse.name} ${contextBadges}_${timestamp}_\n\n`;
 
@@ -850,7 +850,7 @@ function formatToolCall(
 function formatToolResultContent(
   content: string | Array<{ type: string; [key: string]: unknown }>,
   maxOutputLength: number,
-  noTruncate: boolean,
+  noTruncate: boolean
 ): string {
   let md = '';
 
@@ -893,7 +893,7 @@ function formatSubagentInvocation(
   sessionPrefix: string,
   timestamp: string,
   contextBadges: string,
-  includeDetails: boolean,
+  includeDetails: boolean
 ): string {
   let md = `## 🤖 Subagent Invocation: ${msg.subagentType} ${contextBadges}_${timestamp}_\n\n`;
   md += `**Subagent Type:** \`${msg.subagentType}\`\n`;
@@ -926,7 +926,7 @@ function formatSubagentThread(
   includeToolDetails: boolean,
   includeSystemMessages: boolean,
   maxOutputLength: number,
-  noTruncate: boolean,
+  noTruncate: boolean
 ): string {
   let md = '';
 
@@ -952,7 +952,7 @@ function formatSubagentThread(
       includeToolDetails,
       includeSystemMessages,
       maxOutputLength,
-      noTruncate,
+      noTruncate
     );
   }
 

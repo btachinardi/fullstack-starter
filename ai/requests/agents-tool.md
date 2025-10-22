@@ -460,7 +460,7 @@ ${sessions this depended on or affected}
    - Reads `ai/sessions/*.md`, surfaces session metadata.
 
 2. **`agent-session-create`** (used by subagent or slash)
-   - Creates session tracking file from JSON payload; updates index.
+   - Creates session tracking file from 'SON payload'; updates index.
 
 3. **`agent-worktree-create`**
    - `--session-id=<id>` `--request-name=<name>` `--base-branch=<branch>`.

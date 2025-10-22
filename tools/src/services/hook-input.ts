@@ -188,7 +188,7 @@ export abstract class HookHandler<T extends HookInput = HookInput> {
 
       if (!this.validateInput(this.input)) {
         throw new Error(
-          `Invalid hook input: expected ${this.constructor.name}, got ${this.input.hook_event_name}`,
+          `Invalid hook input: expected ${this.constructor.name}, got ${this.input.hook_event_name}`
         );
       }
 
@@ -209,7 +209,7 @@ export abstract class HookHandler<T extends HookInput = HookInput> {
  */
 export function createHook<T extends HookInput>(
   validate: (input: HookInput) => input is T,
-  handler: (input: T) => Promise<void>,
+  handler: (input: T) => Promise<void>
 ): () => Promise<void> {
   return async () => {
     try {
@@ -231,7 +231,7 @@ export function createHook<T extends HookInput>(
  * Quick helper to create a SubagentStop hook
  */
 export function createSubagentStopHook(
-  handler: (input: SubagentStopInput) => Promise<void>,
+  handler: (input: SubagentStopInput) => Promise<void>
 ): () => Promise<void> {
   return createHook(isSubagentStop, handler);
 }
@@ -240,7 +240,7 @@ export function createSubagentStopHook(
  * Quick helper to create a PreToolUse hook
  */
 export function createPreToolUseHook(
-  handler: (input: PreToolUseInput) => Promise<void>,
+  handler: (input: PreToolUseInput) => Promise<void>
 ): () => Promise<void> {
   return createHook(isPreToolUse, handler);
 }
@@ -249,7 +249,7 @@ export function createPreToolUseHook(
  * Quick helper to create a PostToolUse hook
  */
 export function createPostToolUseHook(
-  handler: (input: PostToolUseInput) => Promise<void>,
+  handler: (input: PostToolUseInput) => Promise<void>
 ): () => Promise<void> {
   return createHook(isPostToolUse, handler);
 }
@@ -258,7 +258,7 @@ export function createPostToolUseHook(
  * Quick helper to create a UserPromptSubmit hook
  */
 export function createUserPromptSubmitHook(
-  handler: (input: UserPromptSubmitInput) => Promise<void>,
+  handler: (input: UserPromptSubmitInput) => Promise<void>
 ): () => Promise<void> {
   return createHook(isUserPromptSubmit, handler);
 }

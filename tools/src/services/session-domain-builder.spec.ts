@@ -475,7 +475,7 @@ describe('SessionDomainBuilder', () => {
       const enriched = buildEnrichedSession(parser);
 
       const userMsg = enriched.mainThread.messages.find(
-        (m) => m.type === 'user_message' && m.uuid === 'uuid-user',
+        (m) => m.type === 'user_message' && m.uuid === 'uuid-user'
       );
 
       expect(userMsg).toBeDefined();
@@ -576,7 +576,7 @@ describe('SessionDomainBuilder', () => {
       const enriched = buildEnrichedSession(parser);
 
       const invocationMsg = enriched.mainThread.messages.find(
-        (m) => m.type === 'subagent_invocation',
+        (m) => m.type === 'subagent_invocation'
       );
 
       expect(invocationMsg).toBeDefined();

@@ -182,7 +182,7 @@ describe('Tasks Management Tool', () => {
       await writeFile(testDocPath, INVALID_TASK_DOC);
 
       await expect(tasks.parseTaskDocument(testDocPath)).rejects.toThrow(
-        'Invalid task document: missing frontmatter',
+        'Invalid task document: missing frontmatter'
       );
     });
 

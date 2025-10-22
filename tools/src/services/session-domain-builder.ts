@@ -195,7 +195,7 @@ export class SessionDomainBuilder {
    */
   private processUserEntry(
     entry: UserEntry,
-    nextEntry?: SessionEntry,
+    nextEntry?: SessionEntry
   ): { message: DomainMessage; skipNext: boolean } {
     // Check for /clear command pattern
     const clearCommand = this.detectClearCommand(entry);
@@ -330,7 +330,7 @@ export class SessionDomainBuilder {
    */
   private detectSlashCommand(
     entry: UserEntry,
-    nextEntry?: SessionEntry,
+    nextEntry?: SessionEntry
   ): SlashCommandMessage | null {
     const content = entry.message.content;
 
@@ -463,7 +463,7 @@ export class SessionDomainBuilder {
    */
   private buildAssistantMessages(
     entry: AssistantEntry,
-    toolUseMap: Map<string, EnrichedToolUse>,
+    toolUseMap: Map<string, EnrichedToolUse>
   ): DomainMessage[] {
     const messages: DomainMessage[] = [];
     const content = entry.message.content;
@@ -571,7 +571,7 @@ export class SessionDomainBuilder {
       (e): e is UserEntry | AssistantEntry | SystemEntry =>
         'isSidechain' in e &&
         e.isSidechain === true &&
-        (isUserEntry(e) || isAssistantEntry(e) || isSystemEntry(e)),
+        (isUserEntry(e) || isAssistantEntry(e) || isSystemEntry(e))
     );
 
     // Build thread map by following parentUuid links
@@ -671,7 +671,7 @@ export class SessionDomainBuilder {
    */
   private linkSubagentThreads(
     mainMessages: DomainMessage[],
-    subagentThreads: Map<string, SubagentThread>,
+    subagentThreads: Map<string, SubagentThread>
   ): void {
     for (const msg of mainMessages) {
       if (msg.type === 'subagent_invocation') {
@@ -715,7 +715,7 @@ export class SessionDomainBuilder {
    */
   private calculateStats(
     mainMessages: DomainMessage[],
-    _subagentThreads: Map<string, SubagentThread>,
+    _subagentThreads: Map<string, SubagentThread>
   ): {
     totalMessages: number;
     userMessages: number;

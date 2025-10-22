@@ -216,11 +216,11 @@ TypeScript uses `.js` extensions in imports when targeting ESM (ECMAScript Modul
 
 ```typescript
 // Even though this is a .ts file:
-import { sessionInfo } from "./tools/session"; // ✅ Correct
+import { sessionInfo } from './tools/session"'; // ✅ Correct
 
 // NOT:
-import { sessionInfo } from "./tools/session.ts"; // ❌ Wrong
-import { sessionInfo } from "./tools/session"; // ❌ Wrong (in ESM)
+import { sessionInfo } from './tools/session.ts"'; // ❌ Wrong
+import { sessionInfo } from './tools/session"'; // ❌ Wrong (in ESM)
 ```
 
 **Reason:**
@@ -299,8 +299,8 @@ export * from './tools/git';
 ### Tool Functions (Pure)
 
 ```typescript
-import { describe, it, expect } from "vitest";
-import { sessionInfo } from "./session";
+import { describe, it, expect } from 'vitest"';
+import { sessionInfo } from './session"';
 
 describe("sessionInfo", () => {
   it("should parse session and return info", async () => {
@@ -389,7 +389,7 @@ dist/
 ### Programmatic (Library)
 
 ```typescript
-import { sessionInfo, sessionTools } from "@fullstack-starter/tools";
+import { sessionInfo, sessionTools } from '@fullstack-starter/tools"';
 
 const info = await sessionInfo("session.jsonl");
 const tools = await sessionTools("session.jsonl", { includeCount: true });

@@ -111,9 +111,9 @@ function checkLineForAssertion(line) {
 
   // Pattern: ` as ` with whitespace on both sides, followed by one or more words
   const asPattern = /\s+as\s+([\w.<>[\]]+)/g;
-  let match;
+  const match = asPattern.exec(withoutStrings);
 
-  while ((match = asPattern.exec(withoutStrings)) !== null) {
+  while (match !== null) {
     const typeAfterAs = match[1];
     const fullAssertion = `as ${typeAfterAs}`;
 

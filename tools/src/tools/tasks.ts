@@ -37,7 +37,7 @@ import type {
  * 3. Partial path: "auth/v1" searches for `** /auth/v1.tasks.md`
  */
 export async function discoverDocuments(
-  options: DocumentScopeOptions = {},
+  options: DocumentScopeOptions = {}
 ): Promise<DiscoveredDocument[]> {
   const searchPath = options.searchPath || process.cwd();
   const pattern = options.doc ? buildGlobPattern(options.doc) : '**/*.tasks.md';
@@ -79,7 +79,7 @@ function buildGlobPattern(doc: string): string {
  * Select a document interactively from discovered documents
  */
 export async function selectDocument(
-  documents: DiscoveredDocument[],
+  documents: DiscoveredDocument[]
 ): Promise<DiscoveredDocument | null> {
   if (documents.length === 0) {
     return null;
@@ -236,7 +236,7 @@ function normalizeTask(task: unknown): Task {
  */
 export async function listTasks(
   documentPath: string,
-  options: ListTasksOptions = {},
+  options: ListTasksOptions = {}
 ): Promise<{
   document: TaskDocument;
   tasks: Array<Task & { listName: string }>;
@@ -282,7 +282,7 @@ export async function listTasks(
  */
 export async function getTask(
   documentPath: string,
-  taskId: string,
+  taskId: string
 ): Promise<{ task: Task; listName: string } | null> {
   const document = await parseTaskDocument(documentPath);
 
@@ -341,7 +341,7 @@ export async function listTaskLists(documentPath: string): Promise<{
 export async function updateTaskStatus(
   documentPath: string,
   taskId: string,
-  newStatus: TaskStatus,
+  newStatus: TaskStatus
 ): Promise<TaskOperationResult> {
   const document = await parseTaskDocument(documentPath);
   let updatedContent = document.rawContent;
@@ -385,7 +385,7 @@ export async function updateTaskStatus(
  */
 export async function deleteTask(
   documentPath: string,
-  taskId: string,
+  taskId: string
 ): Promise<TaskOperationResult> {
   const document = await parseTaskDocument(documentPath);
   let updatedContent = document.rawContent;
@@ -426,7 +426,7 @@ export async function deleteTask(
  */
 export async function addTask(
   documentPath: string,
-  options: AddTaskOptions,
+  options: AddTaskOptions
 ): Promise<TaskOperationResult> {
   const document = await parseTaskDocument(documentPath);
 
@@ -482,11 +482,11 @@ function updateTaskInYaml(
   content: string,
   listName: string,
   taskId: string,
-  updates: Partial<Task>,
+  updates: Partial<Task>
 ): string {
   const taskListRegex = new RegExp(
     `(\`\`\`yaml tasks:${listName}\\s*\\n)([\\s\\S]*?)(\`\`\`)`,
-    'g',
+    'g'
   );
 
   return content.replace(taskListRegex, (match, prefix, yamlContent, suffix) => {
@@ -521,7 +521,7 @@ function updateTaskInYaml(
 function deleteTaskFromYaml(content: string, listName: string, taskId: string): string {
   const taskListRegex = new RegExp(
     `(\`\`\`yaml tasks:${listName}\\s*\\n)([\\s\\S]*?)(\`\`\`)`,
-    'g',
+    'g'
   );
 
   return content.replace(taskListRegex, (match, prefix, yamlContent, suffix) => {
@@ -549,7 +549,7 @@ function deleteTaskFromYaml(content: string, listName: string, taskId: string): 
 function addTaskToYaml(content: string, listName: string, newTask: Task): string {
   const taskListRegex = new RegExp(
     `(\`\`\`yaml tasks:${listName}\\s*\\n)([\\s\\S]*?)(\`\`\`)`,
-    'g',
+    'g'
   );
 
   return content.replace(taskListRegex, (match, prefix, yamlContent, suffix) => {

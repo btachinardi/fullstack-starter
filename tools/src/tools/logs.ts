@@ -113,7 +113,7 @@ function filterEntries(entries: LogEntry[], options: LogQueryOptions): LogEntry[
         e.message.toLowerCase().includes(searchLower) ||
         JSON.stringify(e.data || {})
           .toLowerCase()
-          .includes(searchLower),
+          .includes(searchLower)
     );
   }
 
