@@ -38,15 +38,49 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 - **lint-debugger**: Fixes TypeScript and linting errors systematically
 - **test-debugger**: Debugs and fixes test failures (if dev mode runs tests)
 
-**Recommended Custom Subagents:**
+**Available Debugging Subagents:**
 
-Create these subagents using `@subagent-writer` to enhance debugging capabilities:
+These specialized subagents are available to help with complex debugging scenarios. If they don't exist yet, create them once using `@subagent-writer` (see Workflow Integration section).
 
-- **root-cause-analyst**: Helps think through alternative solution paths when stuck on a problem
-- **common-error-researcher**: Searches web for similar errors and community solutions
-- **monorepo-specialist**: Expert in NestJS + Turborepo + PNPM workspace best practices
-- **build-system-debugger**: Analyzes webpack/vite/typescript/module resolution issues
-- **stack-trace-analyzer**: Parses complex error messages and identifies root causes
+**Analysis Specialists (Research & Guidance):**
+
+- **root-cause-analyst**
+  - **When:** Stuck >15 min, tried 2-3 solutions, considering hacks
+  - **What:** Analyzes root cause, suggests 3-5 alternative solutions, ranks by best practices
+  - **Output:** Diagnostic report with ranked solutions and trade-off analysis
+  - **Use for:** Complex bugs, unclear root cause, evaluating solution approaches
+
+- **stack-trace-analyzer**
+  - **When:** Complex multi-file stack traces, unclear error origin
+  - **What:** Parses stack traces, identifies call sequence, pinpoints exact error location
+  - **Output:** File and line number to investigate, call sequence diagram
+  - **Use for:** NestJS dependency errors, async errors, webpack trace parsing
+
+- **common-error-researcher**
+  - **When:** Unfamiliar error, framework-specific issue, need community solutions
+  - **What:** Searches GitHub issues, Stack Overflow, finds proven solutions
+  - **Output:** Top 5 solutions with sources, dates, and success indicators
+  - **Use for:** Error messages you haven't seen, known framework bugs
+
+- **best-practices-researcher**
+  - **When:** Need official guidance, validating configuration, learning proper patterns
+  - **What:** Searches official docs, official repos, core team blogs only
+  - **Output:** Official recommendations with source links, configuration examples
+  - **Use for:** "What's the right way to configure X?", verifying against official patterns
+
+**Domain Specialists (Configuration & Fixes):**
+
+- **monorepo-specialist**
+  - **When:** PNPM workspace issues, package resolution, build output structure problems
+  - **What:** Expert in NestJS + Turborepo + PNPM integration and configuration
+  - **Output:** Configuration fixes, package.json exports, tsconfig paths
+  - **Use for:** Module resolution, workspace packages, monorepo build issues
+
+- **build-system-debugger**
+  - **When:** Webpack/Vite errors, TypeScript compilation, module system conflicts
+  - **What:** Diagnoses webpack, Vite, TypeScript config issues
+  - **Output:** Build configuration fixes, compiler option recommendations
+  - **Use for:** Build failures, dist structure, CommonJS/ESM conflicts
 
 **Prerequisites:**
 
@@ -105,9 +139,11 @@ Create these subagents using `@subagent-writer` to enhance debugging capabilitie
    - Follow the best practice approach identified
    - Document why other approaches were rejected
 
-**Strategy I: Common Error Research (for unfamiliar errors)**
+**Strategy I: Community Error Research (for known errors with solutions)**
 
-**When to use:** Error messages you haven't seen before, framework-specific issues, monorepo problems
+**When to use:** Unfamiliar error messages, known framework bugs, need battle-tested community solutions
+
+**What it does:** Searches GitHub issues and Stack Overflow for community-validated solutions with success rates
 
 **Steps:**
 
@@ -116,36 +152,92 @@ Create these subagents using `@subagent-writer` to enhance debugging capabilitie
    ```
    Task(
      subagent_type="common-error-researcher",
-     description="Research solutions for error online",
-     prompt="Research this error and find solutions: [error message]
+     description="Research community solutions for error",
+     prompt="Research this error and find community solutions: [error message]
 
      Context:
      - Framework: NestJS 10 + Fastify
      - Build tool: Webpack 5 + TypeScript 5.7
      - Monorepo: PNPM workspaces + Turborepo
 
-     Please:
-     1. Search GitHub issues for similar problems
-     2. Find Stack Overflow discussions
-     3. Check official documentation
-     4. Identify common solutions and their success rate
-     5. Highlight solutions specific to our stack (NestJS + PNPM + Turborepo)
-     6. Warn about outdated solutions (pre-2024)"
+     Current situation: [what you've tried]
+
+     Please search for:
+     1. GitHub issues in nestjs/nest, vitejs/vite, pnpm/pnpm repos
+     2. Stack Overflow high-voted answers (100+ votes preferred)
+     3. Recently closed issues (within last year)
+     4. Solutions specific to our stack versions
+     5. Success indicators (confirmed fixes, maintainer responses)
+
+     Prioritize recent solutions (2024-2025) for our stack."
    )
    ```
 
-2. **Evaluate Solutions**
-   - Prioritize solutions for your exact stack
-   - Verify solution dates (prefer recent)
-   - Check if solution is still recommended
+2. **Review Community Solutions**
+   - Check solution dates (prefer 2024-2025)
+   - Verify tech stack match (versions matter!)
+   - Look for maintainer confirmation or high votes
+   - Avoid one-off workarounds
 
-3. **Test Most Promising Solution**
-   - Start with highest-rated solution
+3. **Validate Before Implementing**
+   - Test highest-rated solution first
    - Verify it works before marking complete
+
+**Strategy I-B: Official Best Practices Research (for configuration validation)**
+
+**When to use:** Need to verify "the right way" to configure something, want official guidance, validating current setup
+
+**What it does:** Searches only official documentation, official repos, and core team guidance (no community forums)
+
+**Steps:**
+
+1. **Delegate to best-practices-researcher**
+
+   ```
+   Task(
+     subagent_type="best-practices-researcher",
+     description="Research official best practices",
+     prompt="Research the official recommended way to: [your question]
+
+     Our current setup:
+     [Paste current configuration from package.json, tsconfig.json, etc.]
+
+     Please search official sources only:
+     1. Official docs (docs.nestjs.com, pnpm.io, turbo.build)
+     2. Official example repos (nestjs/typescript-starter, etc.)
+     3. Core team blogs and migration guides
+     4. Official RFCs and changelogs
+
+     Compare our setup vs official recommendations and identify:
+     - What we're doing correctly
+     - What should be changed
+     - Why the official pattern is recommended
+     - Migration steps if changes needed"
+   )
+   ```
+
+2. **Review Official Recommendations**
+   - All claims should have official source URLs
+   - Check version compatibility
+   - Understand the "why" behind recommendations
+
+3. **Implement Official Pattern**
+   - Follow official examples closely
+   - Don't deviate without good reason
+   - Document any intentional differences
+
+**Choosing Between Researchers:**
+- Use **best-practices-researcher** first to learn the "official way"
+- Use **common-error-researcher** when official docs don't cover your specific error
+- Use BOTH in parallel when you need comprehensive perspective
 
 **Strategy J: Monorepo-Specific Debugging**
 
-**When to use:** Module resolution errors, workspace package issues, build output problems
+**When to use:** Module resolution errors, workspace package issues, build output problems, PNPM linking issues
+
+**What it does:** Expert analysis of NestJS + Turborepo + PNPM workspace integration, focusing on package exports, module resolution, and build configuration
+
+**Why use this:** Monorepo module resolution is different from standard Node.js - workspace packages, TypeScript paths, and build tools interact in complex ways. This specialist knows PNPM's specific behaviors.
 
 **Steps:**
 
@@ -157,33 +249,48 @@ Create these subagents using `@subagent-writer` to enhance debugging capabilitie
      description="Diagnose monorepo configuration issue",
      prompt="Diagnose this monorepo problem: [error]
 
-     Setup:
-     - PNPM 9.15.0+ workspaces
-     - Turborepo 2.x
-     - NestJS 10 (uses webpack mode)
+     Our setup:
+     - PNPM 9.15.0+ workspaces with workspace:* protocol
+     - Turborepo 2.x for task orchestration
+     - NestJS 10 (webpack mode enabled in nest-cli.json)
      - React 18 + Vite 6
+     - TypeScript 5.7 strict mode
 
-     Issue:
-     [Paste error and context]
+     Issue details:
+     [Paste complete error message and stack trace]
 
-     Please:
-     1. Check if this is a known PNPM workspace issue
-     2. Verify package.json exports are correct
-     3. Check tsconfig path mappings
-     4. Identify if webpack is configured correctly for monorepo
-     5. Suggest PNPM-specific commands to fix
-     6. Provide NestJS + Turborepo + PNPM best practices"
+     What I've tried:
+     [List attempted fixes]
+
+     Please analyze:
+     1. Is this a known PNPM workspace resolution issue?
+     2. Are package.json exports configured correctly for all workspace packages?
+     3. Do tsconfig.json path mappings align with package structure?
+     4. Is webpack configured correctly for monorepo externals?
+     5. Are we following NestJS + Turborepo + PNPM best practices?
+
+     Provide specific configuration fixes with file diffs."
    )
    ```
 
-2. **Apply Monorepo-Specific Fixes**
-   - Update package.json exports if needed
-   - Fix tsconfig paths
-   - Configure build tools for monorepo
+2. **Review Monorepo Configuration Analysis**
+   - Check package.json "type", "main", "exports" recommendations
+   - Verify workspace:* dependencies are correct
+   - Validate tsconfig paths align with package structure
+
+3. **Apply Monorepo-Specific Fixes**
+   - Update package.json exports to point to built .js files
+   - Fix tsconfig path mappings
+   - Configure webpack externals for workspace packages
+   - Run pnpm install if package.json changes made
 
 **Strategy K: Build System Debugging**
 
-**When to use:** Webpack errors, module resolution, TypeScript compilation issues, nested dist folders
+**When to use:** Webpack/Vite compilation errors, TypeScript compiler issues, module system conflicts, nested dist folder problems
+
+**What it does:** Deep diagnosis of webpack, Vite, and TypeScript configuration issues, focusing on build output structure and module resolution
+
+**Why use this:** Build systems have complex interactions between webpack loaders, TypeScript compiler, and module systems. This specialist understands webpack externals, TypeScript outDir/rootDir, and CommonJS/ESM nuances.
 
 **Steps:**
 
@@ -195,63 +302,176 @@ Create these subagents using `@subagent-writer` to enhance debugging capabilitie
      description="Debug build system configuration",
      prompt="Debug this build/compilation error: [error]
 
-     Build setup:
-     - NestJS with webpack: true (nest-cli.json)
-     - TypeScript 5.7 strict mode
-     - CommonJS/ESM mixed modules
-     - PNPM workspace packages as externals
+     Current build setup:
+     - NestJS 10 with webpack: true (nest-cli.json)
+     - TypeScript 5.7 strict mode, outDir: ./dist
+     - Module system: CommonJS (API), ESM (utils packages)
+     - PNPM workspace packages marked as webpack externals
+     - Turborepo orchestrating parallel builds
 
-     Problem:
-     [Paste error]
+     Build output issue:
+     [Paste error, unexpected output structure, or compilation failure]
 
-     Please:
-     1. Identify if this is webpack, TypeScript, or module system issue
-     2. Check nest-cli.json and tsconfig.json configuration
-     3. Verify package.json "type" and "exports" settings
-     4. Identify CommonJS vs ESM conflicts
-     5. Suggest proper webpack configuration for NestJS + monorepo
-     6. Recommend TypeScript compiler options"
+     What I've observed:
+     - Expected: dist/main.js
+     - Actual: [what you're seeing]
+
+     Please diagnose:
+     1. Is this a webpack, TypeScript, or module system issue?
+     2. Check nest-cli.json webpack configuration
+     3. Analyze tsconfig.json compiler options (outDir, rootDir, composite)
+     4. Verify package.json "type" and "exports" consistency
+     5. Identify CommonJS vs ESM conflicts
+     6. Check webpack externals configuration
+
+     Provide specific configuration fixes with explanations."
    )
    ```
 
-2. **Apply Build Configuration Fixes**
-   - Update webpack/nest-cli settings
-   - Fix module system mismatches
-   - Correct TypeScript output settings
+2. **Review Build System Analysis**
+   - Understand whether issue is webpack, TypeScript, or module system
+   - Check if recommended fixes align with NestJS + monorepo patterns
+   - Verify fixes won't break other parts of build
+
+3. **Apply Build Configuration Fixes**
+   - Update nest-cli.json (enable webpack if needed)
+   - Fix TypeScript compiler options
+   - Align module system (all CommonJS or all ESM)
+   - Clear build caches after config changes
+
+**Strategy L: Stack Trace Analysis (for complex error messages)**
+
+**When to use:** Multi-file stack traces, unclear error origin, deep async call stacks, webpack obfuscated errors
+
+**What it does:** Parses complex stack traces to identify the exact file, line, and call sequence causing the error
+
+**Why use this:** Complex stack traces (especially from NestJS DI, webpack bundles, or async code) can be hard to parse. This specialist extracts the signal from the noise.
+
+**Steps:**
+
+1. **Delegate to stack-trace-analyzer**
+
+   ```
+   Task(
+     subagent_type="stack-trace-analyzer",
+     description="Parse complex stack trace",
+     prompt="Analyze this stack trace and identify root cause:
+
+     Error message:
+     [Paste full error message]
+
+     Stack trace:
+     [Paste complete stack trace]
+
+     Context:
+     - What triggered it: [user action, server startup, etc.]
+     - Source maps available: [yes/no]
+     - Framework: [NestJS/React/etc.]
+
+     Please identify:
+     1. Error type and category
+     2. Exact file and line number to investigate
+     3. Call sequence that led to error
+     4. Immediate cause vs root cause
+     5. Which file to debug first
+     6. Suggested debugging steps"
+   )
+   ```
+
+2. **Review Analysis Results**
+   - Note the exact file and line to investigate
+   - Understand the call sequence
+   - Focus on root cause, not intermediate calls
+
+3. **Investigate Identified Location**
+   - Read the file at the exact line number provided
+   - Understand the context around the error
+   - Apply targeted fix based on root cause
 
 **Debugging Workflow Tips:**
 
-1. **Don't Go in Circles**
-   - If you've tried the same type of fix 3 times → delegate to root-cause-analyst
-   - If error message is unclear → delegate to stack-trace-analyzer first
-   - If error seems framework-specific → delegate to common-error-researcher
+1. **Start with the Right Specialist**
+   - **Error unclear?** → stack-trace-analyzer first to understand what's happening
+   - **Know the error but unfamiliar?** → common-error-researcher for community solutions
+   - **Need official guidance?** → best-practices-researcher for authoritative patterns
+   - **Stuck after trying fixes?** → root-cause-analyst for alternative approaches
+   - **Monorepo/workspace issue?** → monorepo-specialist for PNPM + NestJS expertise
+   - **Build/compilation problem?** → build-system-debugger for webpack/TypeScript config
 
-2. **Use Multiple Specialists Together**
-   - Run common-error-researcher AND root-cause-analyst in parallel for maximum insight
-   - Get external knowledge + systematic thinking simultaneously
+2. **Combine Specialists for Maximum Insight**
+   - **Best combo for unfamiliar errors:** stack-trace-analyzer + common-error-researcher
+   - **Best combo for config issues:** best-practices-researcher + monorepo-specialist
+   - **Best combo when stuck:** root-cause-analyst + best-practices-researcher
+   - **Full investigation:** Run 3+ specialists in parallel and synthesize their findings
+
+3. **Don't Go in Circles - Delegate Early**
+   - Same fix attempted 3 times → delegate to root-cause-analyst
+   - >15 minutes without progress → delegate to appropriate specialist
+   - Considering a hack/workaround → delegate to root-cause-analyst (will warn you!)
+   - Unsure if config is correct → delegate to best-practices-researcher
+
+4. **Optimal Delegation Patterns**
+
+   **Pattern 1: Unknown Error**
+   ```
+   Step 1: stack-trace-analyzer (understand the error)
+   Step 2: common-error-researcher (find solutions)
+   Step 3: Apply highest-rated solution
+   ```
+
+   **Pattern 2: Configuration Confusion**
+   ```
+   Step 1: best-practices-researcher (find official way)
+   Step 2: monorepo-specialist (apply to your monorepo)
+   Step 3: Implement official pattern
+   ```
+
+   **Pattern 3: Stuck After Multiple Attempts**
+   ```
+   Parallel: root-cause-analyst + common-error-researcher + best-practices-researcher
+   Wait: Review all three perspectives
+   Choose: Best approach based on combined recommendations
+   ```
+
+5. **Efficiency Tips**
+   - Always run multiple specialists in PARALLEL (single message, multiple Task calls)
+   - Don't wait for one to finish before starting another (they're independent)
    - Compare their recommendations before implementing
+   - Use analysis specialists (stack-trace, researchers) before domain specialists
 
-3. **Know When to Stop Manual Debugging**
-   - >15 minutes without progress = time for subagent
-   - Complex stack traces = stack-trace-analyzer
-   - Considering a hack = root-cause-analyst
-   - Unfamiliar error = common-error-researcher
-
-4. **Create Project-Specific Subagents**
-   - Use `@subagent-writer` to create the recommended subagents
-   - Customize them with your project's specific stack details
-   - Reuse them across debugging sessions
-
-**Example: Using Multiple Subagents in Parallel**
+**Example: Comprehensive Multi-Specialist Debugging**
 
 ```
-# When truly stuck, get comprehensive help:
+# Complex monorepo build error - get all perspectives at once:
 
-Task(subagent_type="common-error-researcher", ...)
-Task(subagent_type="root-cause-analyst", ...)
-Task(subagent_type="monorepo-specialist", ...)
+# In a SINGLE message, invoke multiple specialists:
 
-# Review all three perspectives before implementing solution
+Task(
+  subagent_type="stack-trace-analyzer",
+  description="Parse error message",
+  prompt="[full error and stack trace]"
+)
+
+Task(
+  subagent_type="best-practices-researcher",
+  description="Find official NestJS monorepo pattern",
+  prompt="What's the official way to configure NestJS in PNPM monorepo?"
+)
+
+Task(
+  subagent_type="monorepo-specialist",
+  description="Diagnose workspace configuration",
+  prompt="Check our PNPM workspace + NestJS setup against best practices"
+)
+
+Task(
+  subagent_type="root-cause-analyst",
+  description="Analyze root cause and alternatives",
+  prompt="I've tried X, Y, Z. Help me find the proper solution."
+)
+
+# All run in parallel, get results in ~2-3 minutes
+# Compare findings and implement the consensus recommendation
 ```
 
 ---
@@ -798,11 +1018,20 @@ Always follow this priority:
 6. **Build/Import** (Strategy G) - Prevents bundling
 7. **Runtime** (Strategy F) - Happens after startup
 
-**Use Advanced Strategies (H-K) when:**
+**Use Advanced Strategies (H-L) when:**
 - Standard strategies fail after 2-3 attempts
 - Error is unfamiliar or complex
 - You're stuck for >15 minutes
 - Considering hacks or workarounds
+- Need to validate configuration against official patterns
+
+**Quick Decision Tree:**
+1. **Error unclear?** → L (stack-trace-analyzer)
+2. **Configuration question?** → I-B (best-practices-researcher)
+3. **Known error, need fix?** → I (common-error-researcher)
+4. **Monorepo issue?** → J (monorepo-specialist)
+5. **Build system problem?** → K (build-system-debugger)
+6. **Tried multiple fixes, still stuck?** → H (root-cause-analyst)
 
 **Validation:**
 
@@ -1410,21 +1639,35 @@ Result: Still stuck - considering symlinking hack
 **Phase 0: Using Advanced Strategies**
 
 ```
-[Delegate to root-cause-analyst + monorepo-specialist in parallel]
+[Delegate to THREE specialists in parallel for comprehensive analysis]
 
-root-cause-analyst findings:
-- Root cause: ESM/CommonJS module system mismatch
-- 3 proper solutions: (1) Align all packages to CommonJS, (2) Use ESM throughout, (3) Configure webpack bundling
-- Best approach: #1 - Change packages to CommonJS (matches NestJS)
-- AVOID: Symlinks or manual file copying (hacks that break hot reload)
+# Invoked in a SINGLE message:
+- stack-trace-analyzer: Parse the exact error
+- best-practices-researcher: Find official NestJS monorepo configuration
+- monorepo-specialist: Diagnose our specific setup
+
+stack-trace-analyzer findings:
+- Error type: Module system mismatch (CommonJS trying to load ESM)
+- Root location: packages/utils/src/index.js (file exists but wrong format)
+- Call sequence: webpack bundle → require('@starter/utils') → Node ESM loader
+- Root cause: package.json "type": "module" but built output is CommonJS
+
+best-practices-researcher findings:
+- Official NestJS docs recommend CommonJS for backend apps
+- Official NestJS monorepo examples use "type": "commonjs" for shared packages
+- PNPM official docs: workspace packages should match consumer's module system
+- Webpack externals require packages to be loadable by Node's require()
+- Source: docs.nestjs.com/cli/monorepo, pnpm.io/workspaces
 
 monorepo-specialist findings:
-- PNPM workspace packages loaded at runtime via require()
-- package.json "type": "module" but built code is CommonJS
-- NestJS + Webpack treats workspace packages as external
-- Solution: Change "type": "commonjs" in @starter/utils package.json
+- PNPM workspace packages are loaded at runtime (not bundled by webpack)
+- Our @starter/utils has "type": "module" but built as CommonJS
+- NestJS API app is CommonJS → workspace packages must also be CommonJS
+- Solution: Change "type": "commonjs" in packages/utils/package.json
+- Also fix package.json exports to point to .js files (not .ts)
 
-Recommended fix: Update package.json "type" field in utils package
+Consensus recommendation: Align all workspace packages to CommonJS (matches NestJS + official examples)
+AVOID: Symlinks, webpack bundling workspace packages, or custom loaders
 ```
 
 **Phase 2: Applying Recommended Fix**
@@ -1456,9 +1699,23 @@ Key learning: Delegate to specialists when stuck >15 minutes
 
 **What Made the Difference:**
 
-- **Without subagents**: 45+ minutes of trial and error, might have implemented a hack
-- **With subagents**: 5 minutes to proper solution, avoided technical debt
-- **Parallel delegation**: Got both root-cause analysis AND monorepo expertise simultaneously
+- **Without subagents**: 45+ minutes of trial and error, likely would have implemented symlink hack
+- **With 3 subagents in parallel**: 5 minutes to proper solution with official validation
+- **stack-trace-analyzer**: Identified exact root cause (module system mismatch)
+- **best-practices-researcher**: Confirmed official NestJS pattern (CommonJS for monorepos)
+- **monorepo-specialist**: Provided specific fix (package.json "type" field)
+- **Result**: Proper solution that aligns with official docs + avoids technical debt
+
+**Time Comparison:**
+- Manual debugging: 45+ min → likely ends with hack
+- Single specialist: 15 min → might miss best practices
+- Triple specialists (parallel): 5 min → official + validated solution
+
+**Key Insight:** Using multiple specialists in parallel gives you:
+1. **Accuracy** - Cross-validation from different perspectives
+2. **Speed** - Parallel execution, no sequential delays
+3. **Quality** - Official validation + practical expertise
+4. **Confidence** - Consensus recommendations are rarely wrong
 
 ---
 
@@ -1480,13 +1737,18 @@ Key learning: Delegate to specialists when stuck >15 minutes
    git clone [repo]
    pnpm install
 
-   # Create recommended subagents for better debugging
-   @subagent-writer create root-cause-analyst
-   @subagent-writer create common-error-researcher
-   @subagent-writer create monorepo-specialist
-   @subagent-writer create build-system-debugger
+   # Create debugging subagents once (if not already created):
+   # These enhance the /dev:debug command with specialized expertise
+   # Only needs to be done once per project
 
-   /dev:debug  (handles Prisma, env, initial errors)
+   @subagent-writer create root-cause-analyst       # Alternative solutions when stuck
+   @subagent-writer create stack-trace-analyzer     # Parse complex error messages
+   @subagent-writer create common-error-researcher  # Find community solutions
+   @subagent-writer create best-practices-researcher # Validate against official docs
+   @subagent-writer create monorepo-specialist      # PNPM + NestJS + Turborepo expert
+   @subagent-writer create build-system-debugger   # Webpack/Vite/TypeScript config
+
+   /dev:debug  (handles Prisma, env, initial errors - now with subagent support!)
    ```
 
 2. **After Pulling Changes:**
@@ -1513,10 +1775,21 @@ Key learning: Delegate to specialists when stuck >15 minutes
 
 ---
 
-**Command Version:** 2.0
+**Command Version:** 2.1
 **Last Updated:** 2025-10-21
 **Owner:** Platform Engineering
 
 **Changelog:**
-- **v2.0**: Added Phase 0 - Advanced Debugging Strategies with specialized subagents (root-cause-analyst, common-error-researcher, monorepo-specialist, build-system-debugger)
-- **v1.0**: Initial version with basic debugging strategies
+- **v2.1**: Added best-practices-researcher, enhanced all strategy descriptions with "When/What/Why", added Quick Decision Tree, updated Example 5 with triple-specialist parallel debugging
+- **v2.0**: Added Phase 0 - Advanced Debugging Strategies with specialized subagents (root-cause-analyst, stack-trace-analyzer, common-error-researcher, monorepo-specialist, build-system-debugger)
+- **v1.0**: Initial version with basic debugging strategies (A-G)
+
+**Subagents Created:**
+- root-cause-analyst (`.claude/agents/validation/`)
+- stack-trace-analyzer (`.claude/agents/validation/`)
+- common-error-researcher (`.claude/agents/validation/`)
+- best-practices-researcher (`.claude/agents/validation/`)
+- monorepo-specialist (`.claude/agents/infrastructure/`)
+- build-system-debugger (`.claude/agents/validation/`)
+
+**Note:** Create these subagents once during project setup for enhanced debugging capabilities (see Workflow Integration section)

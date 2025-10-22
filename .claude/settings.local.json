@@ -80,7 +80,10 @@
       "Bash(npx tsc:*)",
       "Bash(ln:*)",
       "WebFetch(domain:stackoverflow.com)",
-      "Bash(pnpm -r --filter \"@starter/*\" build:*)"
+      "Bash(pnpm -r --filter \"@starter/*\" build:*)",
+      "WebFetch(domain:jxnl.co)",
+      "WebFetch(domain:www.anthropic.com)",
+      "Bash(timeout 5 curl:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",

@@ -113,6 +113,108 @@ Clearly define:
 
 ---
 
+## Context Efficiency & Token Optimization
+
+**Core Principle:** Context quality > context quantity. Research shows 8x efficiency gains through strategic context management.
+
+### Context Quality Metrics
+
+| Approach | Token Usage | Useful Signal | Efficiency |
+|----------|-------------|---------------|------------|
+| Slash command only | 169,000 | 9% | Baseline |
+| Subagent delegation | 21,000 | 76% | 8x better |
+
+**Key Finding:** Delegating verbose operations to subagents reduces context pollution from 91% noise to 24% noise.
+
+### Context Isolation Pattern
+
+**Problem:** Verbose operations (logs, stack traces, web searches) pollute main thread context, degrading reasoning quality.
+
+**Solution:** Use subagents as context isolation boundaries:
+
+```markdown
+# ❌ Bad: Load verbose output into main thread
+/command
+  Run: pnpm dev
+  Load: 50,000 lines of output into context
+  Parse: Try to analyze everything
+  Result: 91% noise, poor focus
+
+# ✅ Good: Isolate noise in subagent
+/command
+  Run: pnpm dev > /tmp/output.log
+  Read: Last 100 lines only (summary)
+  Delegate: Task(stack-trace-analyzer) for deep analysis
+  Result: 76% useful signal, clear objectives
+```
+
+### Token Budget Guidelines
+
+**When to Compress:**
+- Repetitive information (reference shared docs instead of duplicating)
+- Output templates (create once, reference elsewhere)
+- Standard procedures (link to guides instead of inline steps)
+
+**When to Expand:**
+- Core decision-making logic (upfront clarity prevents rework)
+- Phase definitions (detail prevents ambiguity)
+- Examples (depth teaches reasoning patterns)
+
+**ROI Analysis:**
+```
+Terse approach:  5K tokens (instructions) + 30K tokens (rework) = 35K total
+Clear approach: 20K tokens (instructions) +  2K tokens (rework) = 22K total
+
+Savings: 37% fewer tokens overall through upfront clarity
+```
+
+### Information Density Best Practices
+
+**Use structured formats for high information density:**
+
+| Format | Best For | Density Score |
+|--------|----------|---------------|
+| Tables | Decision criteria, comparisons | Very High |
+| Checklists | Validation steps | High |
+| JSON schemas | Input/output contracts | Very High |
+| Numbered lists | Sequential processes | High |
+| Prose | Background context, rationale | Medium |
+
+**Example - High Density Structure:**
+```markdown
+✅ Good (Dense, Scannable):
+## Phase Validation
+- [ ] All files accounted for (sum = total)
+- [ ] No duplicate files across groups
+- [ ] Dependency chains are acyclic
+- [ ] Each group has valid commit type
+
+❌ Bad (Verbose Prose):
+"The agent should verify that all files are included and make sure no files
+appear in multiple groups and check that the dependency ordering is correct
+and validate each group has an appropriate type."
+```
+
+### Upfront Clarity ROI
+
+**Research Finding:** Detailed instructions outperform terse ones by reducing rework costs.
+
+| Instruction Length | Initial Cost | Rework Cost | Total Cost | Quality |
+|-------------------|--------------|-------------|------------|---------|
+| Terse (200 lines) | 5K tokens | 30K tokens | 35K tokens | Low |
+| Verbose prose (1000) | 25K tokens | 10K tokens | 35K tokens | Medium |
+| **Structured (800)** | **20K tokens** | **2K tokens** | **22K tokens** | **High** |
+
+**Key Insight:** Structured, detailed instructions save tokens overall AND improve quality.
+
+**Practical Guidelines:**
+- Simple agents: 300-500 lines with 2-3 phases
+- Medium agents: 500-800 lines with 3-4 phases
+- Complex agents: 800-1200 lines with 4-6 phases
+- Don't sacrifice clarity for brevity
+
+---
+
 ## Task Decomposition
 
 ### Decomposition Strategy
@@ -338,6 +440,183 @@ sub_agent_type: refactoring-analyzer
 
 ---
 
+## Tool Abstraction Guidelines
+
+**Core Principle:** Encapsulate complex, repeated operations into `pnpm tools <name>` commands instead of raw bash scripts.
+
+### When to Create Tools
+
+| Scenario | Create Tool? | Rationale |
+|----------|--------------|-----------|
+| Complex command with 5+ arguments | ✅ Yes | Encapsulates complexity |
+| Operation repeated in 3+ agents/commands | ✅ Yes | DRY principle, consistency |
+| Multi-step process with error handling | ✅ Yes | Encapsulates logic, handles errors |
+| Requires specific environment setup | ✅ Yes | Setup handled internally |
+| Simple one-liner command | ❌ No | Overhead not justified |
+| One-time operation | ❌ No | Tool creation overhead too high |
+
+### Tool Design Principles
+
+**Single Responsibility:**
+```bash
+# ✅ Good: Focused tools
+pnpm tools dev:categorize-errors /tmp/dev.log
+pnpm tools dev:health-check
+pnpm tools dev:start-monitored
+
+# ❌ Bad: Swiss-army-knife tool
+pnpm tools dev:everything --categorize --health --start
+```
+
+**Clear Interface:**
+```bash
+# ✅ Good: Explicit parameters
+pnpm tools session info --format json
+pnpm tools logs tail --lines 100 --follow
+
+# ❌ Bad: Ambiguous flags
+pnpm tools session -f json -i
+pnpm tools logs -l 100 -f
+```
+
+**Consistent Error Handling:**
+```typescript
+// ✅ Good: Clear error messages
+try {
+  const session = await loadSession();
+} catch (error) {
+  if (error.code === 'ENOENT') {
+    throw new Error('No active session found. Start Claude Code first.');
+  }
+  throw error;
+}
+
+// ❌ Bad: Generic errors
+try {
+  const session = await loadSession();
+} catch (error) {
+  throw new Error('Error loading session');
+}
+```
+
+### Tool Implementation Template
+
+**File Structure:**
+```
+tools/
+├── src/
+│   ├── commands/
+│   │   ├── dev/
+│   │   │   ├── categorize-errors.ts    # Logic
+│   │   │   ├── health-check.ts
+│   │   │   └── index.ts                # Command exports
+│   │   └── session/
+│   │       ├── info.ts
+│   │       └── conversation.ts
+│   └── cli/
+│       └── main.ts                      # CLI entry point
+```
+
+**Command Template:**
+```typescript
+// tools/src/commands/dev/categorize-errors.ts
+import { readFileSync } from 'fs';
+
+export interface CategorizeOptions {
+  format?: 'json' | 'text';
+}
+
+export async function categorizeErrors(
+  logFile: string,
+  options: CategorizeOptions = {}
+) {
+  // Validate inputs
+  if (!existsSync(logFile)) {
+    throw new Error(`Log file not found: ${logFile}`);
+  }
+
+  // Execute logic
+  const content = readFileSync(logFile, 'utf-8');
+  const results = parseAndCategorize(content);
+
+  // Format output
+  return options.format === 'json'
+    ? JSON.stringify(results, null, 2)
+    : formatAsText(results);
+}
+```
+
+### Benefits of Tool Abstraction
+
+**Consistency:**
+- All agents use same tool → same behavior
+- Single source of truth for complex operations
+
+**Maintainability:**
+- Update logic in one place → all agents benefit
+- Easier to test (unit tests for tools)
+
+**Clarity:**
+- Agent instructions become simpler
+- Focus on logic, not parsing/formatting
+
+**Example - Error Categorization:**
+
+```markdown
+# ❌ Before: 40 lines of bash in every agent
+Bash: cat /tmp/dev.log | grep -E "error|exception" | while read line; do
+  if [[ $line =~ TS[0-9]+ ]]; then
+    # TypeScript error
+    # ... 15 more lines of parsing ...
+  elif [[ $line =~ "Cannot find module" ]]; then
+    # Dependency error
+    # ... 10 more lines of parsing ...
+  fi
+done
+
+# ✅ After: One line tool call
+Bash: pnpm tools dev:categorize-errors /tmp/dev.log --format json
+
+# Returns structured data:
+{
+  "typescript": { "count": 15, "files": [...], "errors": [...] },
+  "dependency": { "count": 3, "files": [...], "errors": [...] },
+  "summary": { "total": 18, "critical": 5, "risk_level": "medium" }
+}
+```
+
+### Migration Strategy
+
+**Identify candidates:**
+1. Grep for bash commands used in 3+ agents/commands
+2. Look for complex parsing logic (regex, awk, sed)
+3. Find operations with multiple steps
+
+**Extract to tool:**
+1. Create tool in `tools/src/commands/[domain]/[operation].ts`
+2. Implement with proper error handling and validation
+3. Add unit tests
+4. Update agents to use tool instead of raw bash
+
+**Update agent instructions:**
+```markdown
+# Before:
+5. **Parse errors from log:**
+   ```bash
+   cat /tmp/dev.log | grep -E ... | awk ... | sed ...
+   # 20+ lines of complex bash
+   ```
+
+# After:
+5. **Parse errors from log:**
+   ```bash
+   pnpm tools dev:categorize-errors /tmp/dev.log --format json
+   ```
+   Returns structured JSON with error categories, counts, and details.
+```
+
+---
+
 ## Workflow & Orchestration
 
 ### Workflow Definition
@@ -497,6 +776,96 @@ Main agent waits for result
 This is sequential, not parallel!
 ```
 ```
+
+---
+
+## Strategy Documentation Pattern
+
+**Core Principle:** Document strategies with consistent "When/What/Why/Priority" structure for clarity and quick decision-making.
+
+### Strategy Template
+
+```markdown
+### Strategy [Letter/Name]: [Strategy Name]
+
+**When:** [Clear trigger conditions - when to use this strategy]
+
+**What it does:** [Concrete description of actions taken]
+
+**Why use this:** [Justification and benefits over alternatives]
+
+**Priority:** [1-5 or High/Medium/Low based on impact/urgency]
+
+**Steps:**
+1. [Numbered, actionable process]
+2. [Each step concrete and measurable]
+3. [Include validation checkpoints]
+
+**Validation:**
+- [ ] [Measurable success criterion 1]
+- [ ] [Measurable success criterion 2]
+
+**Example:**
+[Brief example showing strategy in action]
+```
+
+### Example - Port Conflict Strategy
+
+```markdown
+### Strategy A: Port Conflict Resolution
+
+**When:** Port conflict errors detected (EADDRINUSE, "address already in use")
+
+**What it does:** Identifies process using required ports (3000/3001) and resolves conflicts
+
+**Why use this:** Ports must be free before dev servers can start. This is a blocking issue that prevents all other fixes.
+
+**Priority:** 1 (CRITICAL - must fix before proceeding)
+
+**Steps:**
+1. Identify conflicting process: `lsof -i :3000 -i :3001 | grep LISTEN`
+2. Choose resolution approach:
+   - **Option A:** Kill process (if safe): `kill -9 [PID]`
+   - **Option B:** Change port in `.env` files: Edit `apps/web/.env` and `apps/api/.env`
+3. Verify ports are now free: `lsof -i :3000 -i :3001` returns no results
+
+**Validation:**
+- [ ] Port 3000 is free
+- [ ] Port 3001 is free
+- [ ] No conflicting processes remain
+
+**Example:**
+```
+$ lsof -i :3000
+node    12345 user   24u  IPv4  TCP *:3000 (LISTEN)
+
+Decision: Process 12345 is old dev server, safe to kill
+Action: kill -9 12345
+Verify: lsof -i :3000 (no output)
+Result: Port now available ✓
+```
+```
+
+### Strategy Comparison Table
+
+For quick scanning, provide comparison table:
+
+| Strategy | When | Priority | Typical Time | Risk |
+|----------|------|----------|--------------|------|
+| A: Port Conflict | EADDRINUSE error | 1 (Critical) | 30 seconds | Low |
+| B: Dependencies | Module not found | 2 (High) | 2-5 minutes | Low |
+| C: Prisma Issues | Client/schema error | 3 (High) | 1-2 minutes | Low |
+| D: Environment | Missing env vars | 4 (Medium) | 1 minute | Low |
+| E: TypeScript (delegate) | >10 TS errors | 5 (Medium) | 2-3 minutes | Low |
+| F: Build Errors | Compilation failed | 6 (Medium) | 3-5 minutes | Medium |
+| G: Configuration | Config/path issues | 7 (Low) | 5-10 minutes | Medium |
+
+### Benefits of Structured Strategy Documentation
+
+**Consistency:** All strategies follow same pattern, easy to scan
+**Clarity:** "When/What/Why" answers key questions immediately
+**Priority:** Explicit priority guides execution order
+**Measurability:** Validation checklist ensures completeness
 
 ---
 
@@ -703,6 +1072,111 @@ git stash pop  # Restore original state
 
 ---
 
+## Agent Optimization Principles
+
+**Goal:** Create agents that are clear, maintainable, and token-efficient (in that order).
+
+### Optimization Priority Framework
+
+| Priority | Focus Area | Metrics | Example Actions |
+|----------|-----------|---------|-----------------|
+| **1. Clarity** | Can agent execute task correctly? | Zero ambiguity, clear decision points | Add "When/What/Why" to strategies |
+| **2. Maintainability** | Can agent be updated easily? | DRY violations, duplication count | Extract tools, standardize patterns |
+| **3. Token Efficiency** | Are instructions optimal length? | Token count, information density | Use tables > prose, reference > duplicate |
+
+**Key Insight:** Optimizing for token count at the expense of clarity is counterproductive. Clarity reduces rework, which saves more tokens overall.
+
+### Refactoring Patterns for Existing Agents
+
+#### Pattern 1: Standardize Strategy Documentation
+
+**Before:**
+```markdown
+### Strategy A: Port Conflicts
+When: EADDRINUSE errors
+Steps: Find and kill process
+```
+
+**After:**
+```markdown
+### Strategy A: Port Conflict Resolution
+**When:** Port conflict errors detected (EADDRINUSE, "address already in use")
+**What it does:** Identifies process using ports 3000/3001 and resolves conflicts
+**Why use this:** Blocking issue - must fix before other strategies can work
+**Priority:** 1 (CRITICAL)
+**Steps:** [Detailed numbered steps]
+**Validation:** [Checklist]
+```
+
+**Impact:** +15% clarity, +5% tokens, +30% maintainability
+
+#### Pattern 2: Consolidate Examples
+
+**Before:** 5 shallow examples (20-30 lines each, output-focused)
+**After:** 3 deep examples (80-120 lines each, decision-focused)
+
+**Benefits:**
+- Examples teach decision-making patterns
+- Show trade-offs and alternatives
+- Demonstrate when to escalate or delegate
+- Include time/quality metrics
+
+**Impact:** +50% pedagogical value, +20% tokens (acceptable trade-off)
+
+#### Pattern 3: Extract Repeated Operations to Tools
+
+**Before:** 40 lines of bash parsing in 3 agents
+**After:** `pnpm tools dev:categorize-errors` used by all 3
+
+**Impact:** -120 lines total, +80% maintainability, +100% testability
+
+### Measurement Approach
+
+**Clarity Assessment:**
+- Can new developer understand agent's purpose? (yes/no)
+- Are decision points explicit? (count ambiguous sections)
+- Do examples teach or just show output? (teachable moments count)
+
+**Maintainability Metrics:**
+- Duplication count (grep for repeated patterns)
+- Tool abstraction opportunities (bash commands used 3+ times)
+- Consistency violations (strategies with different structures)
+
+**Token Efficiency:**
+- Total token count (baseline)
+- Information density (tables vs prose ratio)
+- Reference vs duplication ratio
+
+### Incremental Optimization Roadmap
+
+**Phase 1: High Priority (Do First)**
+- Fix consistency issues (standardize all strategies)
+- Deepen examples (2-3 excellent > 5 shallow)
+- Create high-impact tools (used in 3+ agents)
+
+**Phase 2: Medium Priority (Do Next)**
+- Convert prose to structured formats (tables, checklists)
+- Extract shared content to reference docs
+- Add missing validation checklists
+
+**Phase 3: Low Priority (Nice-to-Have)**
+- Create additional tools (single-use complex operations)
+- Add efficiency metrics to examples
+- Polish formatting and navigation
+
+**ROI Framework:**
+
+| Effort | Impact on Clarity | Impact on Maintainability | Do It? |
+|--------|-------------------|---------------------------|--------|
+| High | High | High | ✅ Yes (Phase 1) |
+| High | High | Low | ✅ Yes (if clarity critical) |
+| High | Low | High | ⚠️ Maybe (Phase 2) |
+| High | Low | Low | ❌ No |
+| Low | High | High | ✅ Yes (quick wins) |
+| Low | Any | Any | ✅ Yes (low cost) |
+
+---
+
 ## Implementation Mapping
 
 ### Slash Command Implementation
@@ -833,6 +1307,138 @@ For each agent PRD, provide:
    - Content: Real-world usage scenarios with before/after
    - Audience: New users learning the agent
 
+### Example Quality Guidelines
+
+**Core Principle:** Examples should teach decision-making, not just show output.
+
+#### Example Depth Standard
+
+**Minimum Standard:** 80-120 lines per pedagogical example
+
+**Required Elements:**
+1. **Context:** What situation triggered this example?
+2. **Decision Points:** Why was option A chosen over B?
+3. **Process:** Step-by-step with reasoning at each step
+4. **Outcome:** What happened? Was it successful?
+5. **Lessons:** What can readers learn? When to use different approach?
+
+#### Example Structure Pattern
+
+```markdown
+### Example [N]: [Scenario Type] - [Key Learning]
+
+**Context:**
+[Describe starting situation, what triggered agent invocation]
+
+**Phase 1: [Phase Name]**
+```
+[Show actual output or relevant snapshot]
+```
+
+**Decision Process:**
+[Explain reasoning - why these choices were made]
+- **Option A:** [Description] → [Why chosen/rejected]
+- **Option B:** [Description] → [Why chosen/rejected]
+- **Selected:** [Option] because [rationale]
+
+**Phase 2: [Next Phase]**
+[Continue with decisions and outcomes]
+
+**Summary & Lessons:**
+**Total Time:** [Duration]
+**Fixes Applied:** [List with context]
+**Key Decisions:** [What mattered and why]
+**Alternative Approaches:** [What else could have been done]
+**When to Use Different Approach:** [Guidance for similar scenarios]
+
+**Time Comparison:**
+- Manual approach: [Estimate] (reasoning: [why])
+- Agent approach: [Actual] (savings: [X%])
+```
+
+#### Example Diversity Guidelines
+
+| Example Type | Percentage | Purpose | Depth |
+|--------------|------------|---------|-------|
+| **Common Case** | 60% (2-3 examples) | Teach standard workflow | 80-100 lines |
+| **Complex Case** | 30% (1-2 examples) | Teach decision-making | 100-120 lines |
+| **Edge Case** | 10% (1 example) | Teach exception handling | 60-80 lines |
+
+#### Anti-Pattern: Minimal Examples
+
+**❌ Bad Example (Output-Only, No Learning):**
+```markdown
+### Example 1: TypeScript Errors
+
+**Input:** `/dev:debug`
+
+**Output:**
+```
+✓ Phase 1: Assessment Complete
+✓ Phase 2: Fixed 15 TypeScript errors
+✓ Phase 3: Verification Passed
+```
+
+**Problems:**
+- No context (why did errors occur?)
+- No decision-making (how were they fixed?)
+- No lessons (what should reader learn?)
+- Too brief (15 lines, minimal pedagogical value)
+```
+
+**✅ Good Example (Decision-Focused, Teaching):**
+```markdown
+### Example 1: Common Scenario - Multiple Error Types
+
+**Context:**
+After pulling latest from develop, dev server fails. User doesn't know error types or count.
+
+**Phase 1: Assessment & Decision-Making**
+```
+Server Status: RUNNING but compilation failed
+Errors: 15 TypeScript + 1 Prisma + 2 Environment
+Total: 18 issues
+```
+
+**Decision Process:**
+Agent analyzes priorities:
+- **Prisma must come first** - If client not generated, other fixes pointless
+- **Environment second** - DATABASE_URL needed for Prisma
+- **TypeScript last** - 15 errors > 10 threshold → delegate to lint-debugger
+
+**Strategy Selection:** C (Prisma) → D (Environment) → E (TypeScript delegation)
+**Rationale:** Follow dependency chain, use delegation threshold
+
+**Phase 2: Systematic Fixes**
+[Show each fix with decisions and validation]
+
+**Phase 3: Verification**
+[Show validation steps and success]
+
+**Summary & Lessons:**
+**Total Time:** 3m 45s (vs 15-20m manual)
+**Key Decisions:**
+1. Priority order prevented wasted effort (Prisma first)
+2. Delegation threshold worked (15 > 10 justified delegation)
+3. Systematic approach caught all issues
+
+**Alternative Approaches:**
+- ❌ Fix TypeScript first → Would still fail (Prisma missing)
+- ❌ Fix manually → 4x slower, higher error risk
+- ✅ Systematic + delegation → Fast, comprehensive
+
+**When to Use Different:**
+- <10 TS errors: Fix manually instead of delegating
+- Prisma schema invalid: Need manual schema fixes first
+```
+
+**Benefits:**
+- **Teaching-focused:** Shows not just what happened, but why
+- **Decision transparency:** Explains reasoning at each step
+- **Complete workflow:** From problem to solution with context
+- **Actionable lessons:** Readers learn patterns they can apply
+- **Trade-off analysis:** Shows alternatives and why they were rejected
+
 ### Example Documentation Structure
 
 ```markdown
@@ -847,6 +1453,171 @@ docs/
 │           ├── 02-multi-file-type-update.md
 │           └── 03-api-contract-change.md
 ```
+
+---
+
+## Real-World Case Studies
+
+### Case Study 1: `/git:commit` Command - Excellent Delegation Pattern
+
+**What Made It Successful:**
+
+**1. Clear Responsibility Separation**
+- Command: Orchestrates workflow, manages user interaction
+- `commit-grouper`: Analyzes and groups changes (974 lines)
+- `commit-message-generator`: Creates messages (invoked in parallel)
+
+**2. Parallel Execution Efficiency**
+```markdown
+# Lines 139-170 demonstrate optimal parallelization
+Phase 3: Message generation for 3 groups
+  Task(sub_agent="commit-message-generator", group=group-1)
+  Task(sub_agent="commit-message-generator", group=group-2)
+  Task(sub_agent="commit-message-generator", group=group-3)
+  # All three in SINGLE response
+
+Time savings: 3 × 30s sequential = 90s → 35s parallel = 61% faster
+```
+
+**3. Structured Outputs Enable Composition**
+- `commit-grouper` returns JSON with exact schema
+- Command validates JSON structure
+- `commit-message-generator` receives validated group objects
+- No ambiguity, no rework
+
+**Metrics:**
+- Token efficiency: 8x cleaner context (analysis isolated in subagent)
+- Time savings: 60%+ through parallelization
+- Reliability: JSON contracts prevent integration errors
+
+**Key Patterns to Replicate:**
+✅ Orchestrator doesn't analyze - delegates to specialist
+✅ Parallel invocation in single response (not sequential)
+✅ Structured JSON contracts between agents
+✅ Validation gates between phases
+
+**File Location:** `.claude/commands/git/commit.md` (617 lines)
+
+---
+
+### Case Study 2: `/dev:debug` Phase 0 - Context Isolation Best Practice
+
+**What Made It Successful:**
+
+**1. Advanced Delegation When Stuck (Lines 93-476)**
+```markdown
+Trigger: >15 min without progress, tried 2-3 solutions
+
+Strategy: Delegate to specialists in PARALLEL
+  - stack-trace-analyzer: Parse 10,000-line traces → 50-line summary
+  - common-error-researcher: Search 100s of results → top 5 solutions
+  - monorepo-specialist: Analyze configs → targeted fixes
+
+Main thread receives: 400 lines actionable intel
+Instead of: 50,000 lines raw diagnostic data
+
+Context efficiency: 8x cleaner (91% noise → 24% noise)
+```
+
+**2. Decision Tree for Strategy Selection (Lines 1028-1035)**
+```markdown
+Quick Decision Tree:
+1. Error unclear? → L (stack-trace-analyzer)
+2. Config question? → I-B (best-practices-researcher)
+3. Known error? → I (common-error-researcher)
+4. Monorepo issue? → J (monorepo-specialist)
+5. Build problem? → K (build-system-debugger)
+6. Still stuck? → H (root-cause-analyst)
+
+Prevents: Circular debugging, wasted time
+Enables: Fast, correct specialist selection
+```
+
+**3. Context Isolation Through File System (Lines 516-528)**
+```bash
+# Write verbose output to file
+pnpm dev 2>&1 | tee /tmp/dev-output.log &
+
+# Main thread reads ONLY tail (last 100 lines)
+tail -n 100 /tmp/dev-output.log
+
+# Subagents read full file when needed
+Task(stack-trace-analyzer, log=/tmp/dev-output.log)
+```
+
+**Metrics:**
+- Context pollution: 91% → 24% (8x improvement)
+- Time to solution: 45+ min manual → 5 min with specialists (9x faster)
+- Success rate: Systematic approach prevents missed issues
+
+**Key Patterns to Replicate:**
+✅ Delegate verbose operations to subagents (context isolation)
+✅ Write raw output to disk, load summaries only
+✅ Provide decision tree for specialist selection
+✅ Document efficiency metrics to justify delegation
+
+**File Location:** `.claude/commands/dev/debug.md` (1,796 lines)
+
+---
+
+### Case Study 3: `commit-grouper` Subagent - Single Responsibility Example
+
+**What Made It Successful:**
+
+**1. Laser-Focused Responsibility**
+```markdown
+Must Do:
+- Analyze git changes (status, diffs)
+- Categorize by system and nature
+- Group logically with dependencies
+- Return structured JSON
+
+Must NOT Do:
+- Generate commit messages (commit-message-generator's job)
+- Execute git commands (orchestrator's job)
+- Write documentation
+- Make commits
+```
+
+**2. Self-Contained Instructions (974 Lines)**
+- Complete problem definition
+- Tool usage guidance (when to use Read vs Grep vs Bash)
+- Decision criteria (4 strategies with "when to use")
+- Quality standards (9 validation checkboxes)
+- 3 comprehensive examples (40-100 lines each)
+
+**3. Explicit Output Contract (Lines 428-447)**
+```json
+{
+  "strategy_used": "dependency-flow",
+  "commit_groups": [
+    {
+      "id": "group-1",
+      "type": "feat",
+      "scope": "api",
+      "files": ["apps/api/src/auth/controller.ts"],
+      "reasoning": "Why grouped this way"
+    }
+  ],
+  "metadata": {
+    "total_files": 8,
+    "total_groups": 3
+  }
+}
+```
+
+**Metrics:**
+- Reusability: Used by `/git:commit`, potential for other git workflows
+- Reliability: Structured output prevents integration failures
+- Maintainability: Single responsibility = easy to update/test
+
+**Key Patterns to Replicate:**
+✅ One job, one output format, clear boundaries
+✅ Self-contained instructions (no external context assumptions)
+✅ Explicit JSON schema for outputs
+✅ 3-5 diverse examples showing decision-making
+
+**File Location:** `.claude/agents/git/commit-grouper.md` (974 lines)
 
 ---
 
@@ -1171,6 +1942,10 @@ autoCommit: true
 ✅ Use structured data formats (JSON) for inter-agent communication
 ✅ Consider error scenarios explicitly
 ✅ Add user approval gates at key decision points
+✅ Use context isolation for verbose operations
+✅ Create tools for repeated bash patterns (3+ uses)
+✅ Write 80-120 line examples with decision-making
+✅ Document strategies with When/What/Why/Priority
 
 ### DON'T:
 ❌ Create monolithic agents that do everything
@@ -1183,6 +1958,9 @@ autoCommit: true
 ❌ Design sub-agents that depend on main agent context
 ❌ Skip documentation
 ❌ Forget to test the full workflow
+❌ Put verbose output in main thread (use subagents)
+❌ Write minimal examples that skip reasoning
+❌ Duplicate bash logic across strategies (create tool)
 
 ---
 
@@ -1288,6 +2066,7 @@ See: `.claude/commands/git/commit.md` + `commit-grouper.md` + `commit-message-ge
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.1 | 2025-10-22 | Documentation Writer | Added context optimization, tool abstraction, example quality, strategy patterns, case studies |
 | 1.0 | 2025-10-21 | Agent Platform Team | Initial comprehensive guidelines |
 
 ---

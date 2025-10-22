@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { CreateResourceDto, ListResourcesDto, UpdateResourceDto } from './dto';
-import type { ResourcesService } from './resources.service';
+import { ResourcesService } from './resources.service';
 
 @ApiTags('resources')
 @Controller('resources')
