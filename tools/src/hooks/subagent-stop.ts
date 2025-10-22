@@ -18,17 +18,17 @@
  * }
  */
 
-import { execSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { query } from "@anthropic-ai/claude-agent-sdk";
-import { glob } from "glob";
-import { createSubagentStopHook } from "../services/hook-input";
-import type { SubagentStopInput } from "../services/hook-input";
-import { createHookLogger } from "../services/logger";
-import type { Logger } from "../services/logger";
-import { sessionAgents } from "../tools/session";
-import type { SubagentInvocation } from "../tools/session";
+import { execSync } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { query } from '@anthropic-ai/claude-agent-sdk';
+import { glob } from 'glob';
+import { createSubagentStopHook } from '../services/hook-input';
+import type { SubagentStopInput } from '../services/hook-input';
+import { createHookLogger } from '../services/logger';
+import type { Logger } from '../services/logger';
+import { sessionAgents } from '../tools/session';
+import type { SubagentInvocation } from '../tools/session';
 
 // ============================================================================
 // Configuration
@@ -58,9 +58,9 @@ interface AgentFrontmatter {
  */
 async function parseAgentFrontmatter(
   agentType: string,
-  logger: Logger
+  logger: Logger,
 ): Promise<AgentFrontmatter | null> {
-  const agentsDir = join(REPO_ROOT, ".claude", "agents");
+  const agentsDir = join(REPO_ROOT, '.claude', 'agents');
 
   try {
     // Search for agent files using glob patterns
@@ -72,12 +72,9 @@ async function parseAgentFrontmatter(
       nodir: true,
     });
 
-    await logger.debug(
-      `Found ${matches.length} potential agent file(s) for ${agentType}`,
-      {
-        matches,
-      }
-    );
+    await logger.debug(`Found ${matches.length} potential agent file(s) for ${agentType}`, {
+      matches,
+    });
 
     if (matches.length === 0) {
       await logger.warn(`No agent file found for type: ${agentType}`);
@@ -92,7 +89,7 @@ async function parseAgentFrontmatter(
     }
     await logger.debug(`Using agent file: ${agentPath}`);
 
-    const content = await readFile(agentPath, "utf-8");
+    const content = await readFile(agentPath, 'utf-8');
 
     // Extract frontmatter (between --- markers)
     const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
@@ -109,7 +106,7 @@ async function parseAgentFrontmatter(
     const frontmatter: AgentFrontmatter = {};
 
     // Parse YAML-like frontmatter (simple key: value parsing)
-    const lines = frontmatterText.split("\n");
+    const lines = frontmatterText.split('\n');
     for (const line of lines) {
       const match = line.match(/^(\w+):\s*(.+)$/);
       if (match) {
@@ -118,14 +115,9 @@ async function parseAgentFrontmatter(
         if (!key || !value) {
           continue;
         }
-        if (key === "autoCommit") {
-          frontmatter.autoCommit = value.trim().toLowerCase() === "true";
-        } else if (
-          key === "name" ||
-          key === "description" ||
-          key === "tools" ||
-          key === "model"
-        ) {
+        if (key === 'autoCommit') {
+          frontmatter.autoCommit = value.trim().toLowerCase() === 'true';
+        } else if (key === 'name' || key === 'description' || key === 'tools' || key === 'model') {
           frontmatter[key] = value.trim();
         }
       }
@@ -152,29 +144,22 @@ async function parseAgentFrontmatter(
  *
  * In all cases, we should NOT auto-commit by default.
  */
-async function shouldAutoCommit(
-  agentType: string,
-  logger: Logger
-): Promise<boolean> {
+async function shouldAutoCommit(agentType: string, logger: Logger): Promise<boolean> {
   const frontmatter = await parseAgentFrontmatter(agentType, logger);
 
   if (!frontmatter) {
     await logger.warn(
-      `No agent file found for ${agentType}, defaulting to autoCommit: false (safe default)`
+      `No agent file found for ${agentType}, defaulting to autoCommit: false (safe default)`,
     );
     return false; // Safe default: do not commit if we can't find the agent file
   }
 
   if (frontmatter.autoCommit === undefined) {
-    await logger.info(
-      `Agent ${agentType} has no autoCommit field, defaulting to false`
-    );
+    await logger.info(`Agent ${agentType} has no autoCommit field, defaulting to false`);
     return false; // Safe default: do not commit unless explicitly enabled
   }
 
-  await logger.info(
-    `Agent ${agentType} autoCommit setting: ${frontmatter.autoCommit}`
-  );
+  await logger.info(`Agent ${agentType} autoCommit setting: ${frontmatter.autoCommit}`);
   return frontmatter.autoCommit;
 }
 
@@ -186,38 +171,33 @@ function gitCommand(command: string): string {
   try {
     return execSync(command, {
       cwd: REPO_ROOT,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
   } catch (_error) {
-    return "";
+    return '';
   }
 }
 
 function hasChanges(): boolean {
-  const status = gitCommand("git status --porcelain");
+  const status = gitCommand('git status --porcelain');
   return !!status;
 }
 
 async function stageChanges(logger: Logger): Promise<void> {
   try {
-    gitCommand("git add -A");
-    await logger.debug("Staged changes for commit");
+    gitCommand('git add -A');
+    await logger.debug('Staged changes for commit');
   } catch (error) {
     const err = error as { stderr?: Buffer };
-    await logger.error("Failed to stage changes", {
+    await logger.error('Failed to stage changes', {
       error: err.stderr?.toString() || error,
     });
-    throw new Error(
-      `Failed to stage changes: ${err.stderr?.toString() || error}`
-    );
+    throw new Error(`Failed to stage changes: ${err.stderr?.toString() || error}`);
   }
 }
 
-async function commitWithAgent(
-  details: SubagentInvocation,
-  logger: Logger
-): Promise<boolean> {
+async function commitWithAgent(details: SubagentInvocation, logger: Logger): Promise<boolean> {
   try {
     // Build the prompt for the Agent SDK with subagent context
     const agentPrompt = `/git:commit
@@ -233,7 +213,7 @@ ${details.prompt}
 Please analyze the staged changes and create an appropriate semantic commit message.
 Since this is from a hook, auto-approve and execute the commit without user interaction.`;
 
-    await logger.info("Invoking /git:commit via Agent SDK", {
+    await logger.info('Invoking /git:commit via Agent SDK', {
       subagentType: details.subagentType,
       sessionId: details.sessionId,
       invocationId: details.invocationId,
@@ -244,17 +224,17 @@ Since this is from a hook, auto-approve and execute the commit without user inte
       prompt: agentPrompt,
       options: {
         maxTurns: 100,
-        settingSources: ["project", "local"], // Enable slash commands
+        settingSources: ['project', 'local'], // Enable slash commands
       },
     })) {
       // Log all Agent SDK outputs
-      await logger.debug("Agent SDK message received", {
+      await logger.debug('Agent SDK message received', {
         messageType: msg.type,
         message: msg,
       });
 
-      if (msg.type === "result") {
-        await logger.info("Agent SDK result received", {
+      if (msg.type === 'result') {
+        await logger.info('Agent SDK result received', {
           subtype: msg.subtype,
           isError: msg.is_error,
           numTurns: msg.num_turns,
@@ -262,7 +242,7 @@ Since this is from a hook, auto-approve and execute the commit without user inte
         });
 
         if (msg.is_error) {
-          await logger.error("Agent SDK execution error", {
+          await logger.error('Agent SDK execution error', {
             subtype: msg.subtype,
           });
           return false;
@@ -272,7 +252,7 @@ Since this is from a hook, auto-approve and execute the commit without user inte
 
     return true;
   } catch (error) {
-    await logger.error("Failed to commit via Agent SDK", { error });
+    await logger.error('Failed to commit via Agent SDK', { error });
     return false;
   }
 }
@@ -289,7 +269,7 @@ Since this is from a hook, auto-approve and execute the commit without user inte
 // ============================================================================
 
 async function getLatestSubagentInvocation(
-  transcriptPath: string
+  transcriptPath: string,
 ): Promise<SubagentInvocation | null> {
   try {
     const invocations = await sessionAgents(transcriptPath);
@@ -302,7 +282,7 @@ async function getLatestSubagentInvocation(
     const latest = invocations[invocations.length - 1];
     return latest ?? null;
   } catch (error) {
-    console.error("Warning: Failed to parse session:", error);
+    console.error('Warning: Failed to parse session:', error);
     return null;
   }
 }
@@ -313,13 +293,9 @@ async function getLatestSubagentInvocation(
 
 async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
   // Initialize logger
-  const logger = createHookLogger(
-    "subagent-stop",
-    input.session_id,
-    input.transcript_path
-  );
+  const logger = createHookLogger('subagent-stop', input.session_id, input.transcript_path);
 
-  await logger.info("SubagentStop hook invoked", {
+  await logger.info('SubagentStop hook invoked', {
     sessionId: input.session_id,
     transcriptPath: input.transcript_path,
     cwd: input.cwd,
@@ -328,22 +304,20 @@ async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
   // Extract subagent details from session
   const details = await getLatestSubagentInvocation(input.transcript_path);
 
-  await logger.info("Subagent details extracted", {
+  await logger.info('Subagent details extracted', {
     subagentType: details?.subagentType,
     invocationId: details?.invocationId,
   });
 
   // Exit early if we don't have valid subagent details
   if (!details || !details.subagentType) {
-    await logger.info(
-      "No valid subagent details found, exiting (not a subagent invocation)"
-    );
+    await logger.info('No valid subagent details found, exiting (not a subagent invocation)');
     return;
   }
 
   // Check if there are any changes to commit
   if (!hasChanges()) {
-    await logger.info("No changes to commit, exiting");
+    await logger.info('No changes to commit, exiting');
     return;
   }
 
@@ -352,19 +326,15 @@ async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
   const shouldCommit = await shouldAutoCommit(agentType, logger);
 
   if (!shouldCommit) {
-    await logger.info(
-      `Agent ${agentType} has autoCommit disabled, skipping commit`
-    );
-    console.error(
-      `⊘ Skipping commit for subagent: ${agentType} (autoCommit: false)`
-    );
+    await logger.info(`Agent ${agentType} has autoCommit disabled, skipping commit`);
+    console.error(`⊘ Skipping commit for subagent: ${agentType} (autoCommit: false)`);
     return;
   }
 
   // Use the valid subagent details
   const commitDetails: SubagentInvocation = details;
 
-  await logger.info("Preparing to commit changes", {
+  await logger.info('Preparing to commit changes', {
     subagentType: commitDetails.subagentType,
   });
 
@@ -375,15 +345,13 @@ async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
   const success = await commitWithAgent(commitDetails, logger);
 
   if (success) {
-    await logger.info("Successfully committed changes", {
+    await logger.info('Successfully committed changes', {
       subagentType: commitDetails.subagentType,
     });
-    console.error(
-      `✓ Committed changes from subagent: ${commitDetails.subagentType}`
-    );
+    console.error(`✓ Committed changes from subagent: ${commitDetails.subagentType}`);
   } else {
-    await logger.error("Failed to commit changes via Agent SDK");
-    console.error("✗ Failed to commit changes via Agent SDK");
+    await logger.error('Failed to commit changes via Agent SDK');
+    console.error('✗ Failed to commit changes via Agent SDK');
     process.exit(1);
   }
 }

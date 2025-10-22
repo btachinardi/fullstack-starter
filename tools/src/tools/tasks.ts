@@ -5,10 +5,10 @@
  * Supports document discovery, parsing, filtering, and task operations.
  */
 
-import { readFile, writeFile } from "node:fs/promises";
-import { basename, resolve } from "node:path";
-import { glob } from "glob";
-import yaml from "js-yaml";
+import { readFile, writeFile } from 'node:fs/promises';
+import { basename, resolve } from 'node:path';
+import { glob } from 'glob';
+import yaml from 'js-yaml';
 import type {
   AddTaskOptions,
   DiscoveredDocument,
@@ -22,7 +22,7 @@ import type {
   TaskOperationResult,
   TaskStatus,
   TaskValidationError,
-} from "../types/tasks";
+} from '../types/tasks';
 
 // ============================================================================
 // Document Discovery
@@ -37,20 +37,20 @@ import type {
  * 3. Partial path: "auth/v1" searches for `** /auth/v1.tasks.md`
  */
 export async function discoverDocuments(
-  options: DocumentScopeOptions = {}
+  options: DocumentScopeOptions = {},
 ): Promise<DiscoveredDocument[]> {
   const searchPath = options.searchPath || process.cwd();
-  const pattern = options.doc ? buildGlobPattern(options.doc) : "**/*.tasks.md";
+  const pattern = options.doc ? buildGlobPattern(options.doc) : '**/*.tasks.md';
 
   const files = await glob(pattern, {
     cwd: searchPath,
     absolute: true,
-    ignore: ["**/node_modules/**", "**/.git/**", "**/dist/**", "**/build/**"],
+    ignore: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/build/**'],
   });
 
   return files.map((path) => ({
     path: resolve(path),
-    name: basename(path, ".tasks.md"),
+    name: basename(path, '.tasks.md'),
   }));
 }
 
@@ -59,15 +59,15 @@ export async function discoverDocuments(
  */
 function buildGlobPattern(doc: string): string {
   // Strip all possible extensions first
-  const cleanName = doc.replace(/\.(tasks\.md|tasks|md)$/, "");
+  const cleanName = doc.replace(/\.(tasks\.md|tasks|md)$/, '');
 
   // Check if it looks like a complete path (has file extension or deep path)
-  if (doc.endsWith(".tasks.md")) {
+  if (doc.endsWith('.tasks.md')) {
     return doc;
   }
 
   // Check if it's a partial path (contains /)
-  if (cleanName.includes("/")) {
+  if (cleanName.includes('/')) {
     return `**/${cleanName}.tasks.md`;
   }
 
@@ -79,7 +79,7 @@ function buildGlobPattern(doc: string): string {
  * Select a document interactively from discovered documents
  */
 export async function selectDocument(
-  documents: DiscoveredDocument[]
+  documents: DiscoveredDocument[],
 ): Promise<DiscoveredDocument | null> {
   if (documents.length === 0) {
     return null;
@@ -100,10 +100,8 @@ export async function selectDocument(
 /**
  * Parse a task document from file
  */
-export async function parseTaskDocument(
-  filePath: string
-): Promise<TaskDocument> {
-  const rawContent = await readFile(filePath, "utf-8");
+export async function parseTaskDocument(filePath: string): Promise<TaskDocument> {
+  const rawContent = await readFile(filePath, 'utf-8');
   const { frontmatter, body } = extractFrontmatter(rawContent);
   const taskLists = parseTaskLists(body);
 
@@ -126,33 +124,31 @@ function extractFrontmatter(content: string): {
   const match = content.match(frontmatterRegex);
 
   if (!match || !match[1] || !match[2]) {
-    throw new Error("Invalid task document: missing frontmatter");
+    throw new Error('Invalid task document: missing frontmatter');
   }
 
   const frontmatterYaml = match[1];
   const body = match[2];
 
-  function isTaskDocumentFrontmatter(
-    data: unknown
-  ): data is TaskDocumentFrontmatter {
+  function isTaskDocumentFrontmatter(data: unknown): data is TaskDocumentFrontmatter {
     return (
-      typeof data === "object" &&
+      typeof data === 'object' &&
       data !== null &&
-      ("title" in data || "description" in data || "source" in data)
+      ('title' in data || 'description' in data || 'source' in data)
     );
   }
 
   const data = yaml.load(frontmatterYaml);
   const frontmatter = isTaskDocumentFrontmatter(data)
     ? data
-    : { title: "", description: "", source: "" };
+    : { title: '', description: '', source: '' };
 
   // Return frontmatter even if fields are missing - validation will catch this
   return {
     frontmatter: {
-      title: frontmatter.title || "",
-      description: frontmatter.description || "",
-      source: frontmatter.source || "",
+      title: frontmatter.title || '',
+      description: frontmatter.description || '',
+      source: frontmatter.source || '',
     },
     body,
   };
@@ -167,9 +163,9 @@ function parseTaskLists(body: string): TaskList[] {
 
   function isTaskListYaml(data: unknown): data is { tasks: Task[] } {
     return (
-      typeof data === "object" &&
+      typeof data === 'object' &&
       data !== null &&
-      "tasks" in data &&
+      'tasks' in data &&
       Array.isArray((data as { tasks: unknown }).tasks)
     );
   }
@@ -193,9 +189,7 @@ function parseTaskLists(body: string): TaskList[] {
         });
       }
     } catch (error) {
-      throw new Error(
-        `Failed to parse YAML in tasks:${listName}: ${(error as Error).message}`
-      );
+      throw new Error(`Failed to parse YAML in tasks:${listName}: ${(error as Error).message}`);
     }
 
     match = taskListRegex.exec(body);
@@ -209,8 +203,8 @@ function parseTaskLists(body: string): TaskList[] {
  */
 function normalizeTask(task: unknown): Task {
   // Type guard: check if task is an object
-  if (typeof task !== "object" || task === null) {
-    throw new Error("Task must be an object");
+  if (typeof task !== 'object' || task === null) {
+    throw new Error('Task must be an object');
   }
 
   const t = task as Record<string, unknown>;
@@ -218,15 +212,14 @@ function normalizeTask(task: unknown): Task {
   // Don't throw on missing fields - let validation catch this
   // Provide defaults to allow parsing to continue
   // Don't normalize status - let validation catch invalid values
-  const rawStatus =
-    typeof t.status === "string" ? t.status.toLowerCase().trim() : "todo";
+  const rawStatus = typeof t.status === 'string' ? t.status.toLowerCase().trim() : 'todo';
 
   return {
-    id: t.id ? String(t.id) : "",
-    title: t.title ? String(t.title) : "",
-    type: typeof t.type === "string" ? t.type : "unknown",
-    project: typeof t.project === "string" ? t.project : "",
-    description: typeof t.description === "string" ? t.description : "",
+    id: t.id ? String(t.id) : '',
+    title: t.title ? String(t.title) : '',
+    type: typeof t.type === 'string' ? t.type : 'unknown',
+    project: typeof t.project === 'string' ? t.project : '',
+    description: typeof t.description === 'string' ? t.description : '',
     deliverables: Array.isArray(t.deliverables) ? t.deliverables : [],
     requirements: Array.isArray(t.requirements) ? t.requirements : [],
     status: rawStatus as TaskStatus,
@@ -243,7 +236,7 @@ function normalizeTask(task: unknown): Task {
  */
 export async function listTasks(
   documentPath: string,
-  options: ListTasksOptions = {}
+  options: ListTasksOptions = {},
 ): Promise<{
   document: TaskDocument;
   tasks: Array<Task & { listName: string }>;
@@ -289,7 +282,7 @@ export async function listTasks(
  */
 export async function getTask(
   documentPath: string,
-  taskId: string
+  taskId: string,
 ): Promise<{ task: Task; listName: string } | null> {
   const document = await parseTaskDocument(documentPath);
 
@@ -319,7 +312,7 @@ export async function listTaskLists(documentPath: string): Promise<{
   const taskLists = document.taskLists.map((list) => {
     const statuses: Record<TaskStatus, number> = {
       todo: 0,
-      "in progress": 0,
+      'in progress': 0,
       completed: 0,
       cancelled: 0,
     };
@@ -348,7 +341,7 @@ export async function listTaskLists(documentPath: string): Promise<{
 export async function updateTaskStatus(
   documentPath: string,
   taskId: string,
-  newStatus: TaskStatus
+  newStatus: TaskStatus,
 ): Promise<TaskOperationResult> {
   const document = await parseTaskDocument(documentPath);
   let updatedContent = document.rawContent;
@@ -370,7 +363,7 @@ export async function updateTaskStatus(
         status: newStatus,
       });
 
-      await writeFile(documentPath, updatedContent, "utf-8");
+      await writeFile(documentPath, updatedContent, 'utf-8');
 
       return {
         success: true,
@@ -392,7 +385,7 @@ export async function updateTaskStatus(
  */
 export async function deleteTask(
   documentPath: string,
-  taskId: string
+  taskId: string,
 ): Promise<TaskOperationResult> {
   const document = await parseTaskDocument(documentPath);
   let updatedContent = document.rawContent;
@@ -409,13 +402,9 @@ export async function deleteTask(
       taskList.tasks.splice(taskIndex, 1);
 
       // Remove from raw content
-      updatedContent = deleteTaskFromYaml(
-        updatedContent,
-        taskList.name,
-        taskId
-      );
+      updatedContent = deleteTaskFromYaml(updatedContent, taskList.name, taskId);
 
-      await writeFile(documentPath, updatedContent, "utf-8");
+      await writeFile(documentPath, updatedContent, 'utf-8');
 
       return {
         success: true,
@@ -437,14 +426,12 @@ export async function deleteTask(
  */
 export async function addTask(
   documentPath: string,
-  options: AddTaskOptions
+  options: AddTaskOptions,
 ): Promise<TaskOperationResult> {
   const document = await parseTaskDocument(documentPath);
 
   // Find the task list
-  const taskList = document.taskLists.find(
-    (list) => list.name === options.list
-  );
+  const taskList = document.taskLists.find((list) => list.name === options.list);
   if (!taskList) {
     return {
       success: false,
@@ -461,10 +448,10 @@ export async function addTask(
     title: options.title,
     type: options.type,
     project: options.project,
-    description: options.description || "",
+    description: options.description || '',
     deliverables: options.deliverables || [],
     requirements: options.requirements || [],
-    status: "todo",
+    status: 'todo',
     depends_on: options.depends_on || [],
   };
 
@@ -472,13 +459,9 @@ export async function addTask(
   taskList.tasks.push(newTask);
 
   // Add to raw content
-  const updatedContent = addTaskToYaml(
-    document.rawContent,
-    options.list,
-    newTask
-  );
+  const updatedContent = addTaskToYaml(document.rawContent, options.list, newTask);
 
-  await writeFile(documentPath, updatedContent, "utf-8");
+  await writeFile(documentPath, updatedContent, 'utf-8');
 
   return {
     success: true,
@@ -499,112 +482,93 @@ function updateTaskInYaml(
   content: string,
   listName: string,
   taskId: string,
-  updates: Partial<Task>
+  updates: Partial<Task>,
 ): string {
   const taskListRegex = new RegExp(
     `(\`\`\`yaml tasks:${listName}\\s*\\n)([\\s\\S]*?)(\`\`\`)`,
-    "g"
+    'g',
   );
 
-  return content.replace(
-    taskListRegex,
-    (match, prefix, yamlContent, suffix) => {
-      const parsed = yaml.load(yamlContent) as { tasks: Task[] };
+  return content.replace(taskListRegex, (match, prefix, yamlContent, suffix) => {
+    const parsed = yaml.load(yamlContent) as { tasks: Task[] };
 
-      if (parsed && Array.isArray(parsed.tasks)) {
-        const taskIndex = parsed.tasks.findIndex(
-          (t) => String(t.id) === taskId
-        );
-        if (taskIndex !== -1) {
-          const existingTask = parsed.tasks[taskIndex];
-          if (!existingTask) {
-            return match;
-          }
-          parsed.tasks[taskIndex] = { ...existingTask, ...updates };
-
-          const updatedYaml = yaml.dump(parsed, {
-            indent: 2,
-            lineWidth: -1,
-            noRefs: true,
-          });
-
-          return `${prefix}${updatedYaml}${suffix}`;
+    if (parsed && Array.isArray(parsed.tasks)) {
+      const taskIndex = parsed.tasks.findIndex((t) => String(t.id) === taskId);
+      if (taskIndex !== -1) {
+        const existingTask = parsed.tasks[taskIndex];
+        if (!existingTask) {
+          return match;
         }
-      }
+        parsed.tasks[taskIndex] = { ...existingTask, ...updates };
 
-      return match;
+        const updatedYaml = yaml.dump(parsed, {
+          indent: 2,
+          lineWidth: -1,
+          noRefs: true,
+        });
+
+        return `${prefix}${updatedYaml}${suffix}`;
+      }
     }
-  );
+
+    return match;
+  });
 }
 
 /**
  * Delete a task from YAML block
  */
-function deleteTaskFromYaml(
-  content: string,
-  listName: string,
-  taskId: string
-): string {
+function deleteTaskFromYaml(content: string, listName: string, taskId: string): string {
   const taskListRegex = new RegExp(
     `(\`\`\`yaml tasks:${listName}\\s*\\n)([\\s\\S]*?)(\`\`\`)`,
-    "g"
+    'g',
   );
 
-  return content.replace(
-    taskListRegex,
-    (match, prefix, yamlContent, suffix) => {
-      const parsed = yaml.load(yamlContent) as { tasks: Task[] };
+  return content.replace(taskListRegex, (match, prefix, yamlContent, suffix) => {
+    const parsed = yaml.load(yamlContent) as { tasks: Task[] };
 
-      if (parsed && Array.isArray(parsed.tasks)) {
-        parsed.tasks = parsed.tasks.filter((t) => String(t.id) !== taskId);
+    if (parsed && Array.isArray(parsed.tasks)) {
+      parsed.tasks = parsed.tasks.filter((t) => String(t.id) !== taskId);
 
-        const updatedYaml = yaml.dump(parsed, {
-          indent: 2,
-          lineWidth: -1,
-          noRefs: true,
-        });
+      const updatedYaml = yaml.dump(parsed, {
+        indent: 2,
+        lineWidth: -1,
+        noRefs: true,
+      });
 
-        return `${prefix}${updatedYaml}${suffix}`;
-      }
-
-      return match;
+      return `${prefix}${updatedYaml}${suffix}`;
     }
-  );
+
+    return match;
+  });
 }
 
 /**
  * Add a new task to YAML block
  */
-function addTaskToYaml(
-  content: string,
-  listName: string,
-  newTask: Task
-): string {
+function addTaskToYaml(content: string, listName: string, newTask: Task): string {
   const taskListRegex = new RegExp(
     `(\`\`\`yaml tasks:${listName}\\s*\\n)([\\s\\S]*?)(\`\`\`)`,
-    "g"
+    'g',
   );
 
-  return content.replace(
-    taskListRegex,
-    (match, prefix, yamlContent, suffix) => {
-      const parsed = yaml.load(yamlContent) as { tasks: Task[] };
+  return content.replace(taskListRegex, (match, prefix, yamlContent, suffix) => {
+    const parsed = yaml.load(yamlContent) as { tasks: Task[] };
 
-      if (parsed && Array.isArray(parsed.tasks)) {
-        parsed.tasks.push(newTask);
+    if (parsed && Array.isArray(parsed.tasks)) {
+      parsed.tasks.push(newTask);
 
-        const updatedYaml = yaml.dump(parsed, {
-          indent: 2,
-          lineWidth: -1,
-          noRefs: true,
-        });
+      const updatedYaml = yaml.dump(parsed, {
+        indent: 2,
+        lineWidth: -1,
+        noRefs: true,
+      });
 
-        return `${prefix}${updatedYaml}${suffix}`;
-      }
-
-      return match;
+      return `${prefix}${updatedYaml}${suffix}`;
     }
-  );
+
+    return match;
+  });
 }
 
 /**
@@ -612,7 +576,7 @@ function addTaskToYaml(
  */
 function generateTaskId(tasks: Task[]): string {
   if (tasks.length === 0) {
-    return "1.1";
+    return '1.1';
   }
 
   // Parse existing IDs and find next available
@@ -631,7 +595,7 @@ function generateTaskId(tasks: Task[]): string {
     .filter((id): id is { major: number; minor: number } => id !== null);
 
   if (numericIds.length === 0) {
-    return "1.1";
+    return '1.1';
   }
 
   // Find highest ID
@@ -652,9 +616,7 @@ function generateTaskId(tasks: Task[]): string {
 /**
  * Validate a task document structure
  */
-export async function validateDocument(
-  documentPath: string
-): Promise<TaskDocumentValidation> {
+export async function validateDocument(documentPath: string): Promise<TaskDocumentValidation> {
   const errors: TaskValidationError[] = [];
 
   try {
@@ -664,19 +626,19 @@ export async function validateDocument(
     // Validate frontmatter
     if (!document.frontmatter.title) {
       errors.push({
-        severity: "error",
-        message: "Missing required frontmatter field: title",
-        location: "frontmatter",
-        field: "title",
+        severity: 'error',
+        message: 'Missing required frontmatter field: title',
+        location: 'frontmatter',
+        field: 'title',
       });
     }
 
     if (!document.frontmatter.source) {
       errors.push({
-        severity: "error",
-        message: "Missing required frontmatter field: source",
-        location: "frontmatter",
-        field: "source",
+        severity: 'error',
+        message: 'Missing required frontmatter field: source',
+        location: 'frontmatter',
+        field: 'source',
       });
     }
 
@@ -684,8 +646,8 @@ export async function validateDocument(
     for (const taskList of document.taskLists) {
       if (!taskList.name) {
         errors.push({
-          severity: "error",
-          message: "Task list missing name",
+          severity: 'error',
+          message: 'Task list missing name',
           location: `tasks:${taskList.name}`,
         });
       }
@@ -696,46 +658,42 @@ export async function validateDocument(
 
         if (!task.id) {
           errors.push({
-            severity: "error",
-            message: "Task missing required field: id",
+            severity: 'error',
+            message: 'Task missing required field: id',
             location: `tasks:${taskList.name}`,
-            field: "id",
+            field: 'id',
           });
         }
 
         if (!task.title) {
           errors.push({
-            severity: "error",
+            severity: 'error',
             message: `Task ${task.id} missing required field: title`,
             location: `tasks:${taskList.name}`,
-            field: "title",
+            field: 'title',
           });
         }
 
-        if (
-          !["todo", "in progress", "completed", "cancelled"].includes(
-            task.status
-          )
-        ) {
+        if (!['todo', 'in progress', 'completed', 'cancelled'].includes(task.status)) {
           errors.push({
-            severity: "error",
+            severity: 'error',
             message: `Task ${task.id} has invalid status: ${task.status}`,
             location: `tasks:${taskList.name}`,
-            field: "status",
+            field: 'status',
           });
         }
       }
     }
 
     return {
-      valid: errors.filter((e) => e.severity === "error").length === 0,
+      valid: errors.filter((e) => e.severity === 'error').length === 0,
       errors,
       taskCount,
       taskListCount: document.taskLists.length,
     };
   } catch (error) {
     errors.push({
-      severity: "error",
+      severity: 'error',
       message: `Failed to parse document: ${(error as Error).message}`,
     });
 

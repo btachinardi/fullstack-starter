@@ -2,7 +2,7 @@
  * Type guards for tools package
  */
 
-import type { TaskStatus } from "../types/tasks";
+import type { TaskStatus } from '../types/tasks';
 
 /**
  * Type guard to check if a value is an Error instance
@@ -16,10 +16,10 @@ export function isError(value: unknown): value is Error {
  */
 export function isErrorLike(value: unknown): value is { message: string } {
   return (
-    typeof value === "object" &&
+    typeof value === 'object' &&
     value !== null &&
-    "message" in value &&
-    typeof (value as { message: unknown }).message === "string"
+    'message' in value &&
+    typeof (value as { message: unknown }).message === 'string'
   );
 }
 
@@ -33,10 +33,10 @@ export function getErrorMessage(error: unknown): string {
   if (isErrorLike(error)) {
     return error.message;
   }
-  if (typeof error === "string") {
+  if (typeof error === 'string') {
     return error;
   }
-  return "Unknown error";
+  return 'Unknown error';
 }
 
 /**
@@ -44,10 +44,7 @@ export function getErrorMessage(error: unknown): string {
  */
 export function isTaskStatus(value: unknown): value is TaskStatus {
   return (
-    typeof value === "string" &&
-    (value === "todo" ||
-      value === "in progress" ||
-      value === "completed" ||
-      value === "cancelled")
+    typeof value === 'string' &&
+    (value === 'todo' || value === 'in progress' || value === 'completed' || value === 'cancelled')
   );
 }

@@ -185,7 +185,7 @@ export class Logger {
     level: LogLevel,
     message: string,
     data?: unknown,
-    extraContext?: LogContext
+    extraContext?: LogContext,
   ): LogEntry {
     return {
       timestamp: new Date().toISOString(),
@@ -269,7 +269,7 @@ export function createLogger(source: string, context?: LogContext): Logger {
 export function createHookLogger(
   hookName: string,
   sessionId?: string,
-  transcriptPath?: string
+  transcriptPath?: string,
 ): Logger {
   return new Logger({
     source: hookName,

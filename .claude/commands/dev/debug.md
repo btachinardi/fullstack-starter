@@ -33,10 +33,20 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 - **Runtime errors**: Server crashes, API endpoint failures, client-side errors
 - **Port conflicts**: Ports already in use by other processes
 
-**Specialized Agents:**
+**Built-in Specialized Agents:**
 
 - **lint-debugger**: Fixes TypeScript and linting errors systematically
 - **test-debugger**: Debugs and fixes test failures (if dev mode runs tests)
+
+**Recommended Custom Subagents:**
+
+Create these subagents using `@subagent-writer` to enhance debugging capabilities:
+
+- **root-cause-analyst**: Helps think through alternative solution paths when stuck on a problem
+- **common-error-researcher**: Searches web for similar errors and community solutions
+- **monorepo-specialist**: Expert in NestJS + Turborepo + PNPM workspace best practices
+- **build-system-debugger**: Analyzes webpack/vite/typescript/module resolution issues
+- **stack-trace-analyzer**: Parses complex error messages and identifies root causes
 
 **Prerequisites:**
 
@@ -45,6 +55,206 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 - `pnpm-lock.yaml` exists (or will be created via `pnpm install`)
 
 ## Instructions
+
+### Phase 0: Advanced Debugging Strategies (When You're Stuck)
+
+**Objective:** Use specialized subagents and advanced techniques to break through debugging roadblocks
+
+**When to Use:**
+
+- You've spent >15 minutes on the same error without progress
+- The error is complex or unfamiliar (build systems, module resolution, monorepo issues)
+- You've tried 2-3 solutions and none worked
+- You're considering workarounds or "hacks" instead of proper fixes
+- The error involves multiple interacting systems (webpack + TypeScript + PNPM)
+
+**Strategy H: Root Cause Analysis (when stuck on complex issues)**
+
+**When to use:** Complex errors with unclear root cause, considering hacks, or multiple failed fix attempts
+
+**Steps:**
+
+1. **Delegate to root-cause-analyst**
+
+   ```
+   Task(
+     subagent_type="root-cause-analyst",
+     description="Analyze root cause and alternative solutions",
+     prompt="I'm stuck debugging this error: [paste error message and stack trace].
+
+     Context:
+     - What I've tried: [list attempts]
+     - Current hypothesis: [your theory]
+     - Stack: NestJS + PNPM workspace + Turborepo + Webpack
+
+     Please:
+     1. Analyze the root cause (not symptoms)
+     2. Suggest 3-5 alternative solution approaches
+     3. Identify which approach is most aligned with best practices
+     4. Explain trade-offs of each approach
+     5. Warn me if I'm about to implement a hack vs proper fix"
+   )
+   ```
+
+2. **Review Analysis**
+   - Consider alternative solutions suggested
+   - Choose the most sustainable approach
+   - Avoid quick hacks that create technical debt
+
+3. **Implement Recommended Solution**
+   - Follow the best practice approach identified
+   - Document why other approaches were rejected
+
+**Strategy I: Common Error Research (for unfamiliar errors)**
+
+**When to use:** Error messages you haven't seen before, framework-specific issues, monorepo problems
+
+**Steps:**
+
+1. **Delegate to common-error-researcher**
+
+   ```
+   Task(
+     subagent_type="common-error-researcher",
+     description="Research solutions for error online",
+     prompt="Research this error and find solutions: [error message]
+
+     Context:
+     - Framework: NestJS 10 + Fastify
+     - Build tool: Webpack 5 + TypeScript 5.7
+     - Monorepo: PNPM workspaces + Turborepo
+
+     Please:
+     1. Search GitHub issues for similar problems
+     2. Find Stack Overflow discussions
+     3. Check official documentation
+     4. Identify common solutions and their success rate
+     5. Highlight solutions specific to our stack (NestJS + PNPM + Turborepo)
+     6. Warn about outdated solutions (pre-2024)"
+   )
+   ```
+
+2. **Evaluate Solutions**
+   - Prioritize solutions for your exact stack
+   - Verify solution dates (prefer recent)
+   - Check if solution is still recommended
+
+3. **Test Most Promising Solution**
+   - Start with highest-rated solution
+   - Verify it works before marking complete
+
+**Strategy J: Monorepo-Specific Debugging**
+
+**When to use:** Module resolution errors, workspace package issues, build output problems
+
+**Steps:**
+
+1. **Delegate to monorepo-specialist**
+
+   ```
+   Task(
+     subagent_type="monorepo-specialist",
+     description="Diagnose monorepo configuration issue",
+     prompt="Diagnose this monorepo problem: [error]
+
+     Setup:
+     - PNPM 9.15.0+ workspaces
+     - Turborepo 2.x
+     - NestJS 10 (uses webpack mode)
+     - React 18 + Vite 6
+
+     Issue:
+     [Paste error and context]
+
+     Please:
+     1. Check if this is a known PNPM workspace issue
+     2. Verify package.json exports are correct
+     3. Check tsconfig path mappings
+     4. Identify if webpack is configured correctly for monorepo
+     5. Suggest PNPM-specific commands to fix
+     6. Provide NestJS + Turborepo + PNPM best practices"
+   )
+   ```
+
+2. **Apply Monorepo-Specific Fixes**
+   - Update package.json exports if needed
+   - Fix tsconfig paths
+   - Configure build tools for monorepo
+
+**Strategy K: Build System Debugging**
+
+**When to use:** Webpack errors, module resolution, TypeScript compilation issues, nested dist folders
+
+**Steps:**
+
+1. **Delegate to build-system-debugger**
+
+   ```
+   Task(
+     subagent_type="build-system-debugger",
+     description="Debug build system configuration",
+     prompt="Debug this build/compilation error: [error]
+
+     Build setup:
+     - NestJS with webpack: true (nest-cli.json)
+     - TypeScript 5.7 strict mode
+     - CommonJS/ESM mixed modules
+     - PNPM workspace packages as externals
+
+     Problem:
+     [Paste error]
+
+     Please:
+     1. Identify if this is webpack, TypeScript, or module system issue
+     2. Check nest-cli.json and tsconfig.json configuration
+     3. Verify package.json "type" and "exports" settings
+     4. Identify CommonJS vs ESM conflicts
+     5. Suggest proper webpack configuration for NestJS + monorepo
+     6. Recommend TypeScript compiler options"
+   )
+   ```
+
+2. **Apply Build Configuration Fixes**
+   - Update webpack/nest-cli settings
+   - Fix module system mismatches
+   - Correct TypeScript output settings
+
+**Debugging Workflow Tips:**
+
+1. **Don't Go in Circles**
+   - If you've tried the same type of fix 3 times → delegate to root-cause-analyst
+   - If error message is unclear → delegate to stack-trace-analyzer first
+   - If error seems framework-specific → delegate to common-error-researcher
+
+2. **Use Multiple Specialists Together**
+   - Run common-error-researcher AND root-cause-analyst in parallel for maximum insight
+   - Get external knowledge + systematic thinking simultaneously
+   - Compare their recommendations before implementing
+
+3. **Know When to Stop Manual Debugging**
+   - >15 minutes without progress = time for subagent
+   - Complex stack traces = stack-trace-analyzer
+   - Considering a hack = root-cause-analyst
+   - Unfamiliar error = common-error-researcher
+
+4. **Create Project-Specific Subagents**
+   - Use `@subagent-writer` to create the recommended subagents
+   - Customize them with your project's specific stack details
+   - Reuse them across debugging sessions
+
+**Example: Using Multiple Subagents in Parallel**
+
+```
+# When truly stuck, get comprehensive help:
+
+Task(subagent_type="common-error-researcher", ...)
+Task(subagent_type="root-cause-analyst", ...)
+Task(subagent_type="monorepo-specialist", ...)
+
+# Review all three perspectives before implementing solution
+```
+
+---
 
 ### Phase 1: Initial Execution and Error Assessment
 
@@ -587,6 +797,12 @@ Always follow this priority:
 5. **TypeScript** (Strategy E) - Prevents compilation
 6. **Build/Import** (Strategy G) - Prevents bundling
 7. **Runtime** (Strategy F) - Happens after startup
+
+**Use Advanced Strategies (H-K) when:**
+- Standard strategies fail after 2-3 attempts
+- Error is unfamiliar or complex
+- You're stuck for >15 minutes
+- Considering hacks or workarounds
 
 **Validation:**
 
@@ -1158,6 +1374,94 @@ Creating apps/api/.env from .env.example...
 
 ---
 
+### Example 5: Complex Module Resolution Error (Using Advanced Strategies)
+
+**User:** `/dev:debug`
+
+**Phase 1: Assessment**
+
+```
+Running pnpm dev...
+
+Server Status:
+- Dev Process: RUNNING
+- Web App: OK
+- API App: FAILED (module loading error)
+
+Error: SyntaxError: Unexpected token 'export'
+  at packages/db/src/index.ts:7
+
+Build succeeded but runtime error loading workspace packages.
+```
+
+**Initial Fix Attempts (15 minutes spent):**
+
+```
+Attempt 1: Fixed package.json exports to use .js files
+Result: Same error persists
+
+Attempt 2: Changed TypeScript module output
+Result: New errors appeared
+
+Attempt 3: Tried different tsconfig settings
+Result: Still stuck - considering symlinking hack
+```
+
+**Phase 0: Using Advanced Strategies**
+
+```
+[Delegate to root-cause-analyst + monorepo-specialist in parallel]
+
+root-cause-analyst findings:
+- Root cause: ESM/CommonJS module system mismatch
+- 3 proper solutions: (1) Align all packages to CommonJS, (2) Use ESM throughout, (3) Configure webpack bundling
+- Best approach: #1 - Change packages to CommonJS (matches NestJS)
+- AVOID: Symlinks or manual file copying (hacks that break hot reload)
+
+monorepo-specialist findings:
+- PNPM workspace packages loaded at runtime via require()
+- package.json "type": "module" but built code is CommonJS
+- NestJS + Webpack treats workspace packages as external
+- Solution: Change "type": "commonjs" in @starter/utils package.json
+
+Recommended fix: Update package.json "type" field in utils package
+```
+
+**Phase 2: Applying Recommended Fix**
+
+```
+[1/1] Module System Alignment
+────────────────────────────────────────────
+Based on monorepo-specialist analysis:
+
+Editing packages/utils/package.json
+  Before: "type": "module"
+  After:  "type": "commonjs"
+
+✓ Module system aligned with NestJS (CommonJS)
+```
+
+**Phase 3: Verification**
+
+```
+✓ Dev servers running successfully
+✓ Web: http://localhost:3000 - OK
+✓ API: http://localhost:3001 - OK
+
+Result: Problem solved in 5 minutes with specialist help
+Avoided: 30+ minutes of trial-and-error + potential hack implementation
+
+Key learning: Delegate to specialists when stuck >15 minutes
+```
+
+**What Made the Difference:**
+
+- **Without subagents**: 45+ minutes of trial and error, might have implemented a hack
+- **With subagents**: 5 minutes to proper solution, avoided technical debt
+- **Parallel delegation**: Got both root-cause analysis AND monorepo expertise simultaneously
+
+---
+
 ## Related Commands
 
 - **`/dev:validate`**: Comprehensive validation including tests and build - use before commits
@@ -1175,6 +1479,13 @@ Creating apps/api/.env from .env.example...
    ```
    git clone [repo]
    pnpm install
+
+   # Create recommended subagents for better debugging
+   @subagent-writer create root-cause-analyst
+   @subagent-writer create common-error-researcher
+   @subagent-writer create monorepo-specialist
+   @subagent-writer create build-system-debugger
+
    /dev:debug  (handles Prisma, env, initial errors)
    ```
 
@@ -1202,6 +1513,10 @@ Creating apps/api/.env from .env.example...
 
 ---
 
-**Command Version:** 1.0
+**Command Version:** 2.0
 **Last Updated:** 2025-10-21
 **Owner:** Platform Engineering
+
+**Changelog:**
+- **v2.0**: Added Phase 0 - Advanced Debugging Strategies with specialized subagents (root-cause-analyst, common-error-researcher, monorepo-specialist, build-system-debugger)
+- **v1.0**: Initial version with basic debugging strategies

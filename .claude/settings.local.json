@@ -68,7 +68,19 @@
       "Bash(pnpm --filter \"@fullstack-starter/tools\" build:*)",
       "Read(//c/tmp/**)",
       "Bash(curl:*)",
-      "Bash(/dev/null)"
+      "Bash(/dev/null)",
+      "Bash(pnpm --filter \"@fullstack-starter/tools\" test session.test.ts)",
+      "Bash(pnpm --filter \"@fullstack-starter/tools\" test:*)",
+      "Bash(pnpm --filter \"@fullstack-starter/tools\" typecheck:*)",
+      "Bash(pnpm --filter \"@fullstack-starter/tools\" lint:*)",
+      "Bash(pnpm --filter \"@fullstack-starter/tools\" format:*)",
+      "Bash(pnpm --filter \"@fullstack-starter/tools\" exec biome check:*)",
+      "Bash(awk:*)",
+      "Bash(xargs:*)",
+      "Bash(npx tsc:*)",
+      "Bash(ln:*)",
+      "WebFetch(domain:stackoverflow.com)",
+      "Bash(pnpm -r --filter \"@starter/*\" build:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",

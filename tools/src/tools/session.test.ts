@@ -2,10 +2,10 @@
  * Session Tools Tests
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdir, writeFile, rm, readFile, access } from 'node:fs/promises';
-import { join } from 'node:path';
+import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { sessionToEnrichedMarkdown } from './session';
 
 describe('sessionToEnrichedMarkdown', () => {
@@ -22,7 +22,7 @@ describe('sessionToEnrichedMarkdown', () => {
     // Clean up test directory
     try {
       await rm(testDir, { recursive: true, force: true });
-    } catch (error) {
+    } catch (_error) {
       // Ignore cleanup errors
     }
   });
@@ -145,7 +145,7 @@ describe('sessionToEnrichedMarkdown', () => {
     expect(result.mainMarkdown).toBeTruthy();
     expect(result.mainMarkdown.length).toBeGreaterThan(0);
     expect(result.subagentFiles).toHaveLength(1);
-    expect(result.subagentFiles[0].subagentType).toBe('commit-grouper');
+    expect(result.subagentFiles[0]?.subagentType).toBe('commit-grouper');
     expect(result.filesWritten).toHaveLength(2); // Main + 1 subagent
 
     // Verify files were actually written
@@ -153,6 +153,9 @@ describe('sessionToEnrichedMarkdown', () => {
 
     // Check main session file
     const mainFile = result.filesWritten[0];
+    if (!mainFile) {
+      throw new Error('Main file path is undefined');
+    }
     expect(mainFile).toContain('58186f35-session.md');
 
     // Verify main file exists
@@ -165,6 +168,9 @@ describe('sessionToEnrichedMarkdown', () => {
 
     // Check subagent thread file
     const subagentFile = result.filesWritten[1];
+    if (!subagentFile) {
+      throw new Error('Subagent file path is undefined');
+    }
     expect(subagentFile).toContain('58186f35-subagent-commit-grouper');
 
     // Verify subagent file exists

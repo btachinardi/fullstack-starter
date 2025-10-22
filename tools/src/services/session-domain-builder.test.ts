@@ -4,10 +4,10 @@
  * Tests for two-phase parsing and domain model building
  */
 
-import { describe, it, expect } from 'vitest';
-import { SessionParser } from './session-parser';
+import { describe, expect, it } from 'vitest';
+import type { AssistantEntry, SessionEntry, UserEntry } from '../types/session';
 import { SessionDomainBuilder, buildEnrichedSession } from './session-domain-builder';
-import type { SessionEntry, UserEntry, AssistantEntry } from '../types/session';
+import { SessionParser } from './session-parser';
 
 describe('SessionDomainBuilder', () => {
   describe('Slash Command Detection', () => {
@@ -64,6 +64,9 @@ describe('SessionDomainBuilder', () => {
       // Should have one slash command message in main thread
       expect(enriched.mainThread.messages).toHaveLength(1);
       const msg = enriched.mainThread.messages[0];
+      if (!msg) {
+        throw new Error('Expected message at index 0');
+      }
       expect(msg.type).toBe('slash_command');
       if (msg.type === 'slash_command') {
         expect(msg.commandName).toBe('git:commit');
@@ -105,6 +108,9 @@ describe('SessionDomainBuilder', () => {
 
       expect(enriched.mainThread.messages).toHaveLength(1);
       const msg = enriched.mainThread.messages[0];
+      if (!msg) {
+        throw new Error('Expected message at index 0');
+      }
       expect(msg.type).toBe('user_message');
       if (msg.type === 'user_message') {
         expect(msg.content).toBe('This is a regular user message');
@@ -189,11 +195,7 @@ describe('SessionDomainBuilder', () => {
         },
       };
 
-      const entries: SessionEntry[] = [
-        subagentInvocation,
-        subagentUserMsg,
-        subagentAssistantMsg,
-      ];
+      const entries: SessionEntry[] = [subagentInvocation, subagentUserMsg, subagentAssistantMsg];
 
       const parser = new SessionParser();
       // biome-ignore lint/complexity/useLiteralKeys: accessing private field for testing
@@ -211,6 +213,9 @@ describe('SessionDomainBuilder', () => {
       // Should have subagent invocation in main thread
       expect(enriched.mainThread.messages).toHaveLength(1);
       const msg = enriched.mainThread.messages[0];
+      if (!msg) {
+        throw new Error('Expected message at index 0');
+      }
       expect(msg.type).toBe('subagent_invocation');
 
       // Should have subagent thread
@@ -470,7 +475,7 @@ describe('SessionDomainBuilder', () => {
       const enriched = buildEnrichedSession(parser);
 
       const userMsg = enriched.mainThread.messages.find(
-        (m) => m.type === 'user_message' && m.uuid === 'uuid-user'
+        (m) => m.type === 'user_message' && m.uuid === 'uuid-user',
       );
 
       expect(userMsg).toBeDefined();
@@ -556,11 +561,7 @@ describe('SessionDomainBuilder', () => {
         },
       };
 
-      const entries: SessionEntry[] = [
-        subagentInvocation,
-        subagentUserMsg,
-        subagentAssistantMsg,
-      ];
+      const entries: SessionEntry[] = [subagentInvocation, subagentUserMsg, subagentAssistantMsg];
 
       const parser = new SessionParser();
       // biome-ignore lint/complexity/useLiteralKeys: accessing private field for testing
@@ -575,7 +576,7 @@ describe('SessionDomainBuilder', () => {
       const enriched = buildEnrichedSession(parser);
 
       const invocationMsg = enriched.mainThread.messages.find(
-        (m) => m.type === 'subagent_invocation'
+        (m) => m.type === 'subagent_invocation',
       );
 
       expect(invocationMsg).toBeDefined();

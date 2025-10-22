@@ -244,6 +244,21 @@ export interface CommandStdoutMessage {
 }
 
 /**
+ * Request interrupted message (user interrupted tool use)
+ */
+export interface RequestInterruptedMessage {
+  type: 'request_interrupted';
+  uuid: MessageId;
+  timestamp: string;
+  /** Raw entry for additional metadata */
+  rawEntry: UserEntry;
+  /** Command context (if message is within a command invocation) */
+  commandContext?: CommandContext;
+  /** Subagent context (if message is in a subagent thread) */
+  subagentContext?: SubagentContext;
+}
+
+/**
  * Union type for all domain message types
  */
 export type DomainMessage =
@@ -256,7 +271,8 @@ export type DomainMessage =
   | SubagentInvocationMessage
   | SystemMessage
   | ClearCommandMessage
-  | CommandStdoutMessage;
+  | CommandStdoutMessage
+  | RequestInterruptedMessage;
 
 // ============================================================================
 // Thread Types
@@ -378,9 +394,7 @@ export function isToolCallMessage(msg: DomainMessage): msg is ToolCallMessage {
   return msg.type === 'tool_call';
 }
 
-export function isSubagentInvocationMessage(
-  msg: DomainMessage
-): msg is SubagentInvocationMessage {
+export function isSubagentInvocationMessage(msg: DomainMessage): msg is SubagentInvocationMessage {
   return msg.type === 'subagent_invocation';
 }
 
@@ -394,4 +408,8 @@ export function isClearCommandMessage(msg: DomainMessage): msg is ClearCommandMe
 
 export function isCommandStdoutMessage(msg: DomainMessage): msg is CommandStdoutMessage {
   return msg.type === 'command_stdout';
+}
+
+export function isRequestInterruptedMessage(msg: DomainMessage): msg is RequestInterruptedMessage {
+  return msg.type === 'request_interrupted';
 }

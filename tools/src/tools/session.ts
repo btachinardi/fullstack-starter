@@ -5,8 +5,8 @@
  * These are pure functions that the CLI dispatches to.
  */
 
-import { SessionParser } from '../services/session-parser.js';
 import { buildEnrichedSession } from '../services/session-domain-builder.js';
+import { SessionParser } from '../services/session-parser.js';
 import type {
   DomainMessage,
   SubagentInvocationMessage,
@@ -18,6 +18,7 @@ import {
   isAssistantThinkingMessage,
   isClearCommandMessage,
   isCommandStdoutMessage,
+  isRequestInterruptedMessage,
   isSlashCommandMessage,
   isSubagentInvocationMessage,
   isSystemMessage,
@@ -146,7 +147,7 @@ export async function sessionInfo(filePath: string): Promise<SessionInfoResult> 
  */
 export async function sessionTools(
   filePath: string,
-  options: { includeCount: boolean } = { includeCount: false }
+  options: { includeCount: boolean } = { includeCount: false },
 ): Promise<{ tools: string[] } | { toolUsage: ToolUsage[] }> {
   const parser = new SessionParser();
   await parser.load(filePath);
@@ -179,7 +180,7 @@ export async function sessionFiles(
     filterRead?: boolean;
     filterWritten?: boolean;
     filterEdited?: boolean;
-  } = {}
+  } = {},
 ): Promise<FileAccessResult | { files: string[] }> {
   const parser = new SessionParser();
   await parser.load(filePath);
@@ -232,7 +233,7 @@ export async function sessionAgents(filePath: string): Promise<SubagentInvocatio
  */
 export async function sessionConversation(
   filePath: string,
-  options: { limit?: number } = {}
+  options: { limit?: number } = {},
 ): Promise<ConversationMessage[]> {
   const parser = new SessionParser();
   await parser.load(filePath);
@@ -261,7 +262,7 @@ export async function sessionBash(filePath: string): Promise<BashCommand[]> {
  */
 export async function sessionExport(
   filePath: string,
-  options: { pretty?: boolean } = {}
+  options: { pretty?: boolean } = {},
 ): Promise<string> {
   const parser = new SessionParser();
   const session = await parser.load(filePath);
@@ -274,7 +275,7 @@ export async function sessionExport(
  */
 export async function sessionToMarkdown(
   filePath: string,
-  options: SessionMarkdownOptions = {}
+  options: SessionMarkdownOptions = {},
 ): Promise<string> {
   const parser = new SessionParser();
   const session = await parser.load(filePath);
@@ -312,7 +313,7 @@ export async function sessionToMarkdown(
       includeToolDetails,
       includeSystemMessages,
       maxOutputLength,
-      noTruncate
+      noTruncate,
     );
   }
 
@@ -397,8 +398,10 @@ function formatEditInput(input: Record<string, unknown>): string {
   const newString = input.new_string as string | undefined;
 
   let md = `**File:** \`${filePath}\`\n`;
-  if (oldString) md += `**Replace:** ${oldString.substring(0, 50)}${oldString.length > 50 ? '...' : ''}\n`;
-  if (newString) md += `**With:** ${newString.substring(0, 50)}${newString.length > 50 ? '...' : ''}\n`;
+  if (oldString)
+    md += `**Replace:** ${oldString.substring(0, 50)}${oldString.length > 50 ? '...' : ''}\n`;
+  if (newString)
+    md += `**With:** ${newString.substring(0, 50)}${newString.length > 50 ? '...' : ''}\n`;
   return md;
 }
 
@@ -422,7 +425,6 @@ function formatGlobInput(input: Record<string, unknown>): string {
   return md;
 }
 
-
 /**
  * List session files with metadata (requires project path)
  */
@@ -435,16 +437,11 @@ export async function sessionList(projectPath?: string): Promise<SessionListItem
   const projectDir = resolve(projectPath || process.cwd());
   // Transform: C:\Users\bruno\... -> C--Users-bruno-...
   const projectName = projectDir
-    .replace(/\\/g, '-')  // Replace backslashes
-    .replace(/\//g, '-')  // Replace forward slashes
-    .replace(/:/g, '-');  // Replace colons
+    .replace(/\\/g, '-') // Replace backslashes
+    .replace(/\//g, '-') // Replace forward slashes
+    .replace(/:/g, '-'); // Replace colons
 
-  const sessionsDir = join(
-    homedir(),
-    '.claude',
-    'projects',
-    projectName
-  );
+  const sessionsDir = join(homedir(), '.claude', 'projects', projectName);
 
   console.log(`Looking for sessions in: ${sessionsDir}`);
 
@@ -478,7 +475,9 @@ export async function sessionList(projectPath?: string): Promise<SessionListItem
           sessionId: session.sessionId,
         });
       } catch (error) {
-        console.log(`Failed to parse session ${file}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.log(
+          `Failed to parse session ${file}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
       }
     }
 
@@ -492,7 +491,9 @@ export async function sessionList(projectPath?: string): Promise<SessionListItem
 
     return sessionItems;
   } catch (error) {
-    console.log(`Failed to read sessions directory: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.log(
+      `Failed to read sessions directory: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
     return [];
   }
 }
@@ -502,7 +503,7 @@ export async function sessionList(projectPath?: string): Promise<SessionListItem
  */
 export async function sessionToEnrichedMarkdown(
   filePath: string,
-  options: SessionMarkdownOptions & { outputDir?: string } = {}
+  options: SessionMarkdownOptions & { outputDir?: string } = {},
 ): Promise<{
   mainMarkdown: string;
   subagentFiles: Array<{ filename: string; content: string; subagentType: string }>;
@@ -546,7 +547,7 @@ export async function sessionToEnrichedMarkdown(
       includeToolDetails,
       includeSystemMessages,
       maxOutputLength,
-      noTruncate
+      noTruncate,
     );
   }
 
@@ -562,7 +563,7 @@ export async function sessionToEnrichedMarkdown(
       includeToolDetails,
       includeSystemMessages,
       maxOutputLength,
-      noTruncate
+      noTruncate,
     );
 
     const filename = `${sessionPrefix}-subagent-${thread.subagentType}-${invocationId.substring(0, 8)}.md`;
@@ -616,7 +617,7 @@ function formatDomainMessage(
   includeToolDetails: boolean,
   includeSystemMessages: boolean,
   maxOutputLength: number,
-  noTruncate: boolean
+  noTruncate: boolean,
 ): string {
   let md = '';
   const timestamp = new Date(msg.timestamp).toLocaleTimeString();
@@ -630,6 +631,10 @@ function formatDomainMessage(
   if (isClearCommandMessage(msg)) {
     md += `## 🧹 Clear Command ${contextBadges}_${timestamp}_\n\n`;
     md += '_Session context cleared_\n\n';
+    md += '---\n\n';
+  } else if (isRequestInterruptedMessage(msg)) {
+    md += `## ⛔ Request Interrupted ${contextBadges}_${timestamp}_\n\n`;
+    md += '_User interrupted tool use_\n\n';
     md += '---\n\n';
   } else if (isSlashCommandMessage(msg)) {
     // Omit command name from title since we have the badge
@@ -657,9 +662,22 @@ function formatDomainMessage(
     md += `> ${msg.thinking.split('\n').join('\n> ')}\n\n`;
     md += '---\n\n';
   } else if (isToolCallMessage(msg)) {
-    md += formatToolCall(msg, timestamp, contextBadges, includeToolDetails, maxOutputLength, noTruncate);
+    md += formatToolCall(
+      msg,
+      timestamp,
+      contextBadges,
+      includeToolDetails,
+      maxOutputLength,
+      noTruncate,
+    );
   } else if (isSubagentInvocationMessage(msg)) {
-    md += formatSubagentInvocation(msg, sessionPrefix, timestamp, contextBadges, includeToolDetails);
+    md += formatSubagentInvocation(
+      msg,
+      sessionPrefix,
+      timestamp,
+      contextBadges,
+      includeToolDetails,
+    );
   } else if (isSystemMessage(msg) && includeSystemMessages) {
     const emoji = msg.level === 'error' ? '❌' : msg.level === 'warning' ? '⚠️' : '📊';
     const levelLabel = msg.level.toUpperCase();
@@ -680,7 +698,7 @@ function formatToolCall(
   contextBadges: string,
   includeDetails: boolean,
   maxOutputLength: number,
-  noTruncate: boolean
+  noTruncate: boolean,
 ): string {
   let md = `## 🔧 Tool: ${msg.toolUse.name} ${contextBadges}_${timestamp}_\n\n`;
 
@@ -717,14 +735,14 @@ function formatToolCall(
 function formatToolResultContent(
   content: string | Array<{ type: string; [key: string]: unknown }>,
   maxOutputLength: number,
-  noTruncate: boolean
+  noTruncate: boolean,
 ): string {
   let md = '';
 
   if (typeof content === 'string') {
     let output = content;
     if (!noTruncate && content.length > maxOutputLength) {
-      output = content.substring(0, maxOutputLength) + '\n\n... (truncated)';
+      output = `${content.substring(0, maxOutputLength)}\n\n... (truncated)`;
     }
     md += '```\n';
     md += output;
@@ -735,7 +753,7 @@ function formatToolResultContent(
         if ('type' in block && block.type === 'text' && 'text' in block) {
           let textContent = block.text as string;
           if (!noTruncate && textContent.length > maxOutputLength) {
-            textContent = textContent.substring(0, maxOutputLength) + '\n\n... (truncated)';
+            textContent = `${textContent.substring(0, maxOutputLength)}\n\n... (truncated)`;
           }
           md += '```\n';
           md += textContent;
@@ -760,7 +778,7 @@ function formatSubagentInvocation(
   sessionPrefix: string,
   timestamp: string,
   contextBadges: string,
-  includeDetails: boolean
+  includeDetails: boolean,
 ): string {
   let md = `## 🤖 Subagent Invocation: ${msg.subagentType} ${contextBadges}_${timestamp}_\n\n`;
   md += `**Subagent Type:** \`${msg.subagentType}\`\n`;
@@ -795,7 +813,7 @@ function formatSubagentThread(
   includeToolDetails: boolean,
   includeSystemMessages: boolean,
   maxOutputLength: number,
-  noTruncate: boolean
+  noTruncate: boolean,
 ): string {
   let md = '';
 
@@ -823,7 +841,7 @@ function formatSubagentThread(
       includeToolDetails,
       includeSystemMessages,
       maxOutputLength,
-      noTruncate
+      noTruncate,
     );
   }
 

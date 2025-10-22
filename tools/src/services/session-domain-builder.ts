@@ -17,12 +17,7 @@ import type {
   ToolResult,
   UserEntry,
 } from '../types/session';
-import {
-  isAssistantEntry,
-  isSystemEntry,
-  isToolUse,
-  isUserEntry,
-} from '../types/session';
+import { isAssistantEntry, isSystemEntry, isToolUse, isUserEntry } from '../types/session';
 import type {
   AssistantTextMessage,
   AssistantThinkingMessage,
@@ -31,6 +26,7 @@ import type {
   CommandStdoutMessage,
   DomainMessage,
   EnrichedSession,
+  RequestInterruptedMessage,
   SessionThread,
   SlashCommandMessage,
   SubagentContext,
@@ -121,9 +117,7 @@ export class SessionDomainBuilder {
   /**
    * Build main thread messages from timeline entries
    */
-  private buildMainThreadMessages(
-    toolUseMap: Map<string, EnrichedToolUse>
-  ): DomainMessage[] {
+  private buildMainThreadMessages(toolUseMap: Map<string, EnrichedToolUse>): DomainMessage[] {
     const messages: DomainMessage[] = [];
     const timelineEntries = this.parser.getTimelineEntries();
 
@@ -176,6 +170,14 @@ export class SessionDomainBuilder {
           continue;
         }
 
+        // Check for request interrupted pattern
+        const interruptedMsg = this.detectRequestInterrupted(entry);
+        if (interruptedMsg) {
+          interruptedMsg.commandContext = currentCommandContext;
+          messages.push(interruptedMsg);
+          continue;
+        }
+
         // Check for slash command pattern
         const slashCommand = this.detectSlashCommand(entry, nextEntry);
         if (slashCommand) {
@@ -223,6 +225,54 @@ export class SessionDomainBuilder {
     }
 
     return messages;
+  }
+
+  /**
+   * Process user entry and return appropriate message type
+   * Handles tool results, clear commands, stdout, interrupts, etc.
+   */
+  private processUserEntry(
+    entry: UserEntry,
+    nextEntry?: SessionEntry,
+  ): { message: DomainMessage; skipNext: boolean } {
+    // Check for /clear command pattern
+    const clearCommand = this.detectClearCommand(entry);
+    if (clearCommand) {
+      if (nextEntry && isUserEntry(nextEntry) && nextEntry.isMeta) {
+        return { message: clearCommand, skipNext: true };
+      }
+      return { message: clearCommand, skipNext: false };
+    }
+
+    // Check for command stdout pattern
+    const stdoutMsg = this.detectCommandStdout(entry);
+    if (stdoutMsg) {
+      return { message: stdoutMsg, skipNext: false };
+    }
+
+    // Check for request interrupted pattern
+    const interruptedMsg = this.detectRequestInterrupted(entry);
+    if (interruptedMsg) {
+      return { message: interruptedMsg, skipNext: false };
+    }
+
+    // Check for slash command pattern
+    const slashCommand = this.detectSlashCommand(entry, nextEntry);
+    if (slashCommand) {
+      return { message: slashCommand, skipNext: true };
+    }
+
+    // Check if this is a tool result message
+    if (this.isToolResultUserMessage(entry)) {
+      const toolResultMsg = this.buildToolResultMessage(entry);
+      if (toolResultMsg) {
+        return { message: toolResultMsg, skipNext: false };
+      }
+    }
+
+    // Regular user message
+    const userMsg = this.buildUserMessage(entry);
+    return { message: userMsg, skipNext: false };
   }
 
   /**
@@ -278,11 +328,47 @@ export class SessionDomainBuilder {
   }
 
   /**
+   * Detect request interrupted pattern
+   */
+  private detectRequestInterrupted(entry: UserEntry): RequestInterruptedMessage | null {
+    const content = entry.message.content;
+
+    // Check if content is an array of content blocks
+    if (typeof content === 'string' || !Array.isArray(content)) {
+      return null;
+    }
+
+    // Check if first block has the interrupted pattern
+    const firstBlock = content[0];
+    if (
+      !firstBlock ||
+      typeof firstBlock !== 'object' ||
+      !('type' in firstBlock) ||
+      !('text' in firstBlock) ||
+      firstBlock.type !== 'text'
+    ) {
+      return null;
+    }
+
+    const text = firstBlock.text;
+    if (typeof text !== 'string' || text !== '[Request interrupted by user for tool use]') {
+      return null;
+    }
+
+    return {
+      type: 'request_interrupted',
+      uuid: entry.uuid,
+      timestamp: entry.timestamp,
+      rawEntry: entry,
+    };
+  }
+
+  /**
    * Detect and merge slash command messages
    */
   private detectSlashCommand(
     entry: UserEntry,
-    nextEntry?: SessionEntry
+    nextEntry?: SessionEntry,
   ): SlashCommandMessage | null {
     const content = entry.message.content;
 
@@ -305,9 +391,8 @@ export class SessionDomainBuilder {
       return null;
     }
 
-    const commandPrompt = typeof nextEntry.message.content === 'string'
-      ? nextEntry.message.content
-      : '';
+    const commandPrompt =
+      typeof nextEntry.message.content === 'string' ? nextEntry.message.content : '';
 
     return {
       type: 'slash_command',
@@ -397,9 +482,10 @@ export class SessionDomainBuilder {
    * Build regular user message
    */
   private buildUserMessage(entry: UserEntry): UserMessage {
-    const content = typeof entry.message.content === 'string'
-      ? entry.message.content
-      : JSON.stringify(entry.message.content);
+    const content =
+      typeof entry.message.content === 'string'
+        ? entry.message.content
+        : JSON.stringify(entry.message.content);
 
     return {
       type: 'user_message',
@@ -415,7 +501,7 @@ export class SessionDomainBuilder {
    */
   private buildAssistantMessages(
     entry: AssistantEntry,
-    toolUseMap: Map<string, EnrichedToolUse>
+    toolUseMap: Map<string, EnrichedToolUse>,
   ): DomainMessage[] {
     const messages: DomainMessage[] = [];
     const content = entry.message.content;
@@ -523,7 +609,7 @@ export class SessionDomainBuilder {
       (e): e is UserEntry | AssistantEntry | SystemEntry =>
         'isSidechain' in e &&
         e.isSidechain === true &&
-        (isUserEntry(e) || isAssistantEntry(e) || isSystemEntry(e))
+        (isUserEntry(e) || isAssistantEntry(e) || isSystemEntry(e)),
     );
 
     // Build thread map by following parentUuid links
@@ -539,9 +625,7 @@ export class SessionDomainBuilder {
       let current = entry;
 
       while (current && 'parentUuid' in current && current.parentUuid) {
-        const parent = sidechainEntries.find(
-          (e) => 'uuid' in e && e.uuid === current.parentUuid
-        );
+        const parent = sidechainEntries.find((e) => 'uuid' in e && e.uuid === current.parentUuid);
         if (!parent || !('uuid' in parent)) break;
         current = parent;
         if ('uuid' in current) {
@@ -570,9 +654,8 @@ export class SessionDomainBuilder {
         continue;
       }
 
-      const prompt = typeof firstEntry.message.content === 'string'
-        ? firstEntry.message.content
-        : '';
+      const prompt =
+        typeof firstEntry.message.content === 'string' ? firstEntry.message.content : '';
 
       // Build messages for this thread
       const messages: DomainMessage[] = [];
@@ -621,7 +704,7 @@ export class SessionDomainBuilder {
    */
   private linkSubagentThreads(
     mainMessages: DomainMessage[],
-    subagentThreads: Map<string, SubagentThread>
+    subagentThreads: Map<string, SubagentThread>,
   ): void {
     for (const msg of mainMessages) {
       if (msg.type === 'subagent_invocation') {
@@ -649,6 +732,8 @@ export class SessionDomainBuilder {
               }
             }
 
+            // Delete old entry keyed by rootUuid to avoid duplicates
+            subagentThreads.delete(_rootUuid);
             // Re-add to map with invocation ID as key
             subagentThreads.set(msg.toolUse.id, thread);
             break;
@@ -663,7 +748,7 @@ export class SessionDomainBuilder {
    */
   private calculateStats(
     mainMessages: DomainMessage[],
-    _subagentThreads: Map<string, SubagentThread>
+    _subagentThreads: Map<string, SubagentThread>,
   ): {
     totalMessages: number;
     userMessages: number;

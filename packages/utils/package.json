@@ -2,20 +2,32 @@
   "name": "@starter/utils",
   "version": "0.1.0",
   "description": "Web utilities for fullstack-starter",
-  "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./errors": "./src/errors.ts",
-    "./logger": "./src/logger.ts",
-    "./format": "./src/format.ts"
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./errors": {
+      "types": "./src/errors.d.ts",
+      "default": "./src/errors.js"
+    },
+    "./logger": {
+      "types": "./src/logger.d.ts",
+      "default": "./src/logger.js"
+    },
+    "./format": {
+      "types": "./src/format.d.ts",
+      "default": "./src/format.js"
+    }
   },
   "typesVersions": {
     "*": {
-      "errors": ["./src/errors.ts"],
-      "logger": ["./src/logger.ts"],
-      "format": ["./src/format.ts"]
+      "errors": ["./src/errors.d.ts"],
+      "logger": ["./src/logger.d.ts"],
+      "format": ["./src/format.d.ts"]
     }
   },
   "files": ["src", "dist"],

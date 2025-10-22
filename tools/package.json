@@ -1,39 +1,39 @@
 {
-    "name": "@fullstack-starter/tools",
-    "version": "0.1.0",
-    "description": "CLI tools for fullstack-starter project",
-    "type": "module",
-    "private": true,
-    "scripts": {
-        "build": "tsup",
-        "dev": "tsup --watch",
-        "typecheck": "tsc --noEmit",
-        "test": "vitest run",
-        "test:watch": "vitest --watch",
-        "lint": "biome check .",
-        "format": "biome format --write ."
-    },
-    "bin": {
-        "tools": "./dist/cli/main.js"
-    },
-    "dependencies": {
-        "@anthropic-ai/claude-agent-sdk": "^0.1.23",
-        "chalk": "^5.3.0",
-        "commander": "^12.1.0",
-        "glob": "^11.0.3",
-        "js-yaml": "^4.1.0",
-        "ora": "^8.1.1"
-    },
-    "devDependencies": {
-        "@biomejs/biome": "^1.9.4",
-        "@types/js-yaml": "^4.0.9",
-        "@types/node": "^22.10.2",
-        "tsup": "^8.3.5",
-        "tsx": "^4.20.6",
-        "typescript": "^5.7.2",
-        "vitest": "^2.1.8"
-    },
-    "engines": {
-        "node": ">=20.0.0"
-    }
+  "name": "@fullstack-starter/tools",
+  "version": "0.1.0",
+  "description": "CLI tools for fullstack-starter project",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "lint": "biome check .",
+    "format": "biome format --write ."
+  },
+  "bin": {
+    "tools": "./dist/cli/main.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.23",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "glob": "^11.0.3",
+    "js-yaml": "^4.1.0",
+    "ora": "^8.1.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }

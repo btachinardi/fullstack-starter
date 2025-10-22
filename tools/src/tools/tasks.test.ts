@@ -4,11 +4,11 @@
  * Comprehensive test suite for task document management functions
  */
 
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import * as tasks from "./tasks";
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import * as tasks from './tasks';
 
 // Sample task document content
 const SAMPLE_TASK_DOC = `---
@@ -102,14 +102,14 @@ tasks:
 \`\`\`
 `;
 
-describe("Tasks Management Tool", () => {
+describe('Tasks Management Tool', () => {
   let tempDir: string;
   let testDocPath: string;
 
   beforeEach(async () => {
     // Create temporary directory for tests
-    tempDir = await mkdtemp(join(tmpdir(), "tasks-test-"));
-    testDocPath = join(tempDir, "test-feature.tasks.md");
+    tempDir = await mkdtemp(join(tmpdir(), 'tasks-test-'));
+    testDocPath = join(tempDir, 'test-feature.tasks.md');
   });
 
   afterEach(async () => {
@@ -117,11 +117,11 @@ describe("Tasks Management Tool", () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  describe("discoverDocuments", () => {
-    it("should discover task documents in directory", async () => {
+  describe('discoverDocuments', () => {
+    it('should discover task documents in directory', async () => {
       // Create multiple task documents
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
-      await writeFile(join(tempDir, "feature-2.tasks.md"), SAMPLE_TASK_DOC);
+      await writeFile(join(tempDir, 'feature-2.tasks.md'), SAMPLE_TASK_DOC);
 
       const docs = await tasks.discoverDocuments({ searchPath: tempDir });
 
@@ -130,73 +130,69 @@ describe("Tasks Management Tool", () => {
       expect(firstDoc).toBeDefined();
       if (firstDoc) {
         expect(firstDoc.name).toMatch(/test-feature|feature-2/);
-        expect(firstDoc.path).toContain(".tasks.md");
+        expect(firstDoc.path).toContain('.tasks.md');
       }
     });
 
-    it("should return empty array when no documents found", async () => {
+    it('should return empty array when no documents found', async () => {
       const docs = await tasks.discoverDocuments({ searchPath: tempDir });
 
       expect(docs).toHaveLength(0);
     });
 
-    it("should filter by simple document name", async () => {
+    it('should filter by simple document name', async () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
-      await writeFile(join(tempDir, "other-feature.tasks.md"), SAMPLE_TASK_DOC);
+      await writeFile(join(tempDir, 'other-feature.tasks.md'), SAMPLE_TASK_DOC);
 
       const docs = await tasks.discoverDocuments({
         searchPath: tempDir,
-        doc: "test-feature",
+        doc: 'test-feature',
       });
 
       expect(docs).toHaveLength(1);
       const firstDoc = docs[0];
       expect(firstDoc).toBeDefined();
       if (firstDoc) {
-        expect(firstDoc.name).toBe("test-feature");
+        expect(firstDoc.name).toBe('test-feature');
       }
     });
   });
 
-  describe("parseTaskDocument", () => {
-    it("should parse valid task document", async () => {
+  describe('parseTaskDocument', () => {
+    it('should parse valid task document', async () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
 
       const doc = await tasks.parseTaskDocument(testDocPath);
 
-      expect(doc.frontmatter.title).toBe("Test Feature");
-      expect(doc.frontmatter.description).toBe(
-        "Sample task document for testing"
-      );
-      expect(doc.frontmatter.source).toBe("ai/docs/prds/test-prd.md");
+      expect(doc.frontmatter.title).toBe('Test Feature');
+      expect(doc.frontmatter.description).toBe('Sample task document for testing');
+      expect(doc.frontmatter.source).toBe('ai/docs/prds/test-prd.md');
       expect(doc.taskLists).toHaveLength(2);
       const firstList = doc.taskLists[0];
       const secondList = doc.taskLists[1];
       expect(firstList).toBeDefined();
       expect(secondList).toBeDefined();
       if (firstList && secondList) {
-        expect(firstList.name).toBe("db");
-        expect(secondList.name).toBe("api");
+        expect(firstList.name).toBe('db');
+        expect(secondList.name).toBe('api');
       }
     });
 
-    it("should throw error for missing frontmatter", async () => {
+    it('should throw error for missing frontmatter', async () => {
       await writeFile(testDocPath, INVALID_TASK_DOC);
 
       await expect(tasks.parseTaskDocument(testDocPath)).rejects.toThrow(
-        "Invalid task document: missing frontmatter"
+        'Invalid task document: missing frontmatter',
       );
     });
 
-    it("should throw error for malformed YAML", async () => {
+    it('should throw error for malformed YAML', async () => {
       await writeFile(testDocPath, MALFORMED_YAML_DOC);
 
-      await expect(tasks.parseTaskDocument(testDocPath)).rejects.toThrow(
-        /Failed to parse YAML/
-      );
+      await expect(tasks.parseTaskDocument(testDocPath)).rejects.toThrow(/Failed to parse YAML/);
     });
 
-    it("should parse all task fields correctly", async () => {
+    it('should parse all task fields correctly', async () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
 
       const doc = await tasks.parseTaskDocument(testDocPath);
@@ -208,18 +204,18 @@ describe("Tasks Management Tool", () => {
       expect(firstTask).toBeDefined();
       if (!firstTask) return;
 
-      expect(firstTask.id).toBe("1.1");
-      expect(firstTask.title).toBe("Create database schema");
-      expect(firstTask.type).toBe("database-schema");
-      expect(firstTask.project).toBe("apps/api");
-      expect(firstTask.description).toBe("Design database schema");
-      expect(firstTask.deliverables).toEqual(["CREATE TABLE test_table"]);
-      expect(firstTask.requirements).toEqual(["Follow naming conventions"]);
-      expect(firstTask.status).toBe("todo");
+      expect(firstTask.id).toBe('1.1');
+      expect(firstTask.title).toBe('Create database schema');
+      expect(firstTask.type).toBe('database-schema');
+      expect(firstTask.project).toBe('apps/api');
+      expect(firstTask.description).toBe('Design database schema');
+      expect(firstTask.deliverables).toEqual(['CREATE TABLE test_table']);
+      expect(firstTask.requirements).toEqual(['Follow naming conventions']);
+      expect(firstTask.status).toBe('todo');
       expect(firstTask.depends_on).toEqual([]);
     });
 
-    it("should parse task dependencies", async () => {
+    it('should parse task dependencies', async () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
 
       const doc = await tasks.parseTaskDocument(testDocPath);
@@ -231,53 +227,53 @@ describe("Tasks Management Tool", () => {
       expect(secondTask).toBeDefined();
       if (!secondTask) return;
 
-      expect(secondTask.depends_on).toEqual(["1.1"]);
+      expect(secondTask.depends_on).toEqual(['1.1']);
     });
   });
 
-  describe("listTasks", () => {
+  describe('listTasks', () => {
     beforeEach(async () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
     });
 
-    it("should list all tasks without filters", async () => {
+    it('should list all tasks without filters', async () => {
       const result = await tasks.listTasks(testDocPath);
 
       expect(result.tasks).toHaveLength(4);
       const firstTask = result.tasks[0];
       expect(firstTask).toBeDefined();
       if (firstTask) {
-        expect(firstTask.id).toBe("1.1");
-        expect(firstTask.listName).toBe("db");
+        expect(firstTask.id).toBe('1.1');
+        expect(firstTask.listName).toBe('db');
       }
     });
 
-    it("should filter tasks by status", async () => {
-      const result = await tasks.listTasks(testDocPath, { status: "todo" });
+    it('should filter tasks by status', async () => {
+      const result = await tasks.listTasks(testDocPath, { status: 'todo' });
 
       expect(result.tasks).toHaveLength(2);
-      expect(result.tasks.every((t) => t.status === "todo")).toBe(true);
+      expect(result.tasks.every((t) => t.status === 'todo')).toBe(true);
     });
 
-    it("should filter tasks by list name", async () => {
-      const result = await tasks.listTasks(testDocPath, { list: "api" });
+    it('should filter tasks by list name', async () => {
+      const result = await tasks.listTasks(testDocPath, { list: 'api' });
 
       expect(result.tasks).toHaveLength(2);
-      expect(result.tasks.every((t) => t.listName === "api")).toBe(true);
+      expect(result.tasks.every((t) => t.listName === 'api')).toBe(true);
     });
 
-    it("should filter tasks by type", async () => {
-      const result = await tasks.listTasks(testDocPath, { type: "endpoint" });
+    it('should filter tasks by type', async () => {
+      const result = await tasks.listTasks(testDocPath, { type: 'endpoint' });
 
       expect(result.tasks).toHaveLength(1);
       const firstTask = result.tasks[0];
       expect(firstTask).toBeDefined();
       if (firstTask) {
-        expect(firstTask.type).toBe("endpoint");
+        expect(firstTask.type).toBe('endpoint');
       }
     });
 
-    it("should apply head limit", async () => {
+    it('should apply head limit', async () => {
       const result = await tasks.listTasks(testDocPath, { head: 2 });
 
       expect(result.tasks).toHaveLength(2);
@@ -286,12 +282,12 @@ describe("Tasks Management Tool", () => {
       expect(firstTask).toBeDefined();
       expect(secondTask).toBeDefined();
       if (firstTask && secondTask) {
-        expect(firstTask.id).toBe("1.1");
-        expect(secondTask.id).toBe("1.2");
+        expect(firstTask.id).toBe('1.1');
+        expect(secondTask.id).toBe('1.2');
       }
     });
 
-    it("should apply tail limit", async () => {
+    it('should apply tail limit', async () => {
       const result = await tasks.listTasks(testDocPath, { tail: 2 });
 
       expect(result.tasks).toHaveLength(2);
@@ -300,69 +296,65 @@ describe("Tasks Management Tool", () => {
       expect(firstTask).toBeDefined();
       expect(secondTask).toBeDefined();
       if (firstTask && secondTask) {
-        expect(firstTask.id).toBe("2.1");
-        expect(secondTask.id).toBe("2.2");
+        expect(firstTask.id).toBe('2.1');
+        expect(secondTask.id).toBe('2.2');
       }
     });
 
-    it("should combine multiple filters", async () => {
+    it('should combine multiple filters', async () => {
       const result = await tasks.listTasks(testDocPath, {
-        list: "api",
-        status: "completed",
+        list: 'api',
+        status: 'completed',
       });
 
       expect(result.tasks).toHaveLength(1);
       const firstTask = result.tasks[0];
       expect(firstTask).toBeDefined();
       if (firstTask) {
-        expect(firstTask.id).toBe("2.2");
+        expect(firstTask.id).toBe('2.2');
       }
     });
   });
 
-  describe("getTask", () => {
+  describe('getTask', () => {
     beforeEach(async () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
     });
 
-    it("should retrieve task by ID", async () => {
-      const result = await tasks.getTask(testDocPath, "1.1");
+    it('should retrieve task by ID', async () => {
+      const result = await tasks.getTask(testDocPath, '1.1');
 
       expect(result).not.toBeNull();
-      expect(result?.task.id).toBe("1.1");
-      expect(result?.task.title).toBe("Create database schema");
-      expect(result?.listName).toBe("db");
+      expect(result?.task.id).toBe('1.1');
+      expect(result?.task.title).toBe('Create database schema');
+      expect(result?.listName).toBe('db');
     });
 
-    it("should return null for non-existent task", async () => {
-      const result = await tasks.getTask(testDocPath, "99.99");
+    it('should return null for non-existent task', async () => {
+      const result = await tasks.getTask(testDocPath, '99.99');
 
       expect(result).toBeNull();
     });
 
-    it("should find task across different lists", async () => {
-      const result = await tasks.getTask(testDocPath, "2.1");
+    it('should find task across different lists', async () => {
+      const result = await tasks.getTask(testDocPath, '2.1');
 
       expect(result).not.toBeNull();
-      expect(result?.listName).toBe("api");
+      expect(result?.listName).toBe('api');
     });
   });
 
-  describe("updateTaskStatus", () => {
+  describe('updateTaskStatus', () => {
     beforeEach(async () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
     });
 
-    it("should update task status successfully", async () => {
-      const result = await tasks.updateTaskStatus(
-        testDocPath,
-        "1.1",
-        "in progress"
-      );
+    it('should update task status successfully', async () => {
+      const result = await tasks.updateTaskStatus(testDocPath, '1.1', 'in progress');
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain("todo → in progress");
-      expect(result.taskIds).toEqual(["1.1"]);
+      expect(result.message).toContain('todo → in progress');
+      expect(result.taskIds).toEqual(['1.1']);
 
       // Verify the change was persisted
       const doc = await tasks.parseTaskDocument(testDocPath);
@@ -373,55 +365,47 @@ describe("Tasks Management Tool", () => {
       const task = firstList.tasks[0];
       expect(task).toBeDefined();
       if (task) {
-        expect(task.status).toBe("in progress");
+        expect(task.status).toBe('in progress');
       }
     });
 
-    it("should handle all valid status transitions", async () => {
+    it('should handle all valid status transitions', async () => {
       // todo → in progress
-      let result = await tasks.updateTaskStatus(
-        testDocPath,
-        "1.1",
-        "in progress"
-      );
+      let result = await tasks.updateTaskStatus(testDocPath, '1.1', 'in progress');
       expect(result.success).toBe(true);
 
       // in progress → completed
-      result = await tasks.updateTaskStatus(testDocPath, "1.1", "completed");
+      result = await tasks.updateTaskStatus(testDocPath, '1.1', 'completed');
       expect(result.success).toBe(true);
 
       // completed → cancelled
-      result = await tasks.updateTaskStatus(testDocPath, "1.1", "cancelled");
+      result = await tasks.updateTaskStatus(testDocPath, '1.1', 'cancelled');
       expect(result.success).toBe(true);
 
       // cancelled → todo
-      result = await tasks.updateTaskStatus(testDocPath, "1.1", "todo");
+      result = await tasks.updateTaskStatus(testDocPath, '1.1', 'todo');
       expect(result.success).toBe(true);
     });
 
-    it("should return error for non-existent task", async () => {
-      const result = await tasks.updateTaskStatus(
-        testDocPath,
-        "99.99",
-        "completed"
-      );
+    it('should return error for non-existent task', async () => {
+      const result = await tasks.updateTaskStatus(testDocPath, '99.99', 'completed');
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain("not found");
+      expect(result.message).toContain('not found');
     });
   });
 
-  describe("deleteTask", () => {
+  describe('deleteTask', () => {
     beforeEach(async () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
     });
 
-    it("should delete task successfully", async () => {
-      const result = await tasks.deleteTask(testDocPath, "1.1");
+    it('should delete task successfully', async () => {
+      const result = await tasks.deleteTask(testDocPath, '1.1');
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain("deleted");
-      expect(result.taskIds).toEqual(["1.1"]);
+      expect(result.message).toContain('deleted');
+      expect(result.taskIds).toEqual(['1.1']);
 
       // Verify task was removed
       const doc = await tasks.parseTaskDocument(testDocPath);
@@ -429,103 +413,103 @@ describe("Tasks Management Tool", () => {
       expect(firstList).toBeDefined();
       if (!firstList) return;
 
-      const task = firstList.tasks.find((t) => t.id === "1.1");
+      const task = firstList.tasks.find((t) => t.id === '1.1');
       expect(task).toBeUndefined();
     });
 
-    it("should return error for non-existent task", async () => {
-      const result = await tasks.deleteTask(testDocPath, "99.99");
+    it('should return error for non-existent task', async () => {
+      const result = await tasks.deleteTask(testDocPath, '99.99');
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain("not found");
+      expect(result.message).toContain('not found');
     });
   });
 
-  describe("addTask", () => {
+  describe('addTask', () => {
     beforeEach(async () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
     });
 
-    it("should add task to existing list", async () => {
+    it('should add task to existing list', async () => {
       const result = await tasks.addTask(testDocPath, {
-        list: "db",
-        title: "New database task",
-        type: "database-schema",
-        project: "apps/api",
-        description: "A new task for testing",
-        deliverables: ["New deliverable"],
-        requirements: ["New requirement"],
+        list: 'db',
+        title: 'New database task',
+        type: 'database-schema',
+        project: 'apps/api',
+        description: 'A new task for testing',
+        deliverables: ['New deliverable'],
+        requirements: ['New requirement'],
       });
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain("added");
+      expect(result.message).toContain('added');
       expect(result.taskIds).toHaveLength(1);
 
       // Verify task was added
       const doc = await tasks.parseTaskDocument(testDocPath);
-      const dbTasks = doc.taskLists.find((list) => list.name === "db");
+      const dbTasks = doc.taskLists.find((list) => list.name === 'db');
       expect(dbTasks?.tasks).toHaveLength(3); // Was 2, now 3
       const newTask = dbTasks?.tasks[2];
       expect(newTask).toBeDefined();
       if (newTask) {
-        expect(newTask.title).toBe("New database task");
+        expect(newTask.title).toBe('New database task');
       }
     });
 
-    it("should generate unique task ID", async () => {
+    it('should generate unique task ID', async () => {
       const result = await tasks.addTask(testDocPath, {
-        list: "db",
-        title: "Another task",
-        type: "database-migration",
-        project: "apps/api",
+        list: 'db',
+        title: 'Another task',
+        type: 'database-migration',
+        project: 'apps/api',
       });
 
       expect(result.success).toBe(true);
 
       const doc = await tasks.parseTaskDocument(testDocPath);
-      const dbTasks = doc.taskLists.find((list) => list.name === "db");
+      const dbTasks = doc.taskLists.find((list) => list.name === 'db');
       const newTask = dbTasks?.tasks[dbTasks.tasks.length - 1];
-      expect(newTask?.id).toBe("1.3"); // Next after 1.2
+      expect(newTask?.id).toBe('1.3'); // Next after 1.2
     });
 
-    it("should return error for non-existent task list", async () => {
+    it('should return error for non-existent task list', async () => {
       const result = await tasks.addTask(testDocPath, {
-        list: "nonexistent",
-        title: "Test",
-        type: "test",
-        project: "apps/api",
+        list: 'nonexistent',
+        title: 'Test',
+        type: 'test',
+        project: 'apps/api',
       });
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain("not found");
+      expect(result.message).toContain('not found');
     });
   });
 
-  describe("listTaskLists", () => {
+  describe('listTaskLists', () => {
     beforeEach(async () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
     });
 
-    it("should list all task lists with statistics", async () => {
+    it('should list all task lists with statistics', async () => {
       const result = await tasks.listTaskLists(testDocPath);
 
       expect(result.taskLists).toHaveLength(2);
 
-      const dbList = result.taskLists.find((list) => list.name === "db");
+      const dbList = result.taskLists.find((list) => list.name === 'db');
       expect(dbList).toBeDefined();
       expect(dbList?.taskCount).toBe(2);
       expect(dbList?.statuses.todo).toBe(2);
 
-      const apiList = result.taskLists.find((list) => list.name === "api");
+      const apiList = result.taskLists.find((list) => list.name === 'api');
       expect(apiList).toBeDefined();
       expect(apiList?.taskCount).toBe(2);
-      expect(apiList?.statuses["in progress"]).toBe(1);
+      expect(apiList?.statuses['in progress']).toBe(1);
       expect(apiList?.statuses.completed).toBe(1);
     });
   });
 
-  describe("validateDocument", () => {
-    it("should validate correct document structure", async () => {
+  describe('validateDocument', () => {
+    it('should validate correct document structure', async () => {
       await writeFile(testDocPath, SAMPLE_TASK_DOC);
 
       const result = await tasks.validateDocument(testDocPath);
@@ -536,7 +520,7 @@ describe("Tasks Management Tool", () => {
       expect(result.taskListCount).toBe(2);
     });
 
-    it("should detect missing frontmatter fields", async () => {
+    it('should detect missing frontmatter fields', async () => {
       const invalidDoc = `---
 title: Test
 ---
@@ -553,10 +537,10 @@ tasks:
       const result = await tasks.validateDocument(testDocPath);
 
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.field === "source")).toBe(true);
+      expect(result.errors.some((e) => e.field === 'source')).toBe(true);
     });
 
-    it("should detect invalid status values", async () => {
+    it('should detect invalid status values', async () => {
       const invalidDoc = `---
 title: Test
 description: Test
@@ -578,12 +562,10 @@ tasks:
       const result = await tasks.validateDocument(testDocPath);
 
       expect(result.valid).toBe(false);
-      expect(
-        result.errors.some((e) => e.message.includes("invalid status"))
-      ).toBe(true);
+      expect(result.errors.some((e) => e.message.includes('invalid status'))).toBe(true);
     });
 
-    it("should detect missing required task fields", async () => {
+    it('should detect missing required task fields', async () => {
       const invalidDoc = `---
 title: Test
 description: Test
@@ -601,7 +583,7 @@ tasks:
       const result = await tasks.validateDocument(testDocPath);
 
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.field === "title")).toBe(true);
+      expect(result.errors.some((e) => e.field === 'title')).toBe(true);
     });
   });
 });
