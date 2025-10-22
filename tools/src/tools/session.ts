@@ -337,7 +337,71 @@ function formatContextBadges(msg: DomainMessage): string {
   return badges.length > 0 ? `${badges.join(' ')} ` : '';
 }
 
-function formatToolInput(toolName: string, input: Record<string, unknown>): string {
+/**
+ * Find the minimum heading level in markdown text
+ * @param text - The markdown text to analyze
+ * @returns The minimum heading level found (1-6), or null if no headings
+ */
+function findMinHeadingLevel(text: string): number | null {
+  const lines = text.split('\n');
+  let minLevel: number | null = null;
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^(#{1,6})\s/);
+    if (headingMatch) {
+      const currentHashes = headingMatch[1] || '';
+      const level = currentHashes.length;
+      if (minLevel === null || level < minLevel) {
+        minLevel = level;
+      }
+    }
+  }
+
+  return minLevel;
+}
+
+/**
+ * Adjust markdown heading levels to maintain proper hierarchy
+ * @param text - The markdown text to adjust
+ * @param parentLevel - The heading level of the parent section (e.g., 2 for h2)
+ * @returns Text with adjusted heading levels
+ */
+function adjustMarkdownHeadings(text: string, parentLevel: number): string {
+  const minLevel = findMinHeadingLevel(text);
+
+  // If no headings found, return as-is
+  if (minLevel === null) return text;
+
+  // Calculate offset: content headings should be children of parent (parentLevel + 1)
+  // But only if they would conflict (be at or above parent level)
+  const targetLevel = parentLevel + 1;
+  const offset = minLevel <= parentLevel ? targetLevel - minLevel : 0;
+
+  // If no adjustment needed, return as-is
+  if (offset === 0) return text;
+
+  const lines = text.split('\n');
+  const adjustedLines = lines.map((line) => {
+    const headingMatch = line.match(/^(#{1,6})\s/);
+    if (headingMatch) {
+      const currentHashes = headingMatch[1] || '';
+      const currentLevel = currentHashes.length;
+      const newLevel = Math.min(currentLevel + offset, 6); // Cap at h6
+      const newHashes = '#'.repeat(newLevel);
+      return line.replace(/^#{1,6}\s/, `${newHashes} `);
+    }
+    return line;
+  });
+
+  return adjustedLines.join('\n');
+}
+
+function formatToolInput(
+  toolName: string,
+  input: Record<string, unknown>,
+  maxOutputLength: number,
+  noTruncate: boolean,
+): string {
   // Format tool inputs in a readable way based on tool type
   switch (toolName) {
     case 'Bash':
@@ -345,9 +409,9 @@ function formatToolInput(toolName: string, input: Record<string, unknown>): stri
     case 'Read':
       return formatReadInput(input);
     case 'Write':
-      return formatWriteInput(input);
+      return formatWriteInput(input, maxOutputLength, noTruncate);
     case 'Edit':
-      return formatEditInput(input);
+      return formatEditInput(input, maxOutputLength, noTruncate);
     case 'Grep':
       return formatGrepInput(input);
     case 'Glob':
@@ -383,25 +447,78 @@ function formatReadInput(input: Record<string, unknown>): string {
   return md;
 }
 
-function formatWriteInput(input: Record<string, unknown>): string {
+function formatWriteInput(
+  input: Record<string, unknown>,
+  maxOutputLength: number,
+  noTruncate: boolean,
+): string {
   const filePath = input.file_path as string;
   const content = input.content as string;
 
   let md = `**File:** \`${filePath}\`\n`;
-  md += `**Content:** ${content.length} characters\n`;
+
+  // Show content (with truncation if needed)
+  if (content) {
+    let displayContent = content;
+    const truncated = !noTruncate && content.length > maxOutputLength;
+
+    if (truncated) {
+      displayContent = content.substring(0, maxOutputLength);
+    }
+
+    md += `**Content:**\n\`\`\`\n${displayContent}`;
+    if (truncated) {
+      md += `\n\n... (truncated, ${content.length - maxOutputLength} more characters)`;
+    }
+    md += '\n\`\`\`\n';
+  }
+
   return md;
 }
 
-function formatEditInput(input: Record<string, unknown>): string {
+function formatEditInput(
+  input: Record<string, unknown>,
+  maxOutputLength: number,
+  noTruncate: boolean,
+): string {
   const filePath = input.file_path as string;
   const oldString = input.old_string as string | undefined;
   const newString = input.new_string as string | undefined;
 
   let md = `**File:** \`${filePath}\`\n`;
-  if (oldString)
-    md += `**Replace:** ${oldString.substring(0, 50)}${oldString.length > 50 ? '...' : ''}\n`;
-  if (newString)
-    md += `**With:** ${newString.substring(0, 50)}${newString.length > 50 ? '...' : ''}\n`;
+
+  // Show old string (with truncation if needed)
+  if (oldString) {
+    let displayOld = oldString;
+    const truncated = !noTruncate && oldString.length > maxOutputLength;
+
+    if (truncated) {
+      displayOld = oldString.substring(0, maxOutputLength);
+    }
+
+    md += `**Replace:**\n\`\`\`\n${displayOld}`;
+    if (truncated) {
+      md += `\n\n... (truncated, ${oldString.length - maxOutputLength} more characters)`;
+    }
+    md += '\n\`\`\`\n';
+  }
+
+  // Show new string (with truncation if needed)
+  if (newString) {
+    let displayNew = newString;
+    const truncated = !noTruncate && newString.length > maxOutputLength;
+
+    if (truncated) {
+      displayNew = newString.substring(0, maxOutputLength);
+    }
+
+    md += `**With:**\n\`\`\`\n${displayNew}`;
+    if (truncated) {
+      md += `\n\n... (truncated, ${newString.length - maxOutputLength} more characters)`;
+    }
+    md += '\n\`\`\`\n';
+  }
+
   return md;
 }
 
@@ -642,20 +759,18 @@ function formatDomainMessage(
 
     // Only show prompt details if prompt is not empty
     if (includeToolDetails && msg.commandPrompt && msg.commandPrompt.trim()) {
-      md += '<details>\n<summary>Command Prompt</summary>\n\n';
-      md += '```\n';
-      md += msg.commandPrompt;
-      md += '\n```\n';
-      md += '</details>\n\n';
+      md += '### Command Prompt\n\n';
+      md += adjustMarkdownHeadings(msg.commandPrompt, 3); // Parent is h3
+      md += '\n\n';
     }
     md += '---\n\n';
   } else if (isUserMessage(msg)) {
     md += `## 👤 User ${contextBadges}_${timestamp}_\n\n`;
-    md += `${msg.content}\n\n`;
+    md += `${adjustMarkdownHeadings(msg.content, 2)}\n\n`; // Parent is h2
     md += '---\n\n';
   } else if (isAssistantTextMessage(msg)) {
     md += `## 🤖 Assistant ${contextBadges}_${timestamp}_\n\n`;
-    md += `${msg.content}\n\n`;
+    md += `${adjustMarkdownHeadings(msg.content, 2)}\n\n`; // Parent is h2
     md += '---\n\n';
   } else if (isAssistantThinkingMessage(msg) && includeThinking) {
     md += `## 🧠 Assistant (thinking) ${contextBadges}_${timestamp}_\n\n`;
@@ -682,7 +797,7 @@ function formatDomainMessage(
     const emoji = msg.level === 'error' ? '❌' : msg.level === 'warning' ? '⚠️' : '📊';
     const levelLabel = msg.level.toUpperCase();
     md += `## ${emoji} System ${levelLabel} ${contextBadges}_${timestamp}_\n\n`;
-    md += `${msg.content}\n\n`;
+    md += `${adjustMarkdownHeadings(msg.content, 2)}\n\n`; // Parent is h2
     md += '---\n\n';
   }
 
@@ -703,7 +818,7 @@ function formatToolCall(
   let md = `## 🔧 Tool: ${msg.toolUse.name} ${contextBadges}_${timestamp}_\n\n`;
 
   if (includeDetails) {
-    md += formatToolInput(msg.toolUse.name, msg.toolUse.input);
+    md += formatToolInput(msg.toolUse.name, msg.toolUse.input, maxOutputLength, noTruncate);
     md += '\n';
   }
 
@@ -786,11 +901,9 @@ function formatSubagentInvocation(
   md += `**Invocation ID:** \`${msg.toolUse.id}\`\n\n`;
 
   if (includeDetails && msg.prompt) {
-    md += '<details>\n<summary>Prompt</summary>\n\n';
-    md += '```\n';
-    md += msg.prompt;
-    md += '\n```\n';
-    md += '</details>\n\n';
+    md += '### Prompt\n\n';
+    md += adjustMarkdownHeadings(msg.prompt, 3); // Parent is h3
+    md += '\n\n';
   }
 
   // Link to subagent thread file with session prefix
@@ -824,11 +937,9 @@ function formatSubagentThread(
   md += `**End:** ${new Date(thread.metadata.endTime).toLocaleString()}\n`;
   md += `**Total Messages:** ${thread.metadata.totalMessages}\n\n`;
 
-  md += '<details>\n<summary>Original Prompt</summary>\n\n';
-  md += '```\n';
-  md += thread.prompt;
-  md += '\n```\n';
-  md += '</details>\n\n';
+  md += '## Original Prompt\n\n';
+  md += adjustMarkdownHeadings(thread.prompt, 2); // Parent is h2
+  md += '\n\n';
 
   md += '---\n\n';
 

@@ -83,7 +83,8 @@
       "Bash(pnpm -r --filter \"@starter/*\" build:*)",
       "WebFetch(domain:jxnl.co)",
       "WebFetch(domain:www.anthropic.com)",
-      "Bash(timeout 5 curl:*)"
+      "Bash(timeout 5 curl:*)",
+      "Bash(tree:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",

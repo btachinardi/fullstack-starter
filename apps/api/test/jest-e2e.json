@@ -1,0 +1,25 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e.spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "tsconfig": {
+          "module": "commonjs",
+          "emitDecoratorMetadata": true,
+          "experimentalDecorators": true,
+          "esModuleInterop": true
+        }
+      }
+    ]
+  },
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/../src/$1",
+    "^@starter/(.*)$": "<rootDir>/../../packages/$1/src",
+    "^(.+)\\.js$": "$1"
+  },
+  "modulePathIgnorePatterns": ["<rootDir>/../../packages/.*/dist"]
+}

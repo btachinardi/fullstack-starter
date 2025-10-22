@@ -1,1185 +1,1154 @@
 ---
 description: Run pnpm dev and systematically fix all errors until applications are running successfully
-allowed-tools: Bash(pnpm *:*), Bash(ps *:*), Bash(kill *:*), Task, Read, Edit, Write
+allowed-tools: Task, TodoWrite
 model: claude-sonnet-4-5
 ---
 
 # /dev:debug
 
-Run `pnpm dev` and systematically fix all errors until all applications are running successfully without errors.
+Run `pnpm dev` and systematically fix all errors until development servers are running successfully without errors.
 
-## Objective
+## When to Use This Command
 
-Execute the development server (`pnpm dev`) and systematically identify, analyze, and fix all errors (TypeScript errors, build errors, dependency issues, runtime errors) until both API and web applications start successfully and remain running without errors.
+Invoke `/dev:debug` when:
+- Development servers fail to start
+- Startup errors are preventing compilation or runtime
+- You need systematic error diagnosis and fixing
+- Multiple error types appear and you want automated triage
+- You want dependency-aware fix prioritization (avoid wasted effort)
+
+## What This Command Does
+
+1. **Validates environment** (Node, PNPM, dependencies) before attempting startup
+2. **Starts dev servers with monitoring** and captures all error output
+3. **Categorizes errors systematically** (TypeScript, Prisma, dependencies, environment, ports, build, runtime)
+4. **Fixes errors in dependency-aware priority order** (ports → deps → Prisma → env → types → runtime)
+5. **Delegates complex debugging** to specialized subagents when stuck (8x context efficiency)
+6. **Validates success comprehensively** (HTTP health checks, process validation, log scanning)
+7. **Keeps servers running** for continued development
+
+## Success Criteria
+
+- ✅ Both API and web development servers running
+- ✅ Zero errors in logs (60-second monitoring window)
+- ✅ HTTP endpoints accessible (localhost:3000 and :3001)
+- ✅ TypeScript compilation successful
+- ✅ Hot reload working
+- ✅ All fixes follow best practices (no hacks, no type safety violations)
+
+---
 
 ## Context & Prerequisites
 
-**Project Context:**
+### Project Context
 
-- PNPM workspace monorepo with Turborepo orchestration
-- Applications: `api` (NestJS + Fastify) and `web` (React + Vite)
-- Development command: `pnpm dev` starts both apps in parallel watch mode
-- Individual app commands: `pnpm dev:api`, `pnpm dev:web`
-- TypeScript 5.7 with strict mode enforcement
-- Biome for linting and formatting
+- **Monorepo:** PNPM workspace with Turborepo orchestration
+- **Applications:**
+  - `api`: NestJS 10 + Fastify (port 3001)
+  - `web`: React 18 + Vite 6 (port 3000)
+- **Development command:** `pnpm dev` (starts both apps in parallel)
+- **Individual commands:** `pnpm dev:api`, `pnpm dev:web`
+- **Type system:** TypeScript 5.7 with strict mode
+- **Linter:** Biome 1.9+
 
-**Common Error Categories:**
+### Common Error Categories
 
-- **TypeScript errors**: Type mismatches, missing types, strict mode violations
-- **Build errors**: Import resolution, module not found, syntax errors
-- **Dependency issues**: Missing packages, version conflicts, workspace resolution
-- **Prisma issues**: Schema validation, migration needed, client generation
-- **Environment issues**: Missing `.env` variables, invalid configuration
-- **Runtime errors**: Server crashes, API endpoint failures, client-side errors
-- **Port conflicts**: Ports already in use by other processes
+1. **TypeScript Errors** - Type mismatches, missing types, strict mode violations
+2. **Build/Import Errors** - Module not found, import resolution failures
+3. **Dependency Issues** - Missing packages, version conflicts
+4. **Prisma Issues** - Schema validation, client not generated, migrations
+5. **Environment Issues** - Missing `.env` variables, invalid configuration
+6. **Runtime Errors** - Server crashes, API failures, unhandled exceptions
+7. **Port Conflicts** - Ports already in use by other processes
 
-**Built-in Specialized Agents:**
+### Required Tools
 
-- **lint-debugger**: Fixes TypeScript and linting errors systematically
-- **test-debugger**: Debugs and fixes test failures (if dev mode runs tests)
+**NOTE:** These tools need to be implemented in the `tools/` package:
 
-**Available Debugging Subagents:**
+- **`pnpm tools dev:start-monitored`** - Start dev servers with log capture
+- **`pnpm tools dev:categorize-errors`** - Parse and categorize error logs
+- **`pnpm tools dev:health-check`** - Validate server health (HTTP + process)
 
-These specialized subagents are available to help with complex debugging scenarios. If they don't exist yet, create them once using `@subagent-writer` (see Workflow Integration section).
+### Prerequisites
+
+- Node.js 20.18.0+ installed
+- PNPM 9.15.0+ installed
+- Git repository initialized
+- `package.json` exists at project root
+
+### Available Subagents
+
+**Built-In:**
+- **lint-debugger** - Fixes TypeScript and linting errors systematically
 
 **Analysis Specialists (Research & Guidance):**
 
 - **root-cause-analyst**
   - **When:** Stuck >15 min, tried 2-3 solutions, considering hacks
-  - **What:** Analyzes root cause, suggests 3-5 alternative solutions, ranks by best practices
-  - **Output:** Diagnostic report with ranked solutions and trade-off analysis
+  - **What:** Analyzes root cause, suggests 3-5 alternatives, ranks by best practices
   - **Use for:** Complex bugs, unclear root cause, evaluating solution approaches
 
 - **stack-trace-analyzer**
   - **When:** Complex multi-file stack traces, unclear error origin
-  - **What:** Parses stack traces, identifies call sequence, pinpoints exact error location
-  - **Output:** File and line number to investigate, call sequence diagram
+  - **What:** Parses traces, identifies call sequence, pinpoints exact error location
   - **Use for:** NestJS dependency errors, async errors, webpack trace parsing
 
 - **common-error-researcher**
   - **When:** Unfamiliar error, framework-specific issue, need community solutions
   - **What:** Searches GitHub issues, Stack Overflow, finds proven solutions
-  - **Output:** Top 5 solutions with sources, dates, and success indicators
   - **Use for:** Error messages you haven't seen, known framework bugs
 
 - **best-practices-researcher**
   - **When:** Need official guidance, validating configuration, learning proper patterns
   - **What:** Searches official docs, official repos, core team blogs only
-  - **Output:** Official recommendations with source links, configuration examples
   - **Use for:** "What's the right way to configure X?", verifying against official patterns
 
 **Domain Specialists (Configuration & Fixes):**
 
 - **monorepo-specialist**
-  - **When:** PNPM workspace issues, package resolution, build output structure problems
-  - **What:** Expert in NestJS + Turborepo + PNPM integration and configuration
-  - **Output:** Configuration fixes, package.json exports, tsconfig paths
+  - **When:** PNPM workspace issues, package resolution, build output problems
+  - **What:** Expert in NestJS + Turborepo + PNPM integration
   - **Use for:** Module resolution, workspace packages, monorepo build issues
 
 - **build-system-debugger**
   - **When:** Webpack/Vite errors, TypeScript compilation, module system conflicts
   - **What:** Diagnoses webpack, Vite, TypeScript config issues
-  - **Output:** Build configuration fixes, compiler option recommendations
   - **Use for:** Build failures, dist structure, CommonJS/ESM conflicts
-
-**Prerequisites:**
-
-- Git repository initialized
-- Node.js 20.18.0+ and PNPM 9.15.0+ installed
-- `pnpm-lock.yaml` exists (or will be created via `pnpm install`)
-
-## Instructions
-
-### Phase 0: Advanced Debugging Strategies (When You're Stuck)
-
-**Objective:** Use specialized subagents and advanced techniques to break through debugging roadblocks
-
-**When to Use:**
-
-- You've spent >15 minutes on the same error without progress
-- The error is complex or unfamiliar (build systems, module resolution, monorepo issues)
-- You've tried 2-3 solutions and none worked
-- You're considering workarounds or "hacks" instead of proper fixes
-- The error involves multiple interacting systems (webpack + TypeScript + PNPM)
-
-**Strategy H: Root Cause Analysis (when stuck on complex issues)**
-
-**When to use:** Complex errors with unclear root cause, considering hacks, or multiple failed fix attempts
-
-**Steps:**
-
-1. **Delegate to root-cause-analyst**
-
-   ```
-   Task(
-     subagent_type="root-cause-analyst",
-     description="Analyze root cause and alternative solutions",
-     prompt="I'm stuck debugging this error: [paste error message and stack trace].
-
-     Context:
-     - What I've tried: [list attempts]
-     - Current hypothesis: [your theory]
-     - Stack: NestJS + PNPM workspace + Turborepo + Webpack
-
-     Please:
-     1. Analyze the root cause (not symptoms)
-     2. Suggest 3-5 alternative solution approaches
-     3. Identify which approach is most aligned with best practices
-     4. Explain trade-offs of each approach
-     5. Warn me if I'm about to implement a hack vs proper fix"
-   )
-   ```
-
-2. **Review Analysis**
-   - Consider alternative solutions suggested
-   - Choose the most sustainable approach
-   - Avoid quick hacks that create technical debt
-
-3. **Implement Recommended Solution**
-   - Follow the best practice approach identified
-   - Document why other approaches were rejected
-
-**Strategy I: Community Error Research (for known errors with solutions)**
-
-**When to use:** Unfamiliar error messages, known framework bugs, need battle-tested community solutions
-
-**What it does:** Searches GitHub issues and Stack Overflow for community-validated solutions with success rates
-
-**Steps:**
-
-1. **Delegate to common-error-researcher**
-
-   ```
-   Task(
-     subagent_type="common-error-researcher",
-     description="Research community solutions for error",
-     prompt="Research this error and find community solutions: [error message]
-
-     Context:
-     - Framework: NestJS 10 + Fastify
-     - Build tool: Webpack 5 + TypeScript 5.7
-     - Monorepo: PNPM workspaces + Turborepo
-
-     Current situation: [what you've tried]
-
-     Please search for:
-     1. GitHub issues in nestjs/nest, vitejs/vite, pnpm/pnpm repos
-     2. Stack Overflow high-voted answers (100+ votes preferred)
-     3. Recently closed issues (within last year)
-     4. Solutions specific to our stack versions
-     5. Success indicators (confirmed fixes, maintainer responses)
-
-     Prioritize recent solutions (2024-2025) for our stack."
-   )
-   ```
-
-2. **Review Community Solutions**
-   - Check solution dates (prefer 2024-2025)
-   - Verify tech stack match (versions matter!)
-   - Look for maintainer confirmation or high votes
-   - Avoid one-off workarounds
-
-3. **Validate Before Implementing**
-   - Test highest-rated solution first
-   - Verify it works before marking complete
-
-**Strategy I-B: Official Best Practices Research (for configuration validation)**
-
-**When to use:** Need to verify "the right way" to configure something, want official guidance, validating current setup
-
-**What it does:** Searches only official documentation, official repos, and core team guidance (no community forums)
-
-**Steps:**
-
-1. **Delegate to best-practices-researcher**
-
-   ```
-   Task(
-     subagent_type="best-practices-researcher",
-     description="Research official best practices",
-     prompt="Research the official recommended way to: [your question]
-
-     Our current setup:
-     [Paste current configuration from package.json, tsconfig.json, etc.]
-
-     Please search official sources only:
-     1. Official docs (docs.nestjs.com, pnpm.io, turbo.build)
-     2. Official example repos (nestjs/typescript-starter, etc.)
-     3. Core team blogs and migration guides
-     4. Official RFCs and changelogs
-
-     Compare our setup vs official recommendations and identify:
-     - What we're doing correctly
-     - What should be changed
-     - Why the official pattern is recommended
-     - Migration steps if changes needed"
-   )
-   ```
-
-2. **Review Official Recommendations**
-   - All claims should have official source URLs
-   - Check version compatibility
-   - Understand the "why" behind recommendations
-
-3. **Implement Official Pattern**
-   - Follow official examples closely
-   - Don't deviate without good reason
-   - Document any intentional differences
-
-**Choosing Between Researchers:**
-- Use **best-practices-researcher** first to learn the "official way"
-- Use **common-error-researcher** when official docs don't cover your specific error
-- Use BOTH in parallel when you need comprehensive perspective
-
-**Strategy J: Monorepo-Specific Debugging**
-
-**When to use:** Module resolution errors, workspace package issues, build output problems, PNPM linking issues
-
-**What it does:** Expert analysis of NestJS + Turborepo + PNPM workspace integration, focusing on package exports, module resolution, and build configuration
-
-**Why use this:** Monorepo module resolution is different from standard Node.js - workspace packages, TypeScript paths, and build tools interact in complex ways. This specialist knows PNPM's specific behaviors.
-
-**Steps:**
-
-1. **Delegate to monorepo-specialist**
-
-   ```
-   Task(
-     subagent_type="monorepo-specialist",
-     description="Diagnose monorepo configuration issue",
-     prompt="Diagnose this monorepo problem: [error]
-
-     Our setup:
-     - PNPM 9.15.0+ workspaces with workspace:* protocol
-     - Turborepo 2.x for task orchestration
-     - NestJS 10 (webpack mode enabled in nest-cli.json)
-     - React 18 + Vite 6
-     - TypeScript 5.7 strict mode
-
-     Issue details:
-     [Paste complete error message and stack trace]
-
-     What I've tried:
-     [List attempted fixes]
-
-     Please analyze:
-     1. Is this a known PNPM workspace resolution issue?
-     2. Are package.json exports configured correctly for all workspace packages?
-     3. Do tsconfig.json path mappings align with package structure?
-     4. Is webpack configured correctly for monorepo externals?
-     5. Are we following NestJS + Turborepo + PNPM best practices?
-
-     Provide specific configuration fixes with file diffs."
-   )
-   ```
-
-2. **Review Monorepo Configuration Analysis**
-   - Check package.json "type", "main", "exports" recommendations
-   - Verify workspace:* dependencies are correct
-   - Validate tsconfig paths align with package structure
-
-3. **Apply Monorepo-Specific Fixes**
-   - Update package.json exports to point to built .js files
-   - Fix tsconfig path mappings
-   - Configure webpack externals for workspace packages
-   - Run pnpm install if package.json changes made
-
-**Strategy K: Build System Debugging**
-
-**When to use:** Webpack/Vite compilation errors, TypeScript compiler issues, module system conflicts, nested dist folder problems
-
-**What it does:** Deep diagnosis of webpack, Vite, and TypeScript configuration issues, focusing on build output structure and module resolution
-
-**Why use this:** Build systems have complex interactions between webpack loaders, TypeScript compiler, and module systems. This specialist understands webpack externals, TypeScript outDir/rootDir, and CommonJS/ESM nuances.
-
-**Steps:**
-
-1. **Delegate to build-system-debugger**
-
-   ```
-   Task(
-     subagent_type="build-system-debugger",
-     description="Debug build system configuration",
-     prompt="Debug this build/compilation error: [error]
-
-     Current build setup:
-     - NestJS 10 with webpack: true (nest-cli.json)
-     - TypeScript 5.7 strict mode, outDir: ./dist
-     - Module system: CommonJS (API), ESM (utils packages)
-     - PNPM workspace packages marked as webpack externals
-     - Turborepo orchestrating parallel builds
-
-     Build output issue:
-     [Paste error, unexpected output structure, or compilation failure]
-
-     What I've observed:
-     - Expected: dist/main.js
-     - Actual: [what you're seeing]
-
-     Please diagnose:
-     1. Is this a webpack, TypeScript, or module system issue?
-     2. Check nest-cli.json webpack configuration
-     3. Analyze tsconfig.json compiler options (outDir, rootDir, composite)
-     4. Verify package.json "type" and "exports" consistency
-     5. Identify CommonJS vs ESM conflicts
-     6. Check webpack externals configuration
-
-     Provide specific configuration fixes with explanations."
-   )
-   ```
-
-2. **Review Build System Analysis**
-   - Understand whether issue is webpack, TypeScript, or module system
-   - Check if recommended fixes align with NestJS + monorepo patterns
-   - Verify fixes won't break other parts of build
-
-3. **Apply Build Configuration Fixes**
-   - Update nest-cli.json (enable webpack if needed)
-   - Fix TypeScript compiler options
-   - Align module system (all CommonJS or all ESM)
-   - Clear build caches after config changes
-
-**Strategy L: Stack Trace Analysis (for complex error messages)**
-
-**When to use:** Multi-file stack traces, unclear error origin, deep async call stacks, webpack obfuscated errors
-
-**What it does:** Parses complex stack traces to identify the exact file, line, and call sequence causing the error
-
-**Why use this:** Complex stack traces (especially from NestJS DI, webpack bundles, or async code) can be hard to parse. This specialist extracts the signal from the noise.
-
-**Steps:**
-
-1. **Delegate to stack-trace-analyzer**
-
-   ```
-   Task(
-     subagent_type="stack-trace-analyzer",
-     description="Parse complex stack trace",
-     prompt="Analyze this stack trace and identify root cause:
-
-     Error message:
-     [Paste full error message]
-
-     Stack trace:
-     [Paste complete stack trace]
-
-     Context:
-     - What triggered it: [user action, server startup, etc.]
-     - Source maps available: [yes/no]
-     - Framework: [NestJS/React/etc.]
-
-     Please identify:
-     1. Error type and category
-     2. Exact file and line number to investigate
-     3. Call sequence that led to error
-     4. Immediate cause vs root cause
-     5. Which file to debug first
-     6. Suggested debugging steps"
-   )
-   ```
-
-2. **Review Analysis Results**
-   - Note the exact file and line to investigate
-   - Understand the call sequence
-   - Focus on root cause, not intermediate calls
-
-3. **Investigate Identified Location**
-   - Read the file at the exact line number provided
-   - Understand the context around the error
-   - Apply targeted fix based on root cause
-
-**Debugging Workflow Tips:**
-
-1. **Start with the Right Specialist**
-   - **Error unclear?** → stack-trace-analyzer first to understand what's happening
-   - **Know the error but unfamiliar?** → common-error-researcher for community solutions
-   - **Need official guidance?** → best-practices-researcher for authoritative patterns
-   - **Stuck after trying fixes?** → root-cause-analyst for alternative approaches
-   - **Monorepo/workspace issue?** → monorepo-specialist for PNPM + NestJS expertise
-   - **Build/compilation problem?** → build-system-debugger for webpack/TypeScript config
-
-2. **Combine Specialists for Maximum Insight**
-   - **Best combo for unfamiliar errors:** stack-trace-analyzer + common-error-researcher
-   - **Best combo for config issues:** best-practices-researcher + monorepo-specialist
-   - **Best combo when stuck:** root-cause-analyst + best-practices-researcher
-   - **Full investigation:** Run 3+ specialists in parallel and synthesize their findings
-
-3. **Don't Go in Circles - Delegate Early**
-   - Same fix attempted 3 times → delegate to root-cause-analyst
-   - >15 minutes without progress → delegate to appropriate specialist
-   - Considering a hack/workaround → delegate to root-cause-analyst (will warn you!)
-   - Unsure if config is correct → delegate to best-practices-researcher
-
-4. **Optimal Delegation Patterns**
-
-   **Pattern 1: Unknown Error**
-   ```
-   Step 1: stack-trace-analyzer (understand the error)
-   Step 2: common-error-researcher (find solutions)
-   Step 3: Apply highest-rated solution
-   ```
-
-   **Pattern 2: Configuration Confusion**
-   ```
-   Step 1: best-practices-researcher (find official way)
-   Step 2: monorepo-specialist (apply to your monorepo)
-   Step 3: Implement official pattern
-   ```
-
-   **Pattern 3: Stuck After Multiple Attempts**
-   ```
-   Parallel: root-cause-analyst + common-error-researcher + best-practices-researcher
-   Wait: Review all three perspectives
-   Choose: Best approach based on combined recommendations
-   ```
-
-5. **Efficiency Tips**
-   - Always run multiple specialists in PARALLEL (single message, multiple Task calls)
-   - Don't wait for one to finish before starting another (they're independent)
-   - Compare their recommendations before implementing
-   - Use analysis specialists (stack-trace, researchers) before domain specialists
-
-**Example: Comprehensive Multi-Specialist Debugging**
-
-```
-# Complex monorepo build error - get all perspectives at once:
-
-# In a SINGLE message, invoke multiple specialists:
-
-Task(
-  subagent_type="stack-trace-analyzer",
-  description="Parse error message",
-  prompt="[full error and stack trace]"
-)
-
-Task(
-  subagent_type="best-practices-researcher",
-  description="Find official NestJS monorepo pattern",
-  prompt="What's the official way to configure NestJS in PNPM monorepo?"
-)
-
-Task(
-  subagent_type="monorepo-specialist",
-  description="Diagnose workspace configuration",
-  prompt="Check our PNPM workspace + NestJS setup against best practices"
-)
-
-Task(
-  subagent_type="root-cause-analyst",
-  description="Analyze root cause and alternatives",
-  prompt="I've tried X, Y, Z. Help me find the proper solution."
-)
-
-# All run in parallel, get results in ~2-3 minutes
-# Compare findings and implement the consensus recommendation
-```
 
 ---
 
-### Phase 1: Initial Execution and Error Assessment
+## Quick Decision Tree
 
-**Objective:** Start dev servers and capture all initial errors
+When encountering errors, use this decision tree for strategy selection:
 
-**Steps:**
+**Basic Strategies:**
+1. **Port conflict?** → A (kill process or change port)
+2. **Module not found / dependency error?** → B (install packages)
+3. **Prisma error?** → C (generate client, validate schema)
+4. **Missing env var?** → D (create/update .env files)
+5. **TypeScript errors?** → E (<10: manual fix, >10: delegate)
+6. **Import resolution / "Cannot find module"?** → F (fix paths)
+7. **Runtime crash / exception?** → G (analyze stack, fix code)
 
-1. **Check for Running Dev Servers**
+**Advanced Strategies (when stuck):**
+8. **Error unclear / complex stack?** → L (stack-trace-analyzer)
+9. **Configuration question?** → I-B (best-practices-researcher)
+10. **Known error but unfamiliar?** → I (common-error-researcher)
+11. **Monorepo issue?** → J (monorepo-specialist)
+12. **Build problem?** → K (build-system-debugger)
+13. **Still stuck after multiple attempts?** → H (root-cause-analyst)
 
-   Before starting, check if dev servers are already running:
+**Multi-Specialist Pattern (when comprehensive analysis needed):**
+Invoke 3-4 specialists in PARALLEL (single response):
+- Stack Trace Analyzer (understand error)
+- Common Error Researcher (find solutions)
+- Best Practices Researcher (validate official docs)
+- Domain specialist (Monorepo or Build System)
 
+Time savings: 5-10 min parallel analysis → consensus solution vs 45+ min trial-and-error
+
+---
+
+## Workflow Overview
+
+```
+User invokes /dev:debug
+    ↓
+[Phase 0: Pre-Flight Checks] (<10s)
+    ├→ Check Node.js / PNPM / Git
+    ├→ Check running processes (kill if needed)
+    └→ Verify dependencies (install if needed)
+    ↓
+[Phase 1: Monitored Startup & Analysis] (~45s)
+    ├→ pnpm tools dev:start-monitored
+    ├→ Wait 30 seconds (monitoring)
+    └→ pnpm tools dev:categorize-errors
+    ↓
+User Approval Gate: Error summary
+    ↓
+[Phase 2: Systematic Resolution] (2-5 min)
+    ├→ Basic Strategies A-G (priority order)
+    │   ├→ A: Port conflicts
+    │   ├→ B: Dependencies
+    │   ├→ C: Prisma
+    │   ├→ D: Environment
+    │   ├→ E: TypeScript (delegate if >10 errors)
+    │   ├→ F: Build/Import
+    │   └→ G: Runtime
+    │
+    └→ IF STUCK (>15 min OR 3 failures):
+        Advanced Strategies H-L (parallel)
+        ├→ H: root-cause-analyst
+        ├→ I: common-error-researcher
+        ├→ I-B: best-practices-researcher
+        ├→ J: monorepo-specialist
+        ├→ K: build-system-debugger
+        └→ L: stack-trace-analyzer
+    ↓
+[Phase 3: Verification] (~90s)
+    ├→ pnpm tools dev:health-check
+    └→ Validate 60 seconds (HTTP + logs + compilation)
+    ↓
+Success → Monitoring commands
+```
+
+**Execution Pattern:**
+- Phases execute sequentially (0 → 1 → 2 → 3)
+- Basic strategies (A-G) apply in priority order
+- Advanced strategies (H-L) invoked in parallel when stuck
+- TodoWrite tracks real-time progress
+
+---
+
+## Phase 0: Pre-Flight Checks
+
+**Objective:** Validate environment readiness before attempting dev server startup
+
+**When to execute:** Immediately upon command invocation
+
+**Process:**
+
+1. **Check Prerequisites**
+
+   Verify required tools installed:
    ```bash
-   ps aux | grep -E "(vite|nest)"
+   node --version    # Must be ≥ 20.18.0
+   pnpm --version    # Must be ≥ 9.15.0
+   test -d .git      # Git repo must exist
+   test -f package.json  # Root package.json must exist
    ```
 
-   If processes found:
+   **Expected Output:** Version numbers and file existence confirmation
 
-   - Ask user: "Dev servers appear to be running. Kill and restart? (Y/n)"
-   - If yes: Kill processes and proceed
-   - If no: Exit and suggest user stops servers manually
+   **Validation:** [ ] All prerequisites met
 
-2. **Bootstrap Dependencies (if needed)**
+2. **Check Running Processes**
 
-   Check if `node_modules` and `pnpm-lock.yaml` exist:
-
+   Scan for existing dev server processes:
    ```bash
-   ls -la node_modules pnpm-lock.yaml 2>/dev/null || echo "MISSING"
+   ps aux | grep -E "(vite|nest)" | grep -v grep
    ```
 
-   If missing or outdated:
+   **If processes found:**
+   - Present to user: "Dev servers appear to be running. Kill and restart? (Y/n)"
+   - Yes: `kill -9 <PID>` for each process
+   - No: Exit with message to stop servers manually
 
+   **Expected Output:** List of PIDs or empty result
+
+   **Validation:** [ ] No conflicting processes remain
+
+3. **Check Dependencies**
+
+   Verify node_modules and lockfile:
    ```bash
-   pnpm install
+   test -d node_modules && test -f pnpm-lock.yaml
    ```
 
-   Wait for installation to complete. Capture any errors.
+   **If missing:** Run `pnpm install` to bootstrap
 
-3. **Start Development Servers**
+   **Expected Output:** Confirmation of existence or installation logs
 
-   Execute dev command in background to capture output:
+   **Validation:** [ ] Dependencies installed
 
+**Success Criteria:**
+- [ ] Node 20.18.0+ and PNPM 9.15.0+ installed
+- [ ] No conflicting dev server processes
+- [ ] Dependencies exist (`node_modules/` and `pnpm-lock.yaml`)
+- [ ] Environment ready to start dev servers
+
+**Failure Handling:**
+- **If:** Prerequisites missing → **Then:** Report error, exit (cannot proceed)
+- **If:** User declines to kill processes → **Then:** Exit with manual stop instructions
+- **If:** `pnpm install` fails → **Then:** Report error, exit (cannot proceed without deps)
+
+**Tools Used:** Task tool for direct bash operations
+
+**Time Target:** <10 seconds
+
+---
+
+## Phase 1: Monitored Startup & Error Analysis
+
+**Objective:** Start dev servers with monitoring, capture all errors, and categorize systematically
+
+**When to execute:** After Phase 0 validation succeeds
+
+**Process:**
+
+1. **Start Development Servers with Monitoring**
+
+   Execute monitored startup tool:
    ```bash
-   pnpm dev 2>&1 | tee /tmp/dev-output.log &
-   DEV_PID=$!
-   echo $DEV_PID > /tmp/dev-pid.txt
+   pnpm tools dev:start-monitored --log /tmp/dev-output.log --pid /tmp/dev-pid.txt
    ```
 
-   This:
+   **NOTE:** This tool needs to be implemented. It should:
+   - Start `pnpm dev` in background
+   - Redirect stdout + stderr to log file
+   - Save process ID to PID file
+   - Return immediately with startup status
 
-   - Runs `pnpm dev` in background
-   - Redirects both stdout and stderr to log file
-   - Saves process ID for later management
+   **Expected Output:** Startup confirmation with PID
 
-4. **Monitor Startup Output (30 seconds)**
+   **Validation:** [ ] Dev servers started (process exists)
 
-   Wait for initial startup and error detection:
+2. **Monitor Initial Startup**
 
+   Wait for compilation and error detection:
    ```bash
    sleep 30
-   tail -n 100 /tmp/dev-output.log
    ```
 
-   Monitor for:
+   Allow time for:
+   - Initial compilation
+   - Module resolution
+   - TypeScript checking
+   - Server startup
 
-   - Compilation errors
-   - TypeScript errors
-   - Server start messages
-   - Port conflict errors
-   - Runtime errors
+   **Expected Output:** Time elapsed
 
-5. **Parse and Categorize Errors**
+   **Validation:** [ ] 30 seconds elapsed
 
-   Analyze the log output to identify error types:
+3. **Categorize Errors**
 
-   **TypeScript Errors:**
-
-   - Pattern: `TS[0-9]+:`, `error TS`, `Type error`
-   - Extract: file path, line number, error code, message
-
-   **Build/Import Errors:**
-
-   - Pattern: `Cannot find module`, `Module not found`, `import.*failed`
-   - Extract: module name, requesting file
-
-   **Dependency Errors:**
-
-   - Pattern: `ERR_PNPM`, `Cannot find package`, `peer dependency`
-   - Extract: package name, version constraint
-
-   **Prisma Errors:**
-
-   - Pattern: `Prisma schema`, `prisma generate`, `migration`
-   - Extract: schema issues, migration status
-
-   **Environment Errors:**
-
-   - Pattern: `environment variable`, `missing.*env`, `configuration`
-   - Extract: variable name, expected format
-
-   **Runtime Errors:**
-
-   - Pattern: `Error:`, `Exception`, `UnhandledPromise`, stack traces
-   - Extract: error message, stack trace, file location
-
-   **Port Conflicts:**
-
-   - Pattern: `EADDRINUSE`, `port.*already in use`, `listen.*EACCES`
-   - Extract: port number, conflicting process
-
-6. **Count and Categorize Issues**
-
-   Create error summary:
-
-   ```
-   Error Assessment:
-   - TypeScript Errors: [X] errors across [Y] files
-   - Build/Import Errors: [X] errors
-   - Dependency Issues: [X] packages
-   - Prisma Issues: [Yes/No]
-   - Environment Issues: [X] missing variables
-   - Runtime Errors: [X] errors
-   - Port Conflicts: [Yes/No] - Port [XXXX]
-
-   Total Issues: [N]
-   ```
-
-7. **Determine Servers Running Status**
-
-   Check if servers managed to start despite errors:
-
+   Parse log file and categorize errors:
    ```bash
-   ps -p $(cat /tmp/dev-pid.txt 2>/dev/null) >/dev/null 2>&1 && echo "RUNNING" || echo "CRASHED"
-   curl -s http://localhost:3000 >/dev/null && echo "WEB: OK" || echo "WEB: FAIL"
-   curl -s http://localhost:3001 >/dev/null && echo "API: OK" || echo "API: FAIL"
+   pnpm tools dev:categorize-errors /tmp/dev-output.log --format json
    ```
 
-8. **Present Assessment to User**
+   **NOTE:** This tool needs to be implemented. It should return structured JSON with error categories, counts, details, and risk level assessment.
+
+   **Expected Output:** Structured JSON with error categories
+
+   **Validation:** [ ] Errors categorized by type
+
+4. **Assess Server Health**
+
+   Check process and HTTP endpoint status:
+   ```bash
+   pnpm tools dev:health-check --format json
+   ```
+
+   **NOTE:** This tool needs to be implemented. It should return process status, HTTP status for both apps, and overall health.
+
+   **Expected Output:** JSON with health status
+
+   **Validation:** [ ] Server health assessed
+
+5. **Create Error Summary**
+
+   Aggregate results for user presentation:
+   - Total error count
+   - Breakdown by category
+   - Most critical issues (blocking errors)
+   - Recommended fix strategy
+   - Estimated fix time
+
+   **Expected Output:** Structured summary for user approval gate
+
+   **Validation:** [ ] Summary created with recommendations
+
+6. **Present to User (Approval Gate 1)**
 
    Show comprehensive error report:
-
    ```
-   Development Server Assessment:
+   Development Server Debug - Error Summary
 
-   Status:
-   - Dev Process: [RUNNING/CRASHED]
-   - Web App (port 3000): [OK/FAIL/NOT_STARTED]
-   - API App (port 3001): [OK/FAIL/NOT_STARTED]
+   Found 23 errors preventing dev server startup:
 
-   [Error summary from step 6]
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Error Categories:
+     ✗ TypeScript: 15 errors across 5 files
+     ✗ Prisma: Client not generated
+     ✗ Environment: 2 missing variables
+
+   Risk Level: MEDIUM
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
    Most Critical Issues:
-   1. [Issue category]: [Specific error]
-   2. [Issue category]: [Specific error]
-   3. [Issue category]: [Specific error]
+     1. Prisma client not generated → API will crash
+     2. Missing DATABASE_URL → Blocks Prisma
+     3. 15 TypeScript errors → Prevents compilation
 
    Recommended Fix Strategy:
-   [Strategy based on error types - see Phase 2 for options]
+     1. Generate Prisma client (Strategy C)
+     2. Configure environment (Strategy D)
+     3. Delegate TypeScript to lint-debugger (Strategy E)
+
+   Estimated Time: 3-5 minutes
+
+   Proceed with automated fixes? (Y/n)
    ```
 
-9. **Stop Dev Servers (for fixing)**
+   **User Options:**
+   - Y: Continue to Phase 2
+   - n: Exit (manual debugging)
+   - Timeout (30s): Default yes
 
-   If errors found and servers are running:
+   **Validation:** [ ] User approval received
 
+7. **Stop Dev Servers**
+
+   Clean shutdown for fixing:
    ```bash
    kill $(cat /tmp/dev-pid.txt 2>/dev/null) 2>/dev/null
    ```
 
-   Explanation: We need to stop servers to apply fixes, then restart.
+   **Expected Output:** Process terminated
+
+   **Validation:** [ ] Servers stopped
+
+**Success Criteria:**
+- [ ] Dev servers started (even with errors)
+- [ ] All errors captured in log file
+- [ ] Errors categorized into 7 categories
+- [ ] Error counts accurate
+- [ ] Server health assessed
+- [ ] Fix strategy identified
+- [ ] User informed and approved
+
+**Failure Handling:**
+- **If:** Dev servers crash immediately → **Then:** Report to user, attempt recovery in Phase 2
+- **If:** Log file empty → **Then:** Use stderr as fallback
+- **If:** User declines fixes → **Then:** Exit gracefully
+
+**Tools Used:**
+- `pnpm tools dev:start-monitored` (NOTE: To be implemented)
+- `pnpm tools dev:categorize-errors` (NOTE: To be implemented)
+- `pnpm tools dev:health-check` (NOTE: To be implemented)
+
+**Time Target:** ~45 seconds
+
+---
+
+## Phase 2: Systematic Error Resolution
+
+**Objective:** Fix all identified errors using dependency-aware priority order and specialized strategies
+
+**When to execute:** After Phase 1 approval gate
+
+**Process:**
+
+### Introduction
+
+Apply fixes in **strict priority order** based on error categories. This order ensures dependencies are resolved before dependent systems:
+
+**Priority Order:**
+1. Port Conflicts (A) - CRITICAL: Blocks all startups
+2. Dependencies (B) - HIGH: Required before code runs
+3. Prisma (C) - HIGH: Required for API functionality
+4. Environment (D) - MEDIUM: Required for configuration
+5. TypeScript (E) - MEDIUM: Prevents compilation
+6. Build/Import (F) - MEDIUM: Prevents bundling
+7. Runtime (G) - LOW: Happens after startup
+
+**Delegation Strategy:**
+- **Basic strategies (A-G):** Handle standard, well-understood error types
+- **Advanced strategies (H-L):** Invoke specialists when stuck (>15 min OR 3 failed attempts)
+- **Parallel invocation:** All advanced specialists invoked simultaneously for 8x efficiency
+
+### Basic Strategies (A-G)
+
+#### Strategy A: Port Conflict Resolution
+
+**When:** Port conflict errors detected (EADDRINUSE, "address already in use")
+
+**What it does:** Identifies process using ports 3000/3001 and resolves conflicts
+
+**Why use this:** Ports must be free before dev servers can start. This is a blocking issue preventing all other fixes from being testable.
+
+**Priority:** 1 (CRITICAL - must fix first)
+
+**Steps:**
+1. Identify conflicting process: `lsof -i :3000 -i :3001 | grep LISTEN`
+2. Present options to user:
+   - **Option A:** Kill process: `kill -9 [PID]`
+   - **Option B:** Change port in `.env` files
+3. Execute chosen solution
+4. Verify ports free: `lsof -i :3000 -i :3001` (should return empty)
 
 **Validation:**
+- [ ] Port 3000 is free
+- [ ] Port 3001 is free
+- [ ] No conflicting processes remain
 
-- [ ] Dev servers started (even if with errors)
-- [ ] All errors captured and logged to `/tmp/dev-output.log`
-- [ ] Errors categorized by type
-- [ ] Error counts and severity determined
-- [ ] Server running status assessed
-- [ ] Fix strategy identified
-- [ ] User informed of scope and approach
+**Failure:** If ports still occupied → Manual intervention required
 
 ---
 
-### Phase 2: Systematic Error Fixing
+#### Strategy B: Dependency Resolution
 
-**Objective:** Fix all identified errors systematically until servers can start cleanly
+**When:** Module not found, package missing, version conflicts, peer dependency errors
 
-**IMPORTANT:** Choose the appropriate strategy based on Phase 1 assessment. Multiple strategies may be combined.
+**What it does:** Installs missing packages, resolves version conflicts, repairs workspace dependencies
+
+**Why use this:** Missing or conflicting dependencies prevent code from executing. Must be resolved before any code fixes.
+
+**Priority:** 2 (HIGH - required before code runs)
+
+**Steps:**
+1. Extract missing package names from error messages
+2. Determine workspace context (which app needs dependency)
+3. Install missing packages:
+   - Workspace: `cd [workspace] && pnpm add [package]`
+   - Root: `pnpm add -w [package]`
+4. Resolve conflicts: `pnpm install --force` OR `pnpm update [package]`
+5. Verify: `pnpm install --frozen-lockfile` (should succeed)
+
+**Validation:**
+- [ ] All missing packages installed
+- [ ] No version conflicts remain
+- [ ] `pnpm install --frozen-lockfile` succeeds
+- [ ] Package in `node_modules/`
+
+**Failure:** If installation fails → Check package name, version compatibility, registry access
 
 ---
 
-#### Strategy A: Port Conflict Resolution (if detected)
+#### Strategy C: Prisma Issues
 
-**When to use:** Port conflict errors found (EADDRINUSE)
+**When:** Prisma schema errors, migration needed, client not generated, database connection issues
+
+**What it does:** Validates Prisma schema, generates client, checks database connectivity
+
+**Why use this:** Prisma client must exist before API code can compile. Missing client causes TypeScript errors AND runtime crashes.
+
+**Priority:** 3 (HIGH - API cannot function without Prisma)
+
+**Steps:**
+1. Validate schema: `cd apps/api && pnpm prisma validate`
+   - If invalid: Fix schema syntax, re-validate
+2. Generate client: `pnpm prisma generate`
+3. Check migrations: `pnpm prisma migrate status`
+4. Verify DB connection: `pnpm prisma db pull` (if needed)
+
+**Validation:**
+- [ ] Schema valid (`prisma validate` succeeds)
+- [ ] Client generated (files in `packages/db/node_modules/.prisma/client/`)
+- [ ] No migration errors
+- [ ] DB connection successful (if required)
+
+**Failure:** If schema invalid → Fix syntax errors; If DB unreachable → Start database service
+
+---
+
+#### Strategy D: Environment Configuration
+
+**When:** Missing environment variables, configuration errors, invalid env file format
+
+**What it does:** Creates/updates `.env` files with required variables, sets development defaults
+
+**Why use this:** Environment variables required for Prisma, API, and services. Missing vars cause startup failures.
+
+**Priority:** 4 (MEDIUM - required for configuration)
+
+**Steps:**
+1. Identify missing variables from error messages
+2. Check for `.env.example`: `find . -name ".env.example"`
+3. Create/update `.env`:
+   - If missing: `cp apps/[app]/.env.example apps/[app]/.env`
+   - If exists: Add missing variables
+4. Set dev-appropriate values (e.g., `DATABASE_URL=postgresql://localhost:5432/dev`)
+5. Validate: Check if env errors resolved
+
+**Validation:**
+- [ ] All required `.env` files exist
+- [ ] All required variables set
+- [ ] Values valid for dev environment
+- [ ] No env errors in next startup
+
+**Failure:** If values invalid → Check format, service availability
+
+---
+
+#### Strategy E: TypeScript and Linting Errors
+
+**When:** TypeScript compilation errors, type mismatches, strict mode violations
+
+**What it does:** Fixes TypeScript errors manually (<10 errors) or delegates to lint-debugger (>10 errors)
+
+**Why use this:** TypeScript errors prevent compilation. Many errors indicate systematic issues better handled by specialized agent.
+
+**Priority:** 5 (MEDIUM - prevents compilation)
 
 **Steps:**
 
-1. **Identify Conflicting Process**
-
-   ```bash
-   lsof -i :3000 -i :3001 | grep LISTEN
-   ```
-
-2. **Present Options to User**
-
-   - Kill conflicting process (if safe)
-   - Change port in `.env` files
-   - Use different ports via command flags
-
-3. **Execute Chosen Solution**
-
-   **Option 1: Kill process**
-
-   ```bash
-   kill -9 [PID]
-   ```
-
-   **Option 2: Update .env files**
-
-   ```bash
-   # Edit apps/web/.env
-   PORT=3002
-
-   # Edit apps/api/.env
-   PORT=3003
-   ```
-
-4. **Verify Resolution**
-   - Confirm ports are now free
-   - Update monitoring URLs if ports changed
-
----
-
-#### Strategy B: Dependency Resolution (if missing packages)
-
-**When to use:** Module not found, package missing, version conflicts
-
-**Steps:**
-
-1. **Analyze Missing Dependencies**
-
-   From error messages, extract:
-
-   - Package names
-   - Requested from which workspace
-   - Expected version (if specified)
-
-2. **Install Missing Packages**
-
-   For workspace packages:
-
-   ```bash
-   cd [workspace-path]
-   pnpm add [package-name]
-   ```
-
-   For root-level deps:
-
-   ```bash
-   pnpm add -w [package-name]
-   ```
-
-3. **Resolve Version Conflicts**
-
-   If peer dependency conflicts:
-
-   ```bash
-   pnpm install --force
-   ```
-
-   Or update conflicting packages:
-
-   ```bash
-   pnpm update [package-name]
-   ```
-
-4. **Verify Installation**
-
-   ```bash
-   pnpm install --frozen-lockfile
-   ```
-
-   Should complete without errors.
-
----
-
-#### Strategy C: Prisma Issues (if schema/migration errors)
-
-**When to use:** Prisma schema errors, migration needed, client not generated
-
-**Steps:**
-
-1. **Validate Prisma Schema**
-
-   ```bash
-   cd apps/api
-   pnpm prisma validate
-   ```
-
-   If schema invalid:
-
-   - Read error message carefully
-   - Fix schema syntax in `prisma/schema.prisma`
-   - Re-validate until valid
-
-2. **Generate Prisma Client**
-
-   ```bash
-   pnpm prisma generate
-   ```
-
-   This regenerates the type-safe client.
-
-3. **Check Migration Status**
-
-   ```bash
-   pnpm prisma migrate status
-   ```
-
-   If migrations pending:
-
-   ```bash
-   pnpm prisma migrate dev
-   ```
-
-4. **Verify Database Connection**
-
-   ```bash
-   pnpm prisma db pull
-   ```
-
-   Should succeed if database is reachable.
-
----
-
-#### Strategy D: Environment Configuration (if env variable errors)
-
-**When to use:** Missing environment variables, configuration errors
-
-**Steps:**
-
-1. **Identify Missing Variables**
-
-   From error messages, extract required variables.
-
-2. **Check for `.env.example` Files**
-
-   ```bash
-   find . -name ".env.example" -type f
-   ```
-
-3. **Create/Update `.env` Files**
-
-   For each app missing configuration:
-
-   ```bash
-   # If .env doesn't exist
-   cp apps/[app]/.env.example apps/[app]/.env
-
-   # Edit to set required values
-   ```
-
-4. **Validate Environment**
-
-   Restart dev server briefly to check if env errors resolved.
-
----
-
-#### Strategy E: TypeScript and Linting Errors (if TS errors found)
-
-**When to use:** TypeScript compilation errors, type mismatches, strict mode violations
-
-**IMPORTANT:** Use this strategy if more than 10 TypeScript errors detected.
-
-**Steps:**
-
-1. **Delegate to lint-debugger Agent**
-
-   Use Task tool to invoke specialized agent:
-
+**If >10 TypeScript errors (DELEGATE):**
+1. Invoke lint-debugger subagent via Task tool:
    ```
    Task(
      subagent_type="lint-debugger",
      description="Fix all TypeScript errors preventing dev server startup",
-     prompt="Fix all TypeScript compilation errors found in the development server output. Focus on errors preventing server startup. Run typecheck after fixes to ensure zero errors remain."
+     prompt="Fix all TypeScript compilation errors. Run typecheck after fixes to ensure zero errors remain."
    )
    ```
+2. Wait for completion
+3. Review fixes, verify zero errors
 
-2. **Wait for lint-debugger Completion**
-
-   The agent will:
-
-   - Run `pnpm typecheck` to identify all TS errors
-   - Fix type errors systematically
-   - Re-run typecheck until zero errors
-   - Report all fixes applied
-
-3. **Review Fixes**
-
-   After agent completes:
-
-   - Read summary of fixes applied
-   - Verify file changes are appropriate
-   - Confirm zero TypeScript errors reported
-
-**Alternative (for <10 TS errors):**
-
-Fix TypeScript errors manually:
-
-1. **Read Error Details**
-
-   ```bash
-   pnpm typecheck 2>&1 | tee /tmp/typecheck-errors.log
-   ```
-
-2. **For Each Error:**
-
+**If <10 TypeScript errors (MANUAL):**
+1. Run: `pnpm typecheck 2>&1 | tee /tmp/typecheck-errors.log`
+2. For each error:
    - Read file at error location
-   - Understand type mismatch or violation
-   - Apply minimal fix (add type annotation, fix import, etc.)
-   - Use type guards instead of `as` assertions
-   - Never use `any` or non-null assertions
-
-3. **Verify Fix**
-
-   ```bash
-   pnpm typecheck
-   ```
-
-   Repeat until zero errors.
-
----
-
-#### Strategy F: Runtime Error Fixes (if server crashes or throws)
-
-**When to use:** Server starts but crashes, unhandled exceptions, runtime errors
-
-**Steps:**
-
-1. **Analyze Stack Traces**
-
-   From `/tmp/dev-output.log`:
-
-   - Identify error message
-   - Find stack trace
-   - Locate source file and line number
-
-2. **Read Problematic Code**
-
-   Use Read tool to examine file at error location:
-
-   ```
-   Read(file_path="[error-file-path]")
-   ```
-
-3. **Identify Root Cause**
-
-   Common runtime errors:
-
-   - Undefined property access: Add null checks
-   - Missing imports: Add import statements
-   - Invalid API calls: Fix endpoint URLs or parameters
-   - Database connection: Check Prisma setup
-   - Configuration: Verify environment variables
-
-4. **Apply Minimal Fix**
-
-   Use Edit tool to fix the issue:
-
-   - Add null/undefined checks
-   - Fix import paths
-   - Correct API configuration
-   - Add error handling
-
-5. **Test Fix**
-
-   Restart dev server partially:
-
-   ```bash
-   # For API errors
-   pnpm dev:api
-
-   # For Web errors
-   pnpm dev:web
-   ```
-
-   Monitor for error resolution.
-
----
-
-#### Strategy G: Build/Import Resolution (if module errors)
-
-**When to use:** "Cannot find module", import resolution failures, path mapping issues
-
-**Steps:**
-
-1. **Verify Import Paths**
-
-   For each "module not found" error:
-
-   - Check file exists at import path
-   - Verify path is correct (relative vs. absolute)
-   - Check tsconfig.json path mappings
-
-2. **Fix Path Mappings**
-
-   If using aliases like `@starter/*`:
-
-   ```bash
-   # Check tsconfig.json paths
-   cat tsconfig.json | grep -A 10 "paths"
-   ```
-
-   Update if incorrect.
-
-3. **Fix Import Statements**
-
-   Use Edit tool to correct import paths:
-
-   - Fix relative path depth (`../../` vs `../`)
-   - Use correct workspace package names (`@starter/utils`)
-   - Fix file extensions if needed
-
-4. **Verify Resolution**
-
-   ```bash
-   pnpm typecheck
-   ```
-
-   Should resolve import errors.
-
----
-
-**Fix Execution Order:**
-
-Always follow this priority:
-
-1. **Port conflicts** (Strategy A) - Must fix first, blocks startup
-2. **Dependencies** (Strategy B) - Required before code runs
-3. **Prisma** (Strategy C) - Required for API to function
-4. **Environment** (Strategy D) - Required for configuration
-5. **TypeScript** (Strategy E) - Prevents compilation
-6. **Build/Import** (Strategy G) - Prevents bundling
-7. **Runtime** (Strategy F) - Happens after startup
-
-**Use Advanced Strategies (H-L) when:**
-- Standard strategies fail after 2-3 attempts
-- Error is unfamiliar or complex
-- You're stuck for >15 minutes
-- Considering hacks or workarounds
-- Need to validate configuration against official patterns
-
-**Quick Decision Tree:**
-1. **Error unclear?** → L (stack-trace-analyzer)
-2. **Configuration question?** → I-B (best-practices-researcher)
-3. **Known error, need fix?** → I (common-error-researcher)
-4. **Monorepo issue?** → J (monorepo-specialist)
-5. **Build system problem?** → K (build-system-debugger)
-6. **Tried multiple fixes, still stuck?** → H (root-cause-analyst)
+   - Understand type mismatch
+   - Apply minimal fix (type guard, annotation, import fix)
+   - **Never** use `any` or non-null assertions
+3. Verify: `pnpm typecheck` (repeat until zero errors)
 
 **Validation:**
+- [ ] Zero TypeScript errors
+- [ ] Type safety standards followed (no `any`, no `!`)
+- [ ] Type guards used instead of assertions
+- [ ] Code compiles successfully
 
-- [ ] Appropriate strategies selected based on error types
-- [ ] Fixes applied in correct priority order
-- [ ] Each fix verified before proceeding to next
-- [ ] Delegated to lint-debugger if extensive TS errors
-- [ ] All fixes are minimal and targeted
-- [ ] Code follows project conventions
-- [ ] No type safety violations introduced
+**Failure:** If errors persist → Escalate to advanced strategies
 
 ---
 
-### Phase 3: Verification and Monitoring
+#### Strategy F: Build/Import Resolution
 
-**Objective:** Restart dev servers and confirm they run successfully without errors
+**When:** "Cannot find module", import resolution failures, path mapping issues
+
+**What it does:** Fixes import paths, updates tsconfig path mappings, resolves module resolution
+
+**Why use this:** Import errors prevent bundling. Common in monorepos with workspace:* and path mappings.
+
+**Priority:** 6 (MEDIUM - prevents bundling)
 
 **Steps:**
+1. For each "module not found":
+   - Verify file exists at path
+   - Check path correctness (relative vs absolute vs alias)
+   - Verify tsconfig.json path mappings
+2. Fix import statements:
+   - Correct relative depth (`../../` vs `../`)
+   - Use workspace names (`@starter/utils`)
+   - Fix extensions if needed
+3. Fix tsconfig paths if aliases broken
+4. Verify: `pnpm typecheck` should resolve imports
 
-1. **Clear Previous Logs**
+**Validation:**
+- [ ] All import paths resolve
+- [ ] No "Cannot find module" errors
+- [ ] tsconfig paths align with structure
+- [ ] Typecheck passes
 
+**Failure:** If paths still broken → Check package.json exports, build output structure
+
+---
+
+#### Strategy G: Runtime Error Fixes
+
+**When:** Server starts but crashes, unhandled exceptions, runtime errors after compilation succeeds
+
+**What it does:** Analyzes runtime errors, fixes code issues causing crashes
+
+**Why use this:** Runtime errors occur after compilation, often due to undefined access, missing imports, invalid calls
+
+**Priority:** 7 (LOW - only after compilation succeeds)
+
+**Steps:**
+1. Analyze stack trace from `/tmp/dev-output.log`
+   - Identify error message
+   - Find file and line number
+   - Trace call sequence
+2. Read problematic code
+3. Identify root cause:
+   - Undefined access → Add null checks
+   - Missing imports → Add imports
+   - Invalid API calls → Fix endpoints
+   - DB connection → Check Prisma
+4. Apply minimal fix
+5. Test: Restart dev server, monitor for resolution
+
+**Validation:**
+- [ ] Runtime error no longer in logs
+- [ ] Server starts and stays running
+- [ ] Null/undefined handled
+- [ ] All imports correct
+
+**Failure:** If crashes persist → Check database services, external dependencies
+
+---
+
+### Advanced Strategies (H-L)
+
+**When to use:** Stuck on same error >15 minutes OR standard strategies fail after 2-3 attempts OR error is complex/unfamiliar
+
+#### Strategy H: Root Cause Analysis
+
+**When:** Complex errors with unclear root cause, considering hacks, multiple failed attempts
+
+**What it does:** Delegates to root-cause-analyst for comprehensive analysis and solution ranking
+
+**Why use this:** Prevents hacks, finds sustainable solutions based on best practices
+
+**Priority:** HIGH (when stuck)
+
+**Invocation:**
+```
+Task(
+  subagent_type="root-cause-analyst",
+  description="Analyze root cause and alternative solutions",
+  prompt="I'm stuck debugging this error: [paste error and stack trace].
+
+  Context:
+  - What I've tried: [list attempts]
+  - Current hypothesis: [theory]
+  - Stack: NestJS + PNPM workspace + Turborepo + Webpack
+
+  Please:
+  1. Analyze root cause (not symptoms)
+  2. Suggest 3-5 alternative solutions
+  3. Identify best practices approach
+  4. Explain trade-offs
+  5. Warn if solution is a hack vs proper fix"
+)
+```
+
+**Expected Output:** Diagnostic report with ranked solutions and trade-off analysis
+
+**Validation:**
+- [ ] Root cause identified (not symptoms)
+- [ ] Solution aligns with best practices
+- [ ] No technical debt introduced
+
+---
+
+#### Strategy I: Community Error Research
+
+**When:** Unfamiliar error, framework-specific issue, need battle-tested solutions
+
+**What it does:** Delegates to common-error-researcher to search GitHub/Stack Overflow
+
+**Why use this:** Community has likely solved this before
+
+**Priority:** MEDIUM (use early when error recognizable but unfamiliar)
+
+**Invocation:**
+```
+Task(
+  subagent_type="common-error-researcher",
+  description="Research community solutions",
+  prompt="Research this error: [error message]
+
+  Context:
+  - Framework: NestJS 10 + Fastify
+  - Build: Webpack 5 + TypeScript 5.7
+  - Monorepo: PNPM workspaces + Turborepo
+  - What I've tried: [attempts]
+
+  Search for:
+  1. GitHub issues (nestjs/nest, vitejs/vite, pnpm/pnpm)
+  2. Stack Overflow (100+ votes preferred)
+  3. Recent closed issues (within last year)
+  4. Solutions for our stack versions
+  5. Success indicators (maintainer responses)
+
+  Prioritize recent solutions (2024-2025)."
+)
+```
+
+**Expected Output:** Top 5 solutions with sources, dates, success indicators
+
+**Validation:**
+- [ ] Solution from credible source
+- [ ] Stack versions match
+- [ ] Not a one-off workaround
+
+---
+
+#### Strategy I-B: Official Best Practices Research
+
+**When:** Need to verify "the right way", want official guidance, validating setup
+
+**What it does:** Delegates to best-practices-researcher to search official sources ONLY
+
+**Why use this:** Official sources are authoritative, prevent bad patterns
+
+**Priority:** MEDIUM (use when configuration questions arise)
+
+**Invocation:**
+```
+Task(
+  subagent_type="best-practices-researcher",
+  description="Research official best practices",
+  prompt="Research the official way to: [question]
+
+  Our current setup:
+  [Paste config from package.json, tsconfig.json, etc.]
+
+  Search official sources only:
+  1. Official docs (docs.nestjs.com, pnpm.io, turbo.build)
+  2. Official example repos
+  3. Core team blogs, migration guides
+  4. Official RFCs, changelogs
+
+  Compare our setup vs official and identify:
+  - What we're doing correctly
+  - What should change
+  - Why official pattern recommended
+  - Migration steps if needed"
+)
+```
+
+**Expected Output:** Official recommendations with source URLs
+
+**Validation:**
+- [ ] All claims have official URLs
+- [ ] Versions compatible
+- [ ] Official pattern understood
+
+---
+
+#### Strategy J: Monorepo-Specific Debugging
+
+**When:** Module resolution errors, workspace package issues, build output problems
+
+**What it does:** Delegates to monorepo-specialist for PNPM + NestJS + Turborepo expertise
+
+**Why use this:** Monorepo resolution different from standard Node.js
+
+**Priority:** HIGH (when monorepo errors detected)
+
+**Invocation:**
+```
+Task(
+  subagent_type="monorepo-specialist",
+  description="Diagnose monorepo configuration",
+  prompt="Diagnose this monorepo problem: [error]
+
+  Setup:
+  - PNPM 9.15.0+ with workspace:*
+  - Turborepo 2.x orchestration
+  - NestJS 10 (webpack enabled)
+  - React 18 + Vite 6
+  - TypeScript 5.7 strict mode
+
+  Issue: [error and stack trace]
+  Tried: [attempts]
+
+  Analyze:
+  1. Known PNPM workspace issue?
+  2. package.json exports correct?
+  3. tsconfig paths align with structure?
+  4. Webpack externals correct?
+  5. Following NestJS + Turborepo + PNPM patterns?
+
+  Provide config fixes with file diffs."
+)
+```
+
+**Expected Output:** Configuration fixes (package.json, tsconfig, webpack)
+
+**Validation:**
+- [ ] package.json exports correct
+- [ ] workspace:* dependencies resolve
+- [ ] tsconfig paths aligned
+- [ ] Webpack externals configured
+
+---
+
+#### Strategy K: Build System Debugging
+
+**When:** Webpack/Vite errors, TypeScript compilation, module system conflicts
+
+**What it does:** Delegates to build-system-debugger for deep config diagnosis
+
+**Why use this:** Build systems have complex interactions
+
+**Priority:** HIGH (when build errors persist)
+
+**Invocation:**
+```
+Task(
+  subagent_type="build-system-debugger",
+  description="Debug build system config",
+  prompt="Debug this build error: [error]
+
+  Setup:
+  - NestJS 10 with webpack: true
+  - TypeScript 5.7 strict, outDir: ./dist
+  - Module: CommonJS (API), ESM (utils)
+  - PNPM workspace externals
+  - Turborepo parallel builds
+
+  Issue: [error and unexpected output]
+  Observed: [what you see]
+
+  Diagnose:
+  1. Webpack, TypeScript, or module system issue?
+  2. nest-cli.json webpack config
+  3. tsconfig compiler options (outDir, rootDir)
+  4. package.json "type" and "exports"
+  5. CommonJS vs ESM conflicts
+  6. Webpack externals
+
+  Provide config fixes with explanations."
+)
+```
+
+**Expected Output:** Build configuration fixes
+
+**Validation:**
+- [ ] Config follows patterns
+- [ ] Compiler options correct
+- [ ] Module system consistent
+- [ ] Build succeeds
+
+---
+
+#### Strategy L: Stack Trace Analysis
+
+**When:** Multi-file stack traces, unclear origin, deep async calls, webpack obfuscation
+
+**What it does:** Delegates to stack-trace-analyzer to parse complex traces
+
+**Why use this:** Complex traces hard to parse manually
+
+**Priority:** MEDIUM (use early when trace complex)
+
+**Invocation:**
+```
+Task(
+  subagent_type="stack-trace-analyzer",
+  description="Parse complex stack trace",
+  prompt="Analyze this stack trace:
+
+  Error: [message]
+
+  Stack: [full trace]
+
+  Context:
+  - Triggered by: [action]
+  - Source maps: [yes/no]
+  - Framework: [NestJS/React]
+
+  Identify:
+  1. Error type and category
+  2. Exact file:line to investigate
+  3. Call sequence
+  4. Immediate vs root cause
+  5. Which file to debug first
+  6. Debugging steps"
+)
+```
+
+**Expected Output:** File:line, call sequence, root cause identification
+
+**Validation:**
+- [ ] Exact location identified
+- [ ] Root cause understood
+- [ ] Call sequence makes sense
+
+---
+
+### Parallel Multi-Specialist Pattern
+
+**When comprehensive analysis needed:**
+
+Invoke 3-4 specialists simultaneously in **single response**:
+
+```
+Task(subagent_type="stack-trace-analyzer", description="Parse error", prompt="[full error]")
+Task(subagent_type="best-practices-researcher", description="Find official pattern", prompt="[question]")
+Task(subagent_type="monorepo-specialist", description="Check workspace config", prompt="[setup]")
+Task(subagent_type="root-cause-analyst", description="Analyze alternatives", prompt="[context]")
+```
+
+All run in parallel, results compared, consensus synthesized.
+
+**Time Savings:** 5-10 min total vs 45+ min sequential trial-and-error
+
+---
+
+**Success Criteria:**
+- [ ] Appropriate strategies selected
+- [ ] Fixes applied in priority order
+- [ ] Each fix validated before next
+- [ ] Delegated if >10 TS errors
+- [ ] Fixes minimal and targeted
+- [ ] Code follows conventions
+- [ ] Zero blocking errors remain
+
+**Failure Handling:**
+- **If:** Fix fails validation → Try alternative, escalate if stuck 3 times
+- **If:** Advanced strategies fail → Report to user, manual intervention
+- **If:** >3 consecutive failures → Halt, report state
+
+**Tools Used:** Task (for subagent delegation), TodoWrite (for progress tracking)
+
+**Time Target:** 2-5 minutes typical
+
+---
+
+## Phase 3: Verification & Health Check
+
+**Objective:** Restart dev servers and confirm they run successfully without errors for sustained period
+
+**When to execute:** After Phase 2 completes
+
+**Process:**
+
+1. **Clear Previous State**
+
+   Remove old logs and temporary files:
    ```bash
    rm -f /tmp/dev-output.log /tmp/dev-pid.txt
    ```
 
+   **Expected Output:** Files removed
+
+   **Validation:** [ ] Old state cleared
+
 2. **Restart Development Servers**
 
-   Execute fresh dev server start:
-
+   Fresh startup with monitoring:
    ```bash
-   pnpm dev 2>&1 | tee /tmp/dev-output.log &
-   DEV_PID=$!
-   echo $DEV_PID > /tmp/dev-pid.txt
+   pnpm tools dev:start-monitored --log /tmp/dev-output.log --pid /tmp/dev-pid.txt
    ```
+
+   **Expected Output:** Servers started, PID saved
+
+   **Validation:** [ ] Dev servers restarted
 
 3. **Monitor Startup (60 seconds)**
 
-   Wait longer this time to ensure complete startup:
-
+   Wait for complete startup (longer than Phase 1 for thorough validation):
    ```bash
    sleep 60
-   tail -n 150 /tmp/dev-output.log
    ```
 
-   Look for:
+   **Expected Output:** Time elapsed
 
-   - ✅ Compilation successful messages
-   - ✅ Server started messages
-   - ✅ Port listening messages
-   - ❌ Any error messages (should be zero)
+   **Validation:** [ ] 60 seconds monitored
 
-4. **Verify Server Health**
+4. **Comprehensive Health Validation**
 
-   **Check processes:**
-
+   Check all health indicators:
    ```bash
-   ps -p $(cat /tmp/dev-pid.txt) -o pid,cmd,etime
+   pnpm tools dev:health-check --format json
    ```
 
-   **Check web app:**
+   **NOTE:** Tool returns structured health data
 
-   ```bash
-   curl -s http://localhost:3000 | head -n 5
-   ```
+   **Expected Output:** JSON with health status
 
-   Should return HTML (React app).
+   **Validation:** [ ] All health checks pass
 
-   **Check API app:**
-
-   ```bash
-   curl -s http://localhost:3001/api/health || curl -s http://localhost:3001
-   ```
-
-   Should return JSON or success response.
-
-5. **Scan for Errors in Output**
+5. **Scan for Errors**
 
    Search log for error patterns:
-
    ```bash
    grep -iE "(error|exception|fail|critical)" /tmp/dev-output.log | tail -n 20
    ```
 
    **If errors found:**
-
-   - Return to Phase 2 with new error information
+   - Categorize new errors
+   - Return to Phase 2
    - Apply additional fixes
    - Iterate until clean
 
    **If no errors:**
-
    - Proceed to success reporting
 
-6. **Verify Hot Reload (optional)**
+   **Expected Output:** Empty result OR error list
 
-   Make a trivial change to test watch mode:
+   **Validation:** [ ] Zero errors in logs
 
+6. **Verify Compilation Success**
+
+   Check for success messages:
    ```bash
-   # Touch a component file to trigger rebuild
+   grep -E "(Compiled successfully|successfully started)" /tmp/dev-output.log
+   ```
+
+   Look for:
+   - Web: "Compiled successfully", "ready in [time]"
+   - API: "Nest application successfully started"
+
+   **Expected Output:** Success messages found
+
+   **Validation:** [ ] Compilation successful
+
+7. **Optional: Test Hot Reload**
+
+   Validate watch mode:
+   ```bash
    touch apps/web/src/App.tsx
    sleep 5
    tail -n 20 /tmp/dev-output.log
    ```
 
-   Should show:
-
+   Check for:
    - Change detected
    - Recompilation
    - No errors
 
-7. **Present Success Report**
+   **Expected Output:** Hot reload messages
 
-   Show comprehensive success summary (see Output Format below)
+   **Validation:** [ ] Hot reload working (optional)
 
-8. **Provide Monitoring Instructions**
+8. **Present Success Report**
+
+   Show comprehensive success summary (see Output Format section)
+
+   **Expected Output:** Success report with URLs and monitoring commands
+
+   **Validation:** [ ] Success report presented
+
+9. **Provide Monitoring Instructions**
 
    Tell user how to monitor servers:
-
    ```
    Monitoring Commands:
-   - View live logs: tail -f /tmp/dev-output.log
-   - Check processes: ps -p $(cat /tmp/dev-pid.txt)
-   - Test web app: open http://localhost:3000
-   - Test API: curl http://localhost:3001/api/health
-   - Stop servers: kill $(cat /tmp/dev-pid.txt)
+   - View logs: tail -f /tmp/dev-output.log
+   - Check process: ps -p $(cat /tmp/dev-pid.txt)
+   - Test web: open http://localhost:3000
+   - Test API: curl http://localhost:3001
+   - Stop: kill $(cat /tmp/dev-pid.txt)
    ```
 
-9. **Keep Servers Running**
+   **Expected Output:** Monitoring guidance
 
-   **IMPORTANT:** Do NOT kill the dev server process at the end.
-   Leave it running in the background for the user.
+   **Validation:** [ ] Instructions provided
 
-**Validation:**
+10. **Keep Servers Running**
 
+    **CRITICAL:** Do NOT kill dev server process. Leave running for user.
+
+    **Expected Output:** Servers continue running
+
+    **Validation:** [ ] Servers left running
+
+**Success Criteria:**
 - [ ] Dev servers restarted successfully
-- [ ] Both web and API apps accessible
-- [ ] Zero errors in startup logs
-- [ ] No errors in last 60 seconds of runtime
+- [ ] Both web and API accessible
+- [ ] Zero errors in last 60 seconds
+- [ ] Compilation successful
+- [ ] HTTP health checks pass (200 responses)
 - [ ] Hot reload working (if tested)
 - [ ] Success report presented
 - [ ] Monitoring instructions provided
-- [ ] Servers left running for user
+- [ ] Servers left running
+
+**Failure Handling:**
+- **If:** Errors found → Return to Phase 2 with error details
+- **If:** Health checks fail → Investigate failure (process crash, port, compilation)
+- **If:** Hot reload broken → Not blocking, report but mark success if servers running
+- **If:** Validation fails 3 times → Halt, report persistent issues
+
+**Tools Used:**
+- `pnpm tools dev:start-monitored` (NOTE: To be implemented)
+- `pnpm tools dev:health-check` (NOTE: To be implemented)
+
+**Time Target:** ~90 seconds
 
 ---
 
 ## Output Format
 
-### Phase 1: Assessment Report
+### Example 1: Phase 1 Assessment Report
 
 ```
 Development Server Debug - Initial Assessment
@@ -1215,28 +1184,33 @@ Recommended Fix Strategy:
 2. Configure environment variables (Strategy D)
 3. Delegate TypeScript fixes to lint-debugger (Strategy E)
 
-Stopping dev servers to apply fixes...
+Estimated Time: 3-5 minutes
+Risk Level: MEDIUM
+
+Proceed with automated fixes? (Y/n)
 ```
 
-### Phase 2: Fix Execution Progress
+### Example 2: Phase 2 Fix Execution Progress
 
 ```
-Applying Fixes - Strategy Priority Order
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Applying Fixes - Priority Order
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[1/4] Prisma Client Generation (Strategy C)
+[1/3] Strategy C: Prisma Client Generation
 ────────────────────────────────────────────
 Running: pnpm prisma generate
 ✓ Prisma client generated successfully
 Files: packages/db/node_modules/.prisma/client/
 
-[2/4] Environment Configuration (Strategy D)
+[2/3] Strategy D: Environment Configuration
 ────────────────────────────────────────────
 Creating apps/api/.env from .env.example
 Setting: DATABASE_URL=postgresql://localhost:5432/dev
 Setting: JWT_SECRET=dev-secret-key-change-in-production
 ✓ Environment configured
 
-[3/4] TypeScript Error Fixes (Strategy E)
+[3/3] Strategy E: TypeScript Error Fixes (DELEGATION)
 ────────────────────────────────────────────
 Delegating to lint-debugger agent...
 
@@ -1248,31 +1222,23 @@ lint-debugger: Fixing null handling in apps/api/src/users/service.ts
 lint-debugger: Running typecheck again...
 lint-debugger: ✓ Zero TypeScript errors
 
-✓ lint-debugger complete: Fixed 23 errors across 8 files
-
-[4/4] Build/Import Resolution (Strategy G)
-────────────────────────────────────────────
-Fixing import path in apps/web/src/components/Button.tsx
-  Before: import { cn } from '../../utils'
-  After:  import { cn } from '@starter/utils'
-
-✓ All import paths resolved
+✓ lint-debugger complete: Fixed 23 errors across 8 files in 2m 15s
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fix Summary:
 - Prisma: Client generated
 - Environment: 2 variables configured
-- TypeScript: 23 errors fixed
-- Imports: 1 path corrected
+- TypeScript: 23 errors fixed by lint-debugger
 
 Total Fixes Applied: 26
 Files Modified: 9 files
+Time Elapsed: 3m 45s
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Proceeding to verification...
 ```
 
-### Phase 3: Success Report
+### Example 3: Phase 3 Success Report
 
 ```
 ✓ Development Servers Running Successfully
@@ -1282,14 +1248,15 @@ Final Verification Results:
 
 Server Status:
   ✓ Dev Process: RUNNING (PID: 12456, uptime: 1m 30s)
-  ✓ Web App: http://localhost:3000 - OK (200)
-  ✓ API App: http://localhost:3001 - OK (200)
+  ✓ Web App: http://localhost:3000 - OK (200, 45ms)
+  ✓ API App: http://localhost:3001 - OK (200, 23ms)
 
 Error Analysis:
   ✓ Compilation: Success - No errors
   ✓ TypeScript: Success - 0 errors
   ✓ Build: Success - Both apps built
-  ✓ Runtime: Success - No errors in 60s
+  ✓ Runtime: Success - No errors in 60s monitoring
+  ✓ Hot Reload: Working (tested)
 
 Applications Ready:
   → Web: http://localhost:3000
@@ -1298,19 +1265,24 @@ Applications Ready:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Summary of Fixes Applied:
-  1. Prisma client generated
-  2. Environment variables configured
-  3. 23 TypeScript errors fixed by lint-debugger
-  4. 1 import path corrected
+Summary of Session:
+  Total Errors Fixed: 26 errors across 3 categories
+  Fixes Applied:
+    1. Prisma client generated
+    2. Environment variables configured (2 vars)
+    3. 23 TypeScript errors fixed by lint-debugger
+    4. 1 import path corrected
 
-Files Modified: 9 files
-  - apps/api/.env (created)
-  - apps/api/src/auth/controller.ts
-  - apps/api/src/users/service.ts
-  - apps/web/src/hooks/useAuth.ts
-  - apps/web/src/components/Button.tsx
-  - (+ 4 more files)
+  Files Modified: 9 files
+    - apps/api/.env (created)
+    - apps/api/src/auth/controller.ts
+    - apps/api/src/users/service.ts
+    - apps/web/src/hooks/useAuth.ts
+    - apps/web/src/components/Button.tsx
+    - (+ 4 more files)
+
+  Total Time: 5m 15s
+  Strategies Used: C, D, E (basic strategies only)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1337,7 +1309,7 @@ Next Steps:
   3. Make changes - hot reload is active
   4. Servers will continue running until stopped
 
-Your development environment is ready! 🚀
+Your development environment is ready!
 ```
 
 ---
@@ -1345,42 +1317,37 @@ Your development environment is ready! 🚀
 ## Quality Standards
 
 ### Error Detection
-
 - All error types captured from output
-- Errors categorized correctly
-- Error counts are accurate
-- Stack traces preserved for analysis
+- Errors categorized correctly (7 categories)
+- Error counts accurate
+- Stack traces preserved
 - No errors missed or ignored
 
 ### Fix Quality
-
-- Fixes are minimal and targeted
-- Root causes addressed, not symptoms
-- Code follows project conventions (TypeScript strict, no `any`)
-- No type safety violations introduced (`as`, non-null assertions, `any`)
-- Functionality preserved during fixes
+- Fixes minimal and targeted
+- Root causes addressed (not symptoms)
+- Code follows project conventions
+- No type safety violations (`any`, `!`, unsafe `as`)
+- Functionality preserved
 - No regressions introduced
 
 ### Delegation Quality
-
 - Appropriate delegation to lint-debugger for extensive TS errors
 - Clear communication with delegated agents
 - Agent results validated before proceeding
-- Fallback to manual fixes if delegation fails
+- Fallback to manual if delegation fails
 
 ### Verification Thoroughness
-
 - Both web and API apps verified
-- Health checks performed on endpoints
+- Health checks on endpoints
 - Log output scanned for errors
-- Hot reload tested if applicable
+- Hot reload tested (if applicable)
 - Servers left running after success
 
 ### Communication Quality
-
 - Clear progress updates during each phase
-- Error summaries are actionable
-- Fix strategies explained to user
+- Error summaries actionable
+- Fix strategies explained
 - Success confirmation with evidence
 - Monitoring instructions provided
 
@@ -1389,333 +1356,42 @@ Your development environment is ready! 🚀
 ## Constraints & Boundaries
 
 ### Must Do
-
-- Run initial assessment before fixing anything
+- Run initial assessment before fixing
 - Categorize all errors by type
-- Apply fixes in correct priority order (port → deps → prisma → env → types → runtime)
+- Apply fixes in priority order (A → B → C → D → E → F → G)
 - Delegate to lint-debugger if >10 TypeScript errors
 - Verify server health after fixes
-- Leave servers running at end (don't kill processes)
-- Provide monitoring instructions to user
+- Leave servers running at end (don't kill)
+- Provide monitoring instructions
 
 ### Must Not Do
-
-- Skip error assessment (need to know what's broken)
+- Skip error assessment (need full picture)
 - Fix errors randomly without prioritization
-- Make configuration changes without understanding impact
-- Use type safety violations (`any`, `as`, non-null assertions) in fixes
-- Disable strict TypeScript or linting to "fix" errors
-- Kill dev servers at end (user needs them running)
+- Make config changes without understanding
+- Use type safety violations in fixes
+- Disable strict TypeScript to "fix" errors
+- Kill dev servers at end (user needs them)
 - Proceed if verification fails without re-fixing
 
-### Scope Management
-
-**In Scope:**
-
+### In Scope
 - Starting and monitoring dev servers
 - Analyzing error output
-- Fixing TypeScript, build, dependency, Prisma, environment errors
-- Delegating to lint-debugger for extensive TS errors
+- Fixing TS, build, dependency, Prisma, env errors
+- Delegating to lint-debugger
 - Manual runtime error fixes
 - Port conflict resolution
 - Verifying server health
 - Providing monitoring guidance
 
-**Out of Scope:**
-
-- Fixing test failures (not part of dev server startup)
-- Running full CI pipeline (use `/dev:validate` instead)
-- Committing fixes (suggest `/git:commit` after success)
+### Out of Scope
+- Test failures (use `test-debugger`)
+- Full CI pipeline (use `/dev:validate`)
+- Committing fixes (suggest `/git:commit`)
 - Deploying applications
-- Database migrations (only Prisma client generation)
-- Installing new features or packages beyond fixing errors
-- Refactoring code beyond minimal fixes
+- Database migrations (only client generation)
+- Installing new features
+- Refactoring beyond fixes
 - Performance optimization
-
----
-
-## Examples
-
-### Example 1: TypeScript Errors and Missing Prisma Client
-
-**User:** `/dev:debug`
-
-**Phase 1: Assessment**
-
-```
-Running pnpm dev...
-
-Server Status:
-- Dev Process: RUNNING
-- Web App: FAILED (compilation errors)
-- API App: FAILED (Prisma client missing)
-
-Error Summary:
-  TypeScript Errors: 15 errors across 5 files
-  Prisma Issues: Yes - Client not generated
-
-Recommended: Generate Prisma client, then delegate to lint-debugger
-```
-
-**Phase 2: Fixes**
-
-```
-[1/2] Prisma Client Generation
-✓ pnpm prisma generate successful
-
-[2/2] TypeScript Fixes
-Delegating to lint-debugger...
-✓ lint-debugger fixed 15 errors
-```
-
-**Phase 3: Verification**
-
-```
-✓ Dev servers running successfully
-✓ Web: http://localhost:3000 - OK
-✓ API: http://localhost:3001 - OK
-
-15 errors fixed, servers ready!
-```
-
----
-
-### Example 2: Port Conflict
-
-**User:** `/dev:debug`
-
-**Phase 1: Assessment**
-
-```
-Running pnpm dev...
-
-Server Status:
-- Dev Process: CRASHED
-- Port Conflicts: Yes - Port 3000 in use
-
-Error: listen EADDRINUSE: address already in use :::3000
-```
-
-**Phase 2: Fixes**
-
-```
-[1/1] Port Conflict Resolution
-
-Found process using port 3000:
-  PID 8765: node (another dev server)
-
-Options:
-  1) Kill process 8765
-  2) Change port in .env
-
-User chose: 1
-
-Killing process 8765...
-✓ Port 3000 now available
-```
-
-**Phase 3: Verification**
-
-```
-✓ Dev servers running successfully
-✓ Web: http://localhost:3000 - OK
-✓ API: http://localhost:3001 - OK
-
-1 port conflict resolved, servers ready!
-```
-
----
-
-### Example 3: Already Running Successfully
-
-**User:** `/dev:debug`
-
-**Phase 1: Assessment**
-
-```
-Running pnpm dev...
-
-Server Status:
-- Dev Process: RUNNING
-- Web App: OK
-- API App: OK
-
-Error Summary:
-  Total Issues: 0
-
-✓ All applications running successfully!
-
-No fixes needed - development environment is healthy.
-```
-
-**Early Exit - Monitoring Instructions Provided**
-
-```
-✓ Development environment already running
-
-Applications:
-  → Web: http://localhost:3000
-  → API: http://localhost:3001
-
-Monitor: tail -f /tmp/dev-output.log
-Stop: kill $(cat /tmp/dev-pid.txt)
-```
-
----
-
-### Example 4: Missing Environment Variables
-
-**User:** `/dev:debug`
-
-**Phase 1: Assessment**
-
-```
-Running pnpm dev...
-
-Server Status:
-- Dev Process: RUNNING
-- API App: CRASHED (env error)
-
-Error: Environment variable DATABASE_URL is required
-```
-
-**Phase 2: Fixes**
-
-```
-[1/1] Environment Configuration
-
-Missing variables in apps/api/.env:
-  - DATABASE_URL
-  - JWT_SECRET
-
-Creating apps/api/.env from .env.example...
-✓ Environment configured with development defaults
-```
-
-**Phase 3: Verification**
-
-```
-✓ Dev servers running successfully
-✓ API: http://localhost:3001 - OK
-
-2 environment variables configured, servers ready!
-```
-
----
-
-### Example 5: Complex Module Resolution Error (Using Advanced Strategies)
-
-**User:** `/dev:debug`
-
-**Phase 1: Assessment**
-
-```
-Running pnpm dev...
-
-Server Status:
-- Dev Process: RUNNING
-- Web App: OK
-- API App: FAILED (module loading error)
-
-Error: SyntaxError: Unexpected token 'export'
-  at packages/db/src/index.ts:7
-
-Build succeeded but runtime error loading workspace packages.
-```
-
-**Initial Fix Attempts (15 minutes spent):**
-
-```
-Attempt 1: Fixed package.json exports to use .js files
-Result: Same error persists
-
-Attempt 2: Changed TypeScript module output
-Result: New errors appeared
-
-Attempt 3: Tried different tsconfig settings
-Result: Still stuck - considering symlinking hack
-```
-
-**Phase 0: Using Advanced Strategies**
-
-```
-[Delegate to THREE specialists in parallel for comprehensive analysis]
-
-# Invoked in a SINGLE message:
-- stack-trace-analyzer: Parse the exact error
-- best-practices-researcher: Find official NestJS monorepo configuration
-- monorepo-specialist: Diagnose our specific setup
-
-stack-trace-analyzer findings:
-- Error type: Module system mismatch (CommonJS trying to load ESM)
-- Root location: packages/utils/src/index.js (file exists but wrong format)
-- Call sequence: webpack bundle → require('@starter/utils') → Node ESM loader
-- Root cause: package.json "type": "module" but built output is CommonJS
-
-best-practices-researcher findings:
-- Official NestJS docs recommend CommonJS for backend apps
-- Official NestJS monorepo examples use "type": "commonjs" for shared packages
-- PNPM official docs: workspace packages should match consumer's module system
-- Webpack externals require packages to be loadable by Node's require()
-- Source: docs.nestjs.com/cli/monorepo, pnpm.io/workspaces
-
-monorepo-specialist findings:
-- PNPM workspace packages are loaded at runtime (not bundled by webpack)
-- Our @starter/utils has "type": "module" but built as CommonJS
-- NestJS API app is CommonJS → workspace packages must also be CommonJS
-- Solution: Change "type": "commonjs" in packages/utils/package.json
-- Also fix package.json exports to point to .js files (not .ts)
-
-Consensus recommendation: Align all workspace packages to CommonJS (matches NestJS + official examples)
-AVOID: Symlinks, webpack bundling workspace packages, or custom loaders
-```
-
-**Phase 2: Applying Recommended Fix**
-
-```
-[1/1] Module System Alignment
-────────────────────────────────────────────
-Based on monorepo-specialist analysis:
-
-Editing packages/utils/package.json
-  Before: "type": "module"
-  After:  "type": "commonjs"
-
-✓ Module system aligned with NestJS (CommonJS)
-```
-
-**Phase 3: Verification**
-
-```
-✓ Dev servers running successfully
-✓ Web: http://localhost:3000 - OK
-✓ API: http://localhost:3001 - OK
-
-Result: Problem solved in 5 minutes with specialist help
-Avoided: 30+ minutes of trial-and-error + potential hack implementation
-
-Key learning: Delegate to specialists when stuck >15 minutes
-```
-
-**What Made the Difference:**
-
-- **Without subagents**: 45+ minutes of trial and error, likely would have implemented symlink hack
-- **With 3 subagents in parallel**: 5 minutes to proper solution with official validation
-- **stack-trace-analyzer**: Identified exact root cause (module system mismatch)
-- **best-practices-researcher**: Confirmed official NestJS pattern (CommonJS for monorepos)
-- **monorepo-specialist**: Provided specific fix (package.json "type" field)
-- **Result**: Proper solution that aligns with official docs + avoids technical debt
-
-**Time Comparison:**
-- Manual debugging: 45+ min → likely ends with hack
-- Single specialist: 15 min → might miss best practices
-- Triple specialists (parallel): 5 min → official + validated solution
-
-**Key Insight:** Using multiple specialists in parallel gives you:
-1. **Accuracy** - Cross-validation from different perspectives
-2. **Speed** - Parallel execution, no sequential delays
-3. **Quality** - Official validation + practical expertise
-4. **Confidence** - Consensus recommendations are rarely wrong
 
 ---
 
@@ -1727,69 +1403,19 @@ Key learning: Delegate to specialists when stuck >15 minutes
 
 ---
 
-## Workflow Integration
+## Changelog
 
-**Typical Usage Pattern:**
+**Version 2.0** (2025-10-22)
+- Optimized structure following comprehensive PRD
+- Standardized all strategies with "When/What/Why/Priority" pattern
+- Introduced tool abstractions (dev:start-monitored, dev:categorize-errors, dev:health-check)
+- Delegated all bash operations to tools/subagents
+- Reduced token count by ~10-15% while improving clarity
+- Enhanced validation gates and success criteria
+- Added comprehensive examples with decision-making
+- Applied agent optimization best practices from research
+- Changed allowed-tools to Task and TodoWrite only (strategic orchestration)
 
-1. **Project Setup (First Time):**
-
-   ```
-   git clone [repo]
-   pnpm install
-
-   # Create debugging subagents once (if not already created):
-   # These enhance the /dev:debug command with specialized expertise
-   # Only needs to be done once per project
-
-   @subagent-writer create root-cause-analyst       # Alternative solutions when stuck
-   @subagent-writer create stack-trace-analyzer     # Parse complex error messages
-   @subagent-writer create common-error-researcher  # Find community solutions
-   @subagent-writer create best-practices-researcher # Validate against official docs
-   @subagent-writer create monorepo-specialist      # PNPM + NestJS + Turborepo expert
-   @subagent-writer create build-system-debugger   # Webpack/Vite/TypeScript config
-
-   /dev:debug  (handles Prisma, env, initial errors - now with subagent support!)
-   ```
-
-2. **After Pulling Changes:**
-
-   ```
-   git pull
-   pnpm install
-   /dev:debug  (fixes any new errors from changes)
-   ```
-
-3. **After Making Changes:**
-
-   ```
-   [Make code changes]
-   /dev:debug  (fixes TypeScript or runtime errors)
-   [Continue development]
-   ```
-
-4. **Debugging Startup Issues:**
-   ```
-   [Dev server won't start]
-   /dev:debug  (systematically fixes until working)
-   ```
-
----
-
-**Command Version:** 2.1
-**Last Updated:** 2025-10-21
-**Owner:** Platform Engineering
-
-**Changelog:**
-- **v2.1**: Added best-practices-researcher, enhanced all strategy descriptions with "When/What/Why", added Quick Decision Tree, updated Example 5 with triple-specialist parallel debugging
-- **v2.0**: Added Phase 0 - Advanced Debugging Strategies with specialized subagents (root-cause-analyst, stack-trace-analyzer, common-error-researcher, monorepo-specialist, build-system-debugger)
-- **v1.0**: Initial version with basic debugging strategies (A-G)
-
-**Subagents Created:**
-- root-cause-analyst (`.claude/agents/validation/`)
-- stack-trace-analyzer (`.claude/agents/validation/`)
-- common-error-researcher (`.claude/agents/validation/`)
-- best-practices-researcher (`.claude/agents/validation/`)
-- monorepo-specialist (`.claude/agents/infrastructure/`)
-- build-system-debugger (`.claude/agents/validation/`)
-
-**Note:** Create these subagents once during project setup for enhanced debugging capabilities (see Workflow Integration section)
+**Version 1.0** (2025-10-21)
+- Initial implementation with Phase 0 advanced strategies
+- 6 specialized subagents, 4 phases, 12 strategies

@@ -3,16 +3,16 @@
   "version": "0.1.0",
   "description": "NestJS utilities for fullstack-starter",
   "type": "commonjs",
-  "main": "./src/index.js",
-  "types": "./src/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.d.ts",
-      "default": "./src/index.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./dtos": {
-      "types": "./src/dtos/index.d.ts",
-      "default": "./src/dtos/index.js"
+      "types": "./dist/dtos/index.d.ts",
+      "default": "./dist/dtos/index.js"
     }
   },
   "files": ["src", "dist"],
