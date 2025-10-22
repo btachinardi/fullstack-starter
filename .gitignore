@@ -54,6 +54,7 @@ lerna-debug.log*
 .cache
 .temp
 tmp
+session-exports
 *.tgz
 .changeset/*.md
 !.changeset/README.md

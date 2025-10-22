@@ -37,6 +37,31 @@ export interface ThreadContext {
 }
 
 // ============================================================================
+// Context Tracking (for output attribution)
+// ============================================================================
+
+/**
+ * Command context - tracks which slash command initiated this message
+ * Used for output attribution in self-improving agentic systems
+ */
+export interface CommandContext {
+  /** Command name with slash (e.g., "/git:commit") */
+  command: string;
+  /** UUID of the command invocation message */
+  commandUuid: string;
+}
+
+/**
+ * Subagent context - tracks if message is from a subagent
+ */
+export interface SubagentContext {
+  /** Subagent type (e.g., "commit-grouper") */
+  subagent: string;
+  /** Subagent invocation ID */
+  invocationId: string;
+}
+
+// ============================================================================
 // Specialized Message Types
 // ============================================================================
 
@@ -53,6 +78,10 @@ export interface SlashCommandMessage {
   commandPrompt: string;
   /** Original user entry UUIDs that were merged */
   sourceUuids: [string, string]; // [invocation uuid, prompt uuid]
+  /** Command context (always set for slash commands) */
+  commandContext: CommandContext;
+  /** Subagent context (undefined for main thread) */
+  subagentContext?: SubagentContext;
 }
 
 /**
@@ -65,6 +94,10 @@ export interface UserMessage {
   content: string;
   /** Raw entry for additional metadata */
   rawEntry: UserEntry;
+  /** Command context (if message is within a command invocation) */
+  commandContext?: CommandContext;
+  /** Subagent context (if message is in a subagent thread) */
+  subagentContext?: SubagentContext;
 }
 
 /**
@@ -78,6 +111,10 @@ export interface ToolResultMessage {
   results: ToolResult[];
   /** Raw entry for additional metadata */
   rawEntry: UserEntry;
+  /** Command context (if message is within a command invocation) */
+  commandContext?: CommandContext;
+  /** Subagent context (if message is in a subagent thread) */
+  subagentContext?: SubagentContext;
 }
 
 /**
@@ -90,6 +127,10 @@ export interface AssistantTextMessage {
   content: string;
   /** Raw entry for additional metadata */
   rawEntry: AssistantEntry;
+  /** Command context (if message is within a command invocation) */
+  commandContext?: CommandContext;
+  /** Subagent context (if message is in a subagent thread) */
+  subagentContext?: SubagentContext;
 }
 
 /**
@@ -102,6 +143,10 @@ export interface AssistantThinkingMessage {
   thinking: string;
   /** Raw entry for additional metadata */
   rawEntry: AssistantEntry;
+  /** Command context (if message is within a command invocation) */
+  commandContext?: CommandContext;
+  /** Subagent context (if message is in a subagent thread) */
+  subagentContext?: SubagentContext;
 }
 
 /**
@@ -119,6 +164,10 @@ export interface ToolCallMessage {
   resultTimestamp?: string;
   /** Raw entry for additional metadata */
   rawEntry: AssistantEntry;
+  /** Command context (if message is within a command invocation) */
+  commandContext?: CommandContext;
+  /** Subagent context (if message is in a subagent thread) */
+  subagentContext?: SubagentContext;
 }
 
 /**
@@ -140,6 +189,10 @@ export interface SubagentInvocationMessage {
   thread: SubagentThread;
   /** Raw entry for additional metadata */
   rawEntry: AssistantEntry;
+  /** Command context (if message is within a command invocation) */
+  commandContext?: CommandContext;
+  /** Subagent context (always undefined for invocation in main thread) */
+  subagentContext?: SubagentContext;
 }
 
 /**
@@ -153,6 +206,41 @@ export interface SystemMessage {
   content: string;
   /** Raw entry for additional metadata */
   rawEntry: SystemEntry;
+  /** Command context (if message is within a command invocation) */
+  commandContext?: CommandContext;
+  /** Subagent context (if message is in a subagent thread) */
+  subagentContext?: SubagentContext;
+}
+
+/**
+ * Clear command invocation (special case of user message)
+ */
+export interface ClearCommandMessage {
+  type: 'clear_command';
+  uuid: MessageId;
+  timestamp: string;
+  /** Raw entry for additional metadata */
+  rawEntry: UserEntry;
+  /** Command context (cleared after this message) */
+  commandContext?: CommandContext;
+  /** Subagent context (if message is in a subagent thread) */
+  subagentContext?: SubagentContext;
+}
+
+/**
+ * Command stdout message (local command output, hidden in rendering)
+ */
+export interface CommandStdoutMessage {
+  type: 'command_stdout';
+  uuid: MessageId;
+  timestamp: string;
+  content: string;
+  /** Raw entry for additional metadata */
+  rawEntry: UserEntry;
+  /** Command context (if message is within a command invocation) */
+  commandContext?: CommandContext;
+  /** Subagent context (if message is in a subagent thread) */
+  subagentContext?: SubagentContext;
 }
 
 /**
@@ -166,7 +254,9 @@ export type DomainMessage =
   | AssistantThinkingMessage
   | ToolCallMessage
   | SubagentInvocationMessage
-  | SystemMessage;
+  | SystemMessage
+  | ClearCommandMessage
+  | CommandStdoutMessage;
 
 // ============================================================================
 // Thread Types
@@ -296,4 +386,12 @@ export function isSubagentInvocationMessage(
 
 export function isSystemMessage(msg: DomainMessage): msg is SystemMessage {
   return msg.type === 'system_message';
+}
+
+export function isClearCommandMessage(msg: DomainMessage): msg is ClearCommandMessage {
+  return msg.type === 'clear_command';
+}
+
+export function isCommandStdoutMessage(msg: DomainMessage): msg is CommandStdoutMessage {
+  return msg.type === 'command_stdout';
 }

@@ -5,33 +5,23 @@
  * These are pure functions that the CLI dispatches to.
  */
 
-import { SessionParser, type EnrichedToolUse } from '../services/session-parser.js';
+import { SessionParser } from '../services/session-parser.js';
 import { buildEnrichedSession } from '../services/session-domain-builder.js';
 import type {
-  AssistantEntry,
-  SystemEntry,
-  TextContent,
-  ThinkingContent,
-  ToolUse,
-  UserEntry,
-} from '../types/session.js';
-import {
-  isAssistantEntry,
-  isSystemEntry,
-  isUserEntry,
-} from '../types/session.js';
-import type {
   DomainMessage,
+  SubagentInvocationMessage,
   SubagentThread,
+  ToolCallMessage,
 } from '../types/session-domain.js';
 import {
   isAssistantTextMessage,
   isAssistantThinkingMessage,
+  isClearCommandMessage,
+  isCommandStdoutMessage,
   isSlashCommandMessage,
   isSubagentInvocationMessage,
   isSystemMessage,
   isToolCallMessage,
-  isToolResultMessage,
   isUserMessage,
 } from '../types/session-domain.js';
 
@@ -280,7 +270,7 @@ export async function sessionExport(
 }
 
 /**
- * Export session to markdown format
+ * Export session to markdown format (using enriched domain model)
  */
 export async function sessionToMarkdown(
   filePath: string,
@@ -288,6 +278,7 @@ export async function sessionToMarkdown(
 ): Promise<string> {
   const parser = new SessionParser();
   const session = await parser.load(filePath);
+  const enrichedSession = buildEnrichedSession(parser);
 
   const {
     includeThinking = true,
@@ -296,10 +287,6 @@ export async function sessionToMarkdown(
     maxOutputLength = 10000,
     noTruncate = true,
   } = options;
-
-  // Get enriched tool uses (with results matched)
-  const enrichedToolUses = parser.getEnrichedToolUses();
-  const toolUseMap = new Map(enrichedToolUses.map((t) => [t.id, t]));
 
   let markdown = '';
 
@@ -313,76 +300,40 @@ export async function sessionToMarkdown(
   }
   markdown += '\n---\n\n';
 
-  // Process entries in chronological order (excluding tool result user messages)
-  const timelineEntries = parser.getTimelineEntries();
+  // Use session ID prefix for subagent links
+  const sessionPrefix = session.sessionId.substring(0, 8);
 
-  for (const entry of timelineEntries) {
-    // Skip summary entries and file history snapshots
-    if (entry.type === 'summary' || entry.type === 'file-history-snapshot') {
-      continue;
-    }
-
-    const timestamp = 'timestamp' in entry ? new Date(entry.timestamp).toLocaleTimeString() : '';
-
-    if (isUserEntry(entry)) {
-      markdown += formatUserEntry(entry, timestamp);
-    } else if (isAssistantEntry(entry)) {
-      markdown += formatAssistantEntry(entry, timestamp, includeThinking, includeToolDetails, toolUseMap, maxOutputLength, noTruncate);
-    } else if (isSystemEntry(entry) && includeSystemMessages) {
-      markdown += formatSystemEntry(entry, timestamp);
-    }
+  // Process main thread messages using enriched domain model
+  for (const msg of enrichedSession.mainThread.messages) {
+    markdown += formatDomainMessage(
+      msg,
+      sessionPrefix,
+      includeThinking,
+      includeToolDetails,
+      includeSystemMessages,
+      maxOutputLength,
+      noTruncate
+    );
   }
 
   return markdown;
 }
 
-function formatUserEntry(entry: UserEntry, timestamp: string): string {
-  let md = `## 👤 User ${timestamp ? `_${timestamp}_` : ''}\n\n`;
-  md += `${entry.message.content}\n\n`;
-  md += '---\n\n';
-  return md;
-}
+/**
+ * Helper function to format context badges for markdown
+ */
+function formatContextBadges(msg: DomainMessage): string {
+  const badges: string[] = [];
 
-function formatAssistantEntry(
-  entry: AssistantEntry,
-  timestamp: string,
-  includeThinking: boolean,
-  includeToolDetails: boolean,
-  toolUseMap: Map<string, EnrichedToolUse>,
-  maxOutputLength: number,
-  noTruncate: boolean
-): string {
-  let md = '';
-  const content = entry.message.content;
-
-  if (typeof content === 'string') {
-    md += `## 🤖 Assistant ${timestamp ? `_${timestamp}_` : ''}\n\n`;
-    md += `${content}\n\n`;
-    md += '---\n\n';
-    return md;
+  if (msg.commandContext) {
+    badges.push(`\`${msg.commandContext.command}\``);
   }
 
-  // Process each content block
-  for (const block of content) {
-    if (block.type === 'text') {
-      const textBlock = block as TextContent;
-      md += `## 🤖 Assistant ${timestamp ? `_${timestamp}_` : ''}\n\n`;
-      md += `${textBlock.text}\n\n`;
-      md += '---\n\n';
-    } else if (block.type === 'thinking' && includeThinking) {
-      const thinkingBlock = block as ThinkingContent;
-      md += `## 🧠 Assistant (thinking) ${timestamp ? `_${timestamp}_` : ''}\n\n`;
-      md += `> ${thinkingBlock.thinking.split('\n').join('\n> ')}\n\n`;
-      md += '---\n\n';
-    } else if (block.type === 'tool_use') {
-      const toolUseBlock = block as ToolUse;
-      const enriched = toolUseMap.get(toolUseBlock.id);
-      md += formatEnrichedToolUse(enriched || toolUseBlock, timestamp, includeToolDetails, maxOutputLength, noTruncate);
-    }
-    // Note: tool_result blocks in assistant messages are skipped - results come from user messages
+  if (msg.subagentContext) {
+    badges.push(`\`@${msg.subagentContext.subagent}\``);
   }
 
-  return md;
+  return badges.length > 0 ? `${badges.join(' ')} ` : '';
 }
 
 function formatToolInput(toolName: string, input: Record<string, unknown>): string {
@@ -471,93 +422,6 @@ function formatGlobInput(input: Record<string, unknown>): string {
   return md;
 }
 
-function formatEnrichedToolUse(
-  tool: EnrichedToolUse | ToolUse,
-  timestamp: string,
-  includeDetails: boolean,
-  maxOutputLength: number,
-  noTruncate: boolean
-): string {
-  let md = `## 🔧 Tool: ${tool.name} ${timestamp ? `_${timestamp}_` : ''}\n\n`;
-
-  // Show tool input
-  if (includeDetails) {
-    md += formatToolInput(tool.name, tool.input);
-    md += '\n';
-  } else {
-    md += `_Tool invoked with ID: ${tool.id}_\n\n`;
-  }
-
-  md += '---\n\n';
-
-  // Show tool result if available (from enriched tool use)
-  const enriched = tool as EnrichedToolUse;
-  if (enriched.result) {
-    const result = enriched.result;
-    const resultTimestamp = enriched.resultTimestamp
-      ? new Date(enriched.resultTimestamp).toLocaleTimeString()
-      : '';
-
-    const emoji = result.is_error ? '❌' : '✅';
-    const status = result.is_error ? 'Error' : 'Result';
-
-    md += `## ${emoji} Tool ${status} ${resultTimestamp ? `_${resultTimestamp}_` : ''}\n\n`;
-
-    if (includeDetails) {
-      const content = result.content;
-
-      if (typeof content === 'string') {
-        // Truncate based on options
-        let output = content;
-        if (!noTruncate && content.length > maxOutputLength) {
-          output = content.substring(0, maxOutputLength) + '\n\n... (truncated)';
-        }
-        md += '```\n';
-        md += output;
-        md += '\n```\n\n';
-      } else if (Array.isArray(content)) {
-        // Handle array of content blocks
-        for (const block of content) {
-          if (typeof block === 'object' && block !== null) {
-            if ('type' in block && block.type === 'text' && 'text' in block) {
-              let textContent = block.text as string;
-              if (!noTruncate && textContent.length > maxOutputLength) {
-                textContent = textContent.substring(0, maxOutputLength) + '\n\n... (truncated)';
-              }
-              md += '```\n';
-              md += textContent;
-              md += '\n```\n\n';
-            } else {
-              md += '```json\n';
-              md += JSON.stringify(block, null, 2);
-              md += '\n```\n\n';
-            }
-          }
-        }
-      } else if (typeof content === 'object' && content !== null) {
-        md += '```json\n';
-        md += JSON.stringify(content, null, 2);
-        md += '\n```\n\n';
-      }
-    } else {
-      md += `_Tool result for: ${result.tool_use_id}_\n\n`;
-    }
-
-    md += '---\n\n';
-  }
-
-  return md;
-}
-
-function formatSystemEntry(entry: SystemEntry, timestamp: string): string {
-  const emoji = entry.level === 'error' ? '❌' : entry.level === 'warning' ? '⚠️' : '📊';
-  const levelLabel = entry.level ? entry.level.toUpperCase() : 'SYSTEM';
-
-  let md = `## ${emoji} System ${levelLabel} ${timestamp ? `_${timestamp}_` : ''}\n\n`;
-  md += `${entry.content}\n\n`;
-  md += '---\n\n';
-  return md;
-}
 
 /**
  * List session files with metadata (requires project path)
@@ -642,6 +506,7 @@ export async function sessionToEnrichedMarkdown(
 ): Promise<{
   mainMarkdown: string;
   subagentFiles: Array<{ filename: string; content: string; subagentType: string }>;
+  filesWritten: string[];
 }> {
   const parser = new SessionParser();
   const session = await parser.load(filePath);
@@ -653,6 +518,7 @@ export async function sessionToEnrichedMarkdown(
     includeSystemMessages = true,
     maxOutputLength = 10000,
     noTruncate = true,
+    outputDir,
   } = options;
 
   // Generate main markdown
@@ -668,10 +534,14 @@ export async function sessionToEnrichedMarkdown(
   }
   mainMarkdown += '\n---\n\n';
 
+  // Use session ID prefix to avoid collisions between sessions
+  const sessionPrefix = session.sessionId.substring(0, 8);
+
   // Process main thread messages
   for (const msg of enrichedSession.mainThread.messages) {
     mainMarkdown += formatDomainMessage(
       msg,
+      sessionPrefix,
       includeThinking,
       includeToolDetails,
       includeSystemMessages,
@@ -682,10 +552,12 @@ export async function sessionToEnrichedMarkdown(
 
   // Generate subagent thread markdown files
   const subagentFiles: Array<{ filename: string; content: string; subagentType: string }> = [];
+  const filesWritten: string[] = [];
 
   for (const [invocationId, thread] of enrichedSession.subagentThreads) {
     const threadMarkdown = formatSubagentThread(
       thread,
+      sessionPrefix,
       includeThinking,
       includeToolDetails,
       includeSystemMessages,
@@ -693,17 +565,44 @@ export async function sessionToEnrichedMarkdown(
       noTruncate
     );
 
-    const filename = `subagent-${thread.subagentType}-${invocationId.substring(0, 8)}.md`;
+    const filename = `${sessionPrefix}-subagent-${thread.subagentType}-${invocationId.substring(0, 8)}.md`;
     subagentFiles.push({
       filename,
       content: threadMarkdown,
       subagentType: thread.subagentType,
     });
+
+    // Write file to disk if outputDir specified
+    if (outputDir) {
+      const { writeFile, mkdir } = await import('node:fs/promises');
+      const { join } = await import('node:path');
+
+      // Ensure output directory exists
+      await mkdir(outputDir, { recursive: true });
+
+      const fullPath = join(outputDir, filename);
+      await writeFile(fullPath, threadMarkdown, 'utf-8');
+      filesWritten.push(fullPath);
+    }
+  }
+
+  // Write main markdown file if outputDir specified
+  if (outputDir) {
+    const { writeFile, mkdir } = await import('node:fs/promises');
+    const { join } = await import('node:path');
+
+    await mkdir(outputDir, { recursive: true });
+
+    const mainFilename = `${sessionPrefix}-session.md`;
+    const mainPath = join(outputDir, mainFilename);
+    await writeFile(mainPath, mainMarkdown, 'utf-8');
+    filesWritten.unshift(mainPath); // Add main file at the beginning
   }
 
   return {
     mainMarkdown,
     subagentFiles,
+    filesWritten,
   };
 }
 
@@ -712,6 +611,7 @@ export async function sessionToEnrichedMarkdown(
  */
 function formatDomainMessage(
   msg: DomainMessage,
+  sessionPrefix: string,
   includeThinking: boolean,
   includeToolDetails: boolean,
   includeSystemMessages: boolean,
@@ -720,11 +620,23 @@ function formatDomainMessage(
 ): string {
   let md = '';
   const timestamp = new Date(msg.timestamp).toLocaleTimeString();
+  const contextBadges = formatContextBadges(msg);
 
-  if (isSlashCommandMessage(msg)) {
-    md += `## ⚡ Slash Command: /${msg.commandName} _${timestamp}_\n\n`;
-    md += `**Command:** \`/${msg.commandName}\`\n\n`;
-    if (includeToolDetails) {
+  // Skip command stdout messages (hidden in rendering)
+  if (isCommandStdoutMessage(msg)) {
+    return '';
+  }
+
+  if (isClearCommandMessage(msg)) {
+    md += `## 🧹 Clear Command ${contextBadges}_${timestamp}_\n\n`;
+    md += '_Session context cleared_\n\n';
+    md += '---\n\n';
+  } else if (isSlashCommandMessage(msg)) {
+    // Omit command name from title since we have the badge
+    md += `## ⚡ Slash Command ${contextBadges}_${timestamp}_\n\n`;
+
+    // Only show prompt details if prompt is not empty
+    if (includeToolDetails && msg.commandPrompt && msg.commandPrompt.trim()) {
       md += '<details>\n<summary>Command Prompt</summary>\n\n';
       md += '```\n';
       md += msg.commandPrompt;
@@ -733,25 +645,25 @@ function formatDomainMessage(
     }
     md += '---\n\n';
   } else if (isUserMessage(msg)) {
-    md += `## 👤 User _${timestamp}_\n\n`;
+    md += `## 👤 User ${contextBadges}_${timestamp}_\n\n`;
     md += `${msg.content}\n\n`;
     md += '---\n\n';
   } else if (isAssistantTextMessage(msg)) {
-    md += `## 🤖 Assistant _${timestamp}_\n\n`;
+    md += `## 🤖 Assistant ${contextBadges}_${timestamp}_\n\n`;
     md += `${msg.content}\n\n`;
     md += '---\n\n';
   } else if (isAssistantThinkingMessage(msg) && includeThinking) {
-    md += `## 🧠 Assistant (thinking) _${timestamp}_\n\n`;
+    md += `## 🧠 Assistant (thinking) ${contextBadges}_${timestamp}_\n\n`;
     md += `> ${msg.thinking.split('\n').join('\n> ')}\n\n`;
     md += '---\n\n';
   } else if (isToolCallMessage(msg)) {
-    md += formatToolCall(msg, timestamp, includeToolDetails, maxOutputLength, noTruncate);
+    md += formatToolCall(msg, timestamp, contextBadges, includeToolDetails, maxOutputLength, noTruncate);
   } else if (isSubagentInvocationMessage(msg)) {
-    md += formatSubagentInvocation(msg, timestamp, includeToolDetails);
+    md += formatSubagentInvocation(msg, sessionPrefix, timestamp, contextBadges, includeToolDetails);
   } else if (isSystemMessage(msg) && includeSystemMessages) {
     const emoji = msg.level === 'error' ? '❌' : msg.level === 'warning' ? '⚠️' : '📊';
     const levelLabel = msg.level.toUpperCase();
-    md += `## ${emoji} System ${levelLabel} _${timestamp}_\n\n`;
+    md += `## ${emoji} System ${levelLabel} ${contextBadges}_${timestamp}_\n\n`;
     md += `${msg.content}\n\n`;
     md += '---\n\n';
   }
@@ -765,11 +677,12 @@ function formatDomainMessage(
 function formatToolCall(
   msg: ToolCallMessage,
   timestamp: string,
+  contextBadges: string,
   includeDetails: boolean,
   maxOutputLength: number,
   noTruncate: boolean
 ): string {
-  let md = `## 🔧 Tool: ${msg.toolUse.name} _${timestamp}_\n\n`;
+  let md = `## 🔧 Tool: ${msg.toolUse.name} ${contextBadges}_${timestamp}_\n\n`;
 
   if (includeDetails) {
     md += formatToolInput(msg.toolUse.name, msg.toolUse.input);
@@ -786,7 +699,7 @@ function formatToolCall(
     const emoji = msg.result.is_error ? '❌' : '✅';
     const status = msg.result.is_error ? 'Error' : 'Result';
 
-    md += `## ${emoji} Tool ${status} _${resultTimestamp}_\n\n`;
+    md += `## ${emoji} Tool ${status} ${contextBadges}_${resultTimestamp}_\n\n`;
 
     if (includeDetails) {
       md += formatToolResultContent(msg.result.content, maxOutputLength, noTruncate);
@@ -844,10 +757,12 @@ function formatToolResultContent(
  */
 function formatSubagentInvocation(
   msg: SubagentInvocationMessage,
+  sessionPrefix: string,
   timestamp: string,
+  contextBadges: string,
   includeDetails: boolean
 ): string {
-  let md = `## 🤖 Subagent Invocation: ${msg.subagentType} _${timestamp}_\n\n`;
+  let md = `## 🤖 Subagent Invocation: ${msg.subagentType} ${contextBadges}_${timestamp}_\n\n`;
   md += `**Subagent Type:** \`${msg.subagentType}\`\n`;
   md += `**Description:** ${msg.description}\n`;
   md += `**Invocation ID:** \`${msg.toolUse.id}\`\n\n`;
@@ -860,8 +775,8 @@ function formatSubagentInvocation(
     md += '</details>\n\n';
   }
 
-  // Link to subagent thread file
-  const filename = `subagent-${msg.subagentType}-${msg.toolUse.id.substring(0, 8)}.md`;
+  // Link to subagent thread file with session prefix
+  const filename = `${sessionPrefix}-subagent-${msg.subagentType}-${msg.toolUse.id.substring(0, 8)}.md`;
   md += `📄 **Thread:** [${filename}](./${filename})\n\n`;
   md += `**Thread Stats:** ${msg.thread.metadata.totalMessages} messages\n\n`;
 
@@ -875,6 +790,7 @@ function formatSubagentInvocation(
  */
 function formatSubagentThread(
   thread: SubagentThread,
+  sessionPrefix: string,
   includeThinking: boolean,
   includeToolDetails: boolean,
   includeSystemMessages: boolean,
@@ -902,6 +818,7 @@ function formatSubagentThread(
   for (const msg of thread.messages) {
     md += formatDomainMessage(
       msg,
+      sessionPrefix,
       includeThinking,
       includeToolDetails,
       includeSystemMessages,

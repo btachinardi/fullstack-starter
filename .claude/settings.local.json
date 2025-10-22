@@ -65,7 +65,10 @@
       "WebSearch",
       "Bash(pnpm lint:assertions:*)",
       "Bash(pnpm lint-staged:*)",
-      "Bash(pnpm --filter \"@fullstack-starter/tools\" build:*)"
+      "Bash(pnpm --filter \"@fullstack-starter/tools\" build:*)",
+      "Read(//c/tmp/**)",
+      "Bash(curl:*)",
+      "Bash(/dev/null)"
     ],
     "deny": [
       "Bash(git push --force:*)",

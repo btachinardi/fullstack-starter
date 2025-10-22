@@ -26,10 +26,14 @@ import {
 import type {
   AssistantTextMessage,
   AssistantThinkingMessage,
+  ClearCommandMessage,
+  CommandContext,
+  CommandStdoutMessage,
   DomainMessage,
   EnrichedSession,
   SessionThread,
   SlashCommandMessage,
+  SubagentContext,
   SubagentInvocationMessage,
   SubagentThread,
   SystemMessage,
@@ -126,6 +130,9 @@ export class SessionDomainBuilder {
     // Track entries to skip (for merged slash commands)
     const skipUuids = new Set<string>();
 
+    // Track current command context for output attribution
+    let currentCommandContext: CommandContext | undefined = undefined;
+
     for (let i = 0; i < timelineEntries.length; i++) {
       const entry = timelineEntries[i];
 
@@ -145,10 +152,36 @@ export class SessionDomainBuilder {
       }
 
       if (isUserEntry(entry)) {
-        // Check for slash command pattern
+        // Check for /clear command pattern
         const nextEntry = timelineEntries[i + 1];
+        const clearCommand = this.detectClearCommand(entry);
+        if (clearCommand) {
+          // Apply current context before clearing
+          clearCommand.commandContext = currentCommandContext;
+          messages.push(clearCommand);
+          // Reset command context
+          currentCommandContext = undefined;
+          // Skip the next entry (clear prompt) if it's a meta message
+          if (nextEntry && isUserEntry(nextEntry) && nextEntry.isMeta && 'uuid' in nextEntry) {
+            skipUuids.add(nextEntry.uuid);
+          }
+          continue;
+        }
+
+        // Check for command stdout pattern
+        const stdoutMsg = this.detectCommandStdout(entry);
+        if (stdoutMsg) {
+          stdoutMsg.commandContext = currentCommandContext;
+          messages.push(stdoutMsg);
+          continue;
+        }
+
+        // Check for slash command pattern
         const slashCommand = this.detectSlashCommand(entry, nextEntry);
         if (slashCommand) {
+          // Set new command context
+          currentCommandContext = slashCommand.commandContext;
+
           messages.push(slashCommand);
           // Skip the next entry (command prompt)
           if (nextEntry && 'uuid' in nextEntry) {
@@ -161,23 +194,87 @@ export class SessionDomainBuilder {
         if (this.isToolResultUserMessage(entry)) {
           const toolResultMsg = this.buildToolResultMessage(entry);
           if (toolResultMsg) {
+            // Apply command context
+            toolResultMsg.commandContext = currentCommandContext;
             messages.push(toolResultMsg);
           }
           continue;
         }
 
         // Regular user message
-        messages.push(this.buildUserMessage(entry));
+        const userMsg = this.buildUserMessage(entry);
+        // Apply command context
+        userMsg.commandContext = currentCommandContext;
+        messages.push(userMsg);
       } else if (isAssistantEntry(entry)) {
         // Process assistant entry content blocks
         const assistantMessages = this.buildAssistantMessages(entry, toolUseMap);
+        // Apply command context to all assistant messages
+        for (const msg of assistantMessages) {
+          msg.commandContext = currentCommandContext;
+        }
         messages.push(...assistantMessages);
       } else if (isSystemEntry(entry)) {
-        messages.push(this.buildSystemMessage(entry));
+        const sysMsg = this.buildSystemMessage(entry);
+        // Apply command context
+        sysMsg.commandContext = currentCommandContext;
+        messages.push(sysMsg);
       }
     }
 
     return messages;
+  }
+
+  /**
+   * Detect /clear command pattern
+   */
+  private detectClearCommand(entry: UserEntry): ClearCommandMessage | null {
+    const content = entry.message.content;
+
+    if (typeof content !== 'string') {
+      return null;
+    }
+
+    // Check for <command-name>/clear</command-name> pattern
+    const commandNameMatch = content.match(/<command-name>\/clear<\/command-name>/);
+    const commandMessageMatch = content.match(/<command-message>.*?clear.*?<\/command-message>/);
+
+    if (!commandNameMatch || !commandMessageMatch) {
+      return null;
+    }
+
+    return {
+      type: 'clear_command',
+      uuid: entry.uuid,
+      timestamp: entry.timestamp,
+      rawEntry: entry,
+    };
+  }
+
+  /**
+   * Detect command stdout pattern
+   */
+  private detectCommandStdout(entry: UserEntry): CommandStdoutMessage | null {
+    const content = entry.message.content;
+
+    if (typeof content !== 'string') {
+      return null;
+    }
+
+    // Check for <local-command-stdout> pattern
+    const stdoutMatch = content.match(/<local-command-stdout>(.*?)<\/local-command-stdout>/s);
+
+    if (!stdoutMatch) {
+      return null;
+    }
+
+    return {
+      type: 'command_stdout',
+      uuid: entry.uuid,
+      timestamp: entry.timestamp,
+      content: stdoutMatch[1] || '',
+      rawEntry: entry,
+    };
   }
 
   /**
@@ -197,7 +294,7 @@ export class SessionDomainBuilder {
     const commandMessageMatch = content.match(/<command-message>([^<]+)<\/command-message>/);
     const commandNameMatch = content.match(/<command-name>\/([^<]+)<\/command-name>/);
 
-    if (!commandMessageMatch || !commandNameMatch) {
+    if (!commandMessageMatch || !commandNameMatch || !commandNameMatch[1]) {
       return null;
     }
 
@@ -219,6 +316,10 @@ export class SessionDomainBuilder {
       commandName,
       commandPrompt,
       sourceUuids: [entry.uuid, nextEntry.uuid],
+      commandContext: {
+        command: `/${commandName}`,
+        commandUuid: entry.uuid,
+      },
     };
   }
 
@@ -275,16 +376,9 @@ export class SessionDomainBuilder {
           results.push(item as unknown as ToolResult);
         }
       }
-    } else if (
-      typeof content === 'object' &&
-      content !== null &&
-      'type' in content &&
-      content.type === 'tool_result'
-    ) {
-      // This branch is for the object case (not array, not string)
-      // But TypeScript can't narrow the union type properly
-      // Skip this case as it's less common
     }
+    // Note: content can only be string or array based on UserEntry type definition
+    // So no need to handle plain object case
 
     if (results.length === 0) {
       return null;
@@ -424,12 +518,16 @@ export class SessionDomainBuilder {
     const threads = new Map<string, SubagentThread>();
 
     // Group sidechain entries by their root (find entries with isSidechain=true and parentUuid=null)
+    // Only include conversation entries (user, assistant, system)
     const sidechainEntries = this.entries.filter(
-      (e) => 'isSidechain' in e && e.isSidechain
+      (e): e is UserEntry | AssistantEntry | SystemEntry =>
+        'isSidechain' in e &&
+        e.isSidechain === true &&
+        (isUserEntry(e) || isAssistantEntry(e) || isSystemEntry(e))
     );
 
     // Build thread map by following parentUuid links
-    const threadMap = new Map<string, SessionEntry[]>();
+    const threadMap = new Map<string, (UserEntry | AssistantEntry | SystemEntry)[]>();
 
     for (const entry of sidechainEntries) {
       if (!('parentUuid' in entry) || !('uuid' in entry)) {
@@ -468,7 +566,7 @@ export class SessionDomainBuilder {
 
       // First entry should be user message with prompt
       const firstEntry = entries[0];
-      if (!isUserEntry(firstEntry)) {
+      if (!firstEntry || !isUserEntry(firstEntry)) {
         continue;
       }
 
@@ -482,6 +580,7 @@ export class SessionDomainBuilder {
       const toolUseMap = new Map(enrichedToolUses.map((t) => [t.id, t]));
 
       for (const entry of entries) {
+        // Entries are already filtered to user/assistant/system only
         if (isUserEntry(entry)) {
           messages.push(this.buildUserMessage(entry));
         } else if (isAssistantEntry(entry)) {
@@ -534,6 +633,22 @@ export class SessionDomainBuilder {
             // Update thread metadata
             thread.invocationId = msg.toolUse.id;
             thread.subagentType = msg.subagentType;
+
+            // Create subagent context for this thread
+            const subagentContext: SubagentContext = {
+              subagent: msg.subagentType,
+              invocationId: msg.toolUse.id,
+            };
+
+            // Apply subagent context and propagate command context to all messages in thread
+            for (const threadMsg of thread.messages) {
+              threadMsg.subagentContext = subagentContext;
+              // Propagate command context from invocation message
+              if (msg.commandContext) {
+                threadMsg.commandContext = msg.commandContext;
+              }
+            }
+
             // Re-add to map with invocation ID as key
             subagentThreads.set(msg.toolUse.id, thread);
             break;

@@ -15,6 +15,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 ## Context & Prerequisites
 
 **Project Context:**
+
 - PNPM workspace monorepo with Turborepo orchestration
 - Applications: `api` (NestJS + Fastify) and `web` (React + Vite)
 - Development command: `pnpm dev` starts both apps in parallel watch mode
@@ -23,6 +24,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 - Biome for linting and formatting
 
 **Common Error Categories:**
+
 - **TypeScript errors**: Type mismatches, missing types, strict mode violations
 - **Build errors**: Import resolution, module not found, syntax errors
 - **Dependency issues**: Missing packages, version conflicts, workspace resolution
@@ -32,10 +34,12 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 - **Port conflicts**: Ports already in use by other processes
 
 **Specialized Agents:**
+
 - **lint-debugger**: Fixes TypeScript and linting errors systematically
 - **test-debugger**: Debugs and fixes test failures (if dev mode runs tests)
 
 **Prerequisites:**
+
 - Git repository initialized
 - Node.js 20.18.0+ and PNPM 9.15.0+ installed
 - `pnpm-lock.yaml` exists (or will be created via `pnpm install`)
@@ -51,11 +55,13 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 1. **Check for Running Dev Servers**
 
    Before starting, check if dev servers are already running:
+
    ```bash
    ps aux | grep -E "(vite|nest)"
    ```
 
    If processes found:
+
    - Ask user: "Dev servers appear to be running. Kill and restart? (Y/n)"
    - If yes: Kill processes and proceed
    - If no: Exit and suggest user stops servers manually
@@ -63,11 +69,13 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 2. **Bootstrap Dependencies (if needed)**
 
    Check if `node_modules` and `pnpm-lock.yaml` exist:
+
    ```bash
    ls -la node_modules pnpm-lock.yaml 2>/dev/null || echo "MISSING"
    ```
 
    If missing or outdated:
+
    ```bash
    pnpm install
    ```
@@ -77,6 +85,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 3. **Start Development Servers**
 
    Execute dev command in background to capture output:
+
    ```bash
    pnpm dev 2>&1 | tee /tmp/dev-output.log &
    DEV_PID=$!
@@ -84,6 +93,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
    ```
 
    This:
+
    - Runs `pnpm dev` in background
    - Redirects both stdout and stderr to log file
    - Saves process ID for later management
@@ -91,12 +101,14 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 4. **Monitor Startup Output (30 seconds)**
 
    Wait for initial startup and error detection:
+
    ```bash
    sleep 30
    tail -n 100 /tmp/dev-output.log
    ```
 
    Monitor for:
+
    - Compilation errors
    - TypeScript errors
    - Server start messages
@@ -108,36 +120,44 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
    Analyze the log output to identify error types:
 
    **TypeScript Errors:**
+
    - Pattern: `TS[0-9]+:`, `error TS`, `Type error`
    - Extract: file path, line number, error code, message
 
    **Build/Import Errors:**
+
    - Pattern: `Cannot find module`, `Module not found`, `import.*failed`
    - Extract: module name, requesting file
 
    **Dependency Errors:**
+
    - Pattern: `ERR_PNPM`, `Cannot find package`, `peer dependency`
    - Extract: package name, version constraint
 
    **Prisma Errors:**
+
    - Pattern: `Prisma schema`, `prisma generate`, `migration`
    - Extract: schema issues, migration status
 
    **Environment Errors:**
+
    - Pattern: `environment variable`, `missing.*env`, `configuration`
    - Extract: variable name, expected format
 
    **Runtime Errors:**
+
    - Pattern: `Error:`, `Exception`, `UnhandledPromise`, stack traces
    - Extract: error message, stack trace, file location
 
    **Port Conflicts:**
+
    - Pattern: `EADDRINUSE`, `port.*already in use`, `listen.*EACCES`
    - Extract: port number, conflicting process
 
 6. **Count and Categorize Issues**
 
    Create error summary:
+
    ```
    Error Assessment:
    - TypeScript Errors: [X] errors across [Y] files
@@ -154,6 +174,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 7. **Determine Servers Running Status**
 
    Check if servers managed to start despite errors:
+
    ```bash
    ps -p $(cat /tmp/dev-pid.txt 2>/dev/null) >/dev/null 2>&1 && echo "RUNNING" || echo "CRASHED"
    curl -s http://localhost:3000 >/dev/null && echo "WEB: OK" || echo "WEB: FAIL"
@@ -163,6 +184,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 8. **Present Assessment to User**
 
    Show comprehensive error report:
+
    ```
    Development Server Assessment:
 
@@ -185,6 +207,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 9. **Stop Dev Servers (for fixing)**
 
    If errors found and servers are running:
+
    ```bash
    kill $(cat /tmp/dev-pid.txt 2>/dev/null) 2>/dev/null
    ```
@@ -192,6 +215,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
    Explanation: We need to stop servers to apply fixes, then restart.
 
 **Validation:**
+
 - [ ] Dev servers started (even if with errors)
 - [ ] All errors captured and logged to `/tmp/dev-output.log`
 - [ ] Errors categorized by type
@@ -217,11 +241,13 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 **Steps:**
 
 1. **Identify Conflicting Process**
+
    ```bash
    lsof -i :3000 -i :3001 | grep LISTEN
    ```
 
 2. **Present Options to User**
+
    - Kill conflicting process (if safe)
    - Change port in `.env` files
    - Use different ports via command flags
@@ -229,11 +255,13 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 3. **Execute Chosen Solution**
 
    **Option 1: Kill process**
+
    ```bash
    kill -9 [PID]
    ```
 
    **Option 2: Update .env files**
+
    ```bash
    # Edit apps/web/.env
    PORT=3002
@@ -257,6 +285,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 1. **Analyze Missing Dependencies**
 
    From error messages, extract:
+
    - Package names
    - Requested from which workspace
    - Expected version (if specified)
@@ -264,12 +293,14 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 2. **Install Missing Packages**
 
    For workspace packages:
+
    ```bash
    cd [workspace-path]
    pnpm add [package-name]
    ```
 
    For root-level deps:
+
    ```bash
    pnpm add -w [package-name]
    ```
@@ -277,16 +308,19 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 3. **Resolve Version Conflicts**
 
    If peer dependency conflicts:
+
    ```bash
    pnpm install --force
    ```
 
    Or update conflicting packages:
+
    ```bash
    pnpm update [package-name]
    ```
 
 4. **Verify Installation**
+
    ```bash
    pnpm install --frozen-lockfile
    ```
@@ -302,17 +336,20 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 **Steps:**
 
 1. **Validate Prisma Schema**
+
    ```bash
    cd apps/api
    pnpm prisma validate
    ```
 
    If schema invalid:
+
    - Read error message carefully
    - Fix schema syntax in `prisma/schema.prisma`
    - Re-validate until valid
 
 2. **Generate Prisma Client**
+
    ```bash
    pnpm prisma generate
    ```
@@ -320,16 +357,19 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
    This regenerates the type-safe client.
 
 3. **Check Migration Status**
+
    ```bash
    pnpm prisma migrate status
    ```
 
    If migrations pending:
+
    ```bash
    pnpm prisma migrate dev
    ```
 
 4. **Verify Database Connection**
+
    ```bash
    pnpm prisma db pull
    ```
@@ -349,6 +389,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
    From error messages, extract required variables.
 
 2. **Check for `.env.example` Files**
+
    ```bash
    find . -name ".env.example" -type f
    ```
@@ -356,6 +397,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 3. **Create/Update `.env` Files**
 
    For each app missing configuration:
+
    ```bash
    # If .env doesn't exist
    cp apps/[app]/.env.example apps/[app]/.env
@@ -380,6 +422,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 1. **Delegate to lint-debugger Agent**
 
    Use Task tool to invoke specialized agent:
+
    ```
    Task(
      subagent_type="lint-debugger",
@@ -391,6 +434,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 2. **Wait for lint-debugger Completion**
 
    The agent will:
+
    - Run `pnpm typecheck` to identify all TS errors
    - Fix type errors systematically
    - Re-run typecheck until zero errors
@@ -399,6 +443,7 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 3. **Review Fixes**
 
    After agent completes:
+
    - Read summary of fixes applied
    - Verify file changes are appropriate
    - Confirm zero TypeScript errors reported
@@ -408,18 +453,21 @@ Execute the development server (`pnpm dev`) and systematically identify, analyze
 Fix TypeScript errors manually:
 
 1. **Read Error Details**
+
    ```bash
    pnpm typecheck 2>&1 | tee /tmp/typecheck-errors.log
    ```
 
 2. **For Each Error:**
+
    - Read file at error location
    - Understand type mismatch or violation
    - Apply minimal fix (add type annotation, fix import, etc.)
    - Use type guards instead of `as` assertions
-   - Never use `any` or `!` non-null assertions
+   - Never use `any` or non-null assertions
 
 3. **Verify Fix**
+
    ```bash
    pnpm typecheck
    ```
@@ -437,6 +485,7 @@ Fix TypeScript errors manually:
 1. **Analyze Stack Traces**
 
    From `/tmp/dev-output.log`:
+
    - Identify error message
    - Find stack trace
    - Locate source file and line number
@@ -444,6 +493,7 @@ Fix TypeScript errors manually:
 2. **Read Problematic Code**
 
    Use Read tool to examine file at error location:
+
    ```
    Read(file_path="[error-file-path]")
    ```
@@ -451,6 +501,7 @@ Fix TypeScript errors manually:
 3. **Identify Root Cause**
 
    Common runtime errors:
+
    - Undefined property access: Add null checks
    - Missing imports: Add import statements
    - Invalid API calls: Fix endpoint URLs or parameters
@@ -460,6 +511,7 @@ Fix TypeScript errors manually:
 4. **Apply Minimal Fix**
 
    Use Edit tool to fix the issue:
+
    - Add null/undefined checks
    - Fix import paths
    - Correct API configuration
@@ -468,6 +520,7 @@ Fix TypeScript errors manually:
 5. **Test Fix**
 
    Restart dev server partially:
+
    ```bash
    # For API errors
    pnpm dev:api
@@ -489,6 +542,7 @@ Fix TypeScript errors manually:
 1. **Verify Import Paths**
 
    For each "module not found" error:
+
    - Check file exists at import path
    - Verify path is correct (relative vs. absolute)
    - Check tsconfig.json path mappings
@@ -496,6 +550,7 @@ Fix TypeScript errors manually:
 2. **Fix Path Mappings**
 
    If using aliases like `@starter/*`:
+
    ```bash
    # Check tsconfig.json paths
    cat tsconfig.json | grep -A 10 "paths"
@@ -506,11 +561,13 @@ Fix TypeScript errors manually:
 3. **Fix Import Statements**
 
    Use Edit tool to correct import paths:
+
    - Fix relative path depth (`../../` vs `../`)
    - Use correct workspace package names (`@starter/utils`)
    - Fix file extensions if needed
 
 4. **Verify Resolution**
+
    ```bash
    pnpm typecheck
    ```
@@ -532,6 +589,7 @@ Always follow this priority:
 7. **Runtime** (Strategy F) - Happens after startup
 
 **Validation:**
+
 - [ ] Appropriate strategies selected based on error types
 - [ ] Fixes applied in correct priority order
 - [ ] Each fix verified before proceeding to next
@@ -549,6 +607,7 @@ Always follow this priority:
 **Steps:**
 
 1. **Clear Previous Logs**
+
    ```bash
    rm -f /tmp/dev-output.log /tmp/dev-pid.txt
    ```
@@ -556,6 +615,7 @@ Always follow this priority:
 2. **Restart Development Servers**
 
    Execute fresh dev server start:
+
    ```bash
    pnpm dev 2>&1 | tee /tmp/dev-output.log &
    DEV_PID=$!
@@ -565,12 +625,14 @@ Always follow this priority:
 3. **Monitor Startup (60 seconds)**
 
    Wait longer this time to ensure complete startup:
+
    ```bash
    sleep 60
    tail -n 150 /tmp/dev-output.log
    ```
 
    Look for:
+
    - ✅ Compilation successful messages
    - ✅ Server started messages
    - ✅ Port listening messages
@@ -579,40 +641,49 @@ Always follow this priority:
 4. **Verify Server Health**
 
    **Check processes:**
+
    ```bash
    ps -p $(cat /tmp/dev-pid.txt) -o pid,cmd,etime
    ```
 
    **Check web app:**
+
    ```bash
    curl -s http://localhost:3000 | head -n 5
    ```
+
    Should return HTML (React app).
 
    **Check API app:**
+
    ```bash
    curl -s http://localhost:3001/api/health || curl -s http://localhost:3001
    ```
+
    Should return JSON or success response.
 
 5. **Scan for Errors in Output**
 
    Search log for error patterns:
+
    ```bash
    grep -iE "(error|exception|fail|critical)" /tmp/dev-output.log | tail -n 20
    ```
 
    **If errors found:**
+
    - Return to Phase 2 with new error information
    - Apply additional fixes
    - Iterate until clean
 
    **If no errors:**
+
    - Proceed to success reporting
 
 6. **Verify Hot Reload (optional)**
 
    Make a trivial change to test watch mode:
+
    ```bash
    # Touch a component file to trigger rebuild
    touch apps/web/src/App.tsx
@@ -621,6 +692,7 @@ Always follow this priority:
    ```
 
    Should show:
+
    - Change detected
    - Recompilation
    - No errors
@@ -632,6 +704,7 @@ Always follow this priority:
 8. **Provide Monitoring Instructions**
 
    Tell user how to monitor servers:
+
    ```
    Monitoring Commands:
    - View live logs: tail -f /tmp/dev-output.log
@@ -647,6 +720,7 @@ Always follow this priority:
    Leave it running in the background for the user.
 
 **Validation:**
+
 - [ ] Dev servers restarted successfully
 - [ ] Both web and API apps accessible
 - [ ] Zero errors in startup logs
@@ -826,6 +900,7 @@ Your development environment is ready! 🚀
 ## Quality Standards
 
 ### Error Detection
+
 - All error types captured from output
 - Errors categorized correctly
 - Error counts are accurate
@@ -833,20 +908,23 @@ Your development environment is ready! 🚀
 - No errors missed or ignored
 
 ### Fix Quality
+
 - Fixes are minimal and targeted
 - Root causes addressed, not symptoms
 - Code follows project conventions (TypeScript strict, no `any`)
-- No type safety violations introduced (`as`, `!`, `any`)
+- No type safety violations introduced (`as`, non-null assertions, `any`)
 - Functionality preserved during fixes
 - No regressions introduced
 
 ### Delegation Quality
+
 - Appropriate delegation to lint-debugger for extensive TS errors
 - Clear communication with delegated agents
 - Agent results validated before proceeding
 - Fallback to manual fixes if delegation fails
 
 ### Verification Thoroughness
+
 - Both web and API apps verified
 - Health checks performed on endpoints
 - Log output scanned for errors
@@ -854,6 +932,7 @@ Your development environment is ready! 🚀
 - Servers left running after success
 
 ### Communication Quality
+
 - Clear progress updates during each phase
 - Error summaries are actionable
 - Fix strategies explained to user
@@ -865,6 +944,7 @@ Your development environment is ready! 🚀
 ## Constraints & Boundaries
 
 ### Must Do
+
 - Run initial assessment before fixing anything
 - Categorize all errors by type
 - Apply fixes in correct priority order (port → deps → prisma → env → types → runtime)
@@ -874,10 +954,11 @@ Your development environment is ready! 🚀
 - Provide monitoring instructions to user
 
 ### Must Not Do
+
 - Skip error assessment (need to know what's broken)
 - Fix errors randomly without prioritization
 - Make configuration changes without understanding impact
-- Use type safety violations (`any`, `as`, `!`) in fixes
+- Use type safety violations (`any`, `as`, non-null assertions) in fixes
 - Disable strict TypeScript or linting to "fix" errors
 - Kill dev servers at end (user needs them running)
 - Proceed if verification fails without re-fixing
@@ -885,6 +966,7 @@ Your development environment is ready! 🚀
 ### Scope Management
 
 **In Scope:**
+
 - Starting and monitoring dev servers
 - Analyzing error output
 - Fixing TypeScript, build, dependency, Prisma, environment errors
@@ -895,6 +977,7 @@ Your development environment is ready! 🚀
 - Providing monitoring guidance
 
 **Out of Scope:**
+
 - Fixing test failures (not part of dev server startup)
 - Running full CI pipeline (use `/dev:validate` instead)
 - Committing fixes (suggest `/git:commit` after success)
@@ -913,6 +996,7 @@ Your development environment is ready! 🚀
 **User:** `/dev:debug`
 
 **Phase 1: Assessment**
+
 ```
 Running pnpm dev...
 
@@ -929,6 +1013,7 @@ Recommended: Generate Prisma client, then delegate to lint-debugger
 ```
 
 **Phase 2: Fixes**
+
 ```
 [1/2] Prisma Client Generation
 ✓ pnpm prisma generate successful
@@ -939,6 +1024,7 @@ Delegating to lint-debugger...
 ```
 
 **Phase 3: Verification**
+
 ```
 ✓ Dev servers running successfully
 ✓ Web: http://localhost:3000 - OK
@@ -954,6 +1040,7 @@ Delegating to lint-debugger...
 **User:** `/dev:debug`
 
 **Phase 1: Assessment**
+
 ```
 Running pnpm dev...
 
@@ -965,6 +1052,7 @@ Error: listen EADDRINUSE: address already in use :::3000
 ```
 
 **Phase 2: Fixes**
+
 ```
 [1/1] Port Conflict Resolution
 
@@ -982,6 +1070,7 @@ Killing process 8765...
 ```
 
 **Phase 3: Verification**
+
 ```
 ✓ Dev servers running successfully
 ✓ Web: http://localhost:3000 - OK
@@ -997,6 +1086,7 @@ Killing process 8765...
 **User:** `/dev:debug`
 
 **Phase 1: Assessment**
+
 ```
 Running pnpm dev...
 
@@ -1014,6 +1104,7 @@ No fixes needed - development environment is healthy.
 ```
 
 **Early Exit - Monitoring Instructions Provided**
+
 ```
 ✓ Development environment already running
 
@@ -1032,6 +1123,7 @@ Stop: kill $(cat /tmp/dev-pid.txt)
 **User:** `/dev:debug`
 
 **Phase 1: Assessment**
+
 ```
 Running pnpm dev...
 
@@ -1043,6 +1135,7 @@ Error: Environment variable DATABASE_URL is required
 ```
 
 **Phase 2: Fixes**
+
 ```
 [1/1] Environment Configuration
 
@@ -1055,6 +1148,7 @@ Creating apps/api/.env from .env.example...
 ```
 
 **Phase 3: Verification**
+
 ```
 ✓ Dev servers running successfully
 ✓ API: http://localhost:3001 - OK
@@ -1077,6 +1171,7 @@ Creating apps/api/.env from .env.example...
 **Typical Usage Pattern:**
 
 1. **Project Setup (First Time):**
+
    ```
    git clone [repo]
    pnpm install
@@ -1084,6 +1179,7 @@ Creating apps/api/.env from .env.example...
    ```
 
 2. **After Pulling Changes:**
+
    ```
    git pull
    pnpm install
@@ -1091,6 +1187,7 @@ Creating apps/api/.env from .env.example...
    ```
 
 3. **After Making Changes:**
+
    ```
    [Make code changes]
    /dev:debug  (fixes TypeScript or runtime errors)
