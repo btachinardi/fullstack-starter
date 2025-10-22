@@ -69,7 +69,7 @@
       "Read(//c/tmp/**)",
       "Bash(curl:*)",
       "Bash(/dev/null)",
-      "Bash(pnpm --filter \"@fullstack-starter/tools\" test session.test.ts)",
+      "Bash(pnpm --filter \"@fullstack-starter/tools\" test session.spec.ts)",
       "Bash(pnpm --filter \"@fullstack-starter/tools\" test:*)",
       "Bash(pnpm --filter \"@fullstack-starter/tools\" typecheck:*)",
       "Bash(pnpm --filter \"@fullstack-starter/tools\" lint:*)",
