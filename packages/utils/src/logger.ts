@@ -1,6 +1,6 @@
-import { isNodeDevelopment } from './type-guards.js';
+import { isNodeDevelopment } from "./type-guards";
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+type LogLevel = "debug" | "info" | "warn" | "error";
 
 interface LogEntry {
   level: LogLevel;
@@ -13,7 +13,9 @@ class Logger {
   private isDevelopment = isNodeDevelopment();
 
   private formatMessage(entry: LogEntry): string {
-    return `[${entry.timestamp}] ${entry.level.toUpperCase()}: ${entry.message}`;
+    return `[${entry.timestamp}] ${entry.level.toUpperCase()}: ${
+      entry.message
+    }`;
   }
 
   private log(level: LogLevel, message: string, data?: unknown) {
@@ -27,37 +29,37 @@ class Logger {
     const formatted = this.formatMessage(entry);
 
     switch (level) {
-      case 'debug':
+      case "debug":
         if (this.isDevelopment) {
-          console.debug(formatted, data ?? '');
+          console.debug(formatted, data ?? "");
         }
         break;
-      case 'info':
-        console.log(formatted, data ?? '');
+      case "info":
+        console.log(formatted, data ?? "");
         break;
-      case 'warn':
-        console.warn(formatted, data ?? '');
+      case "warn":
+        console.warn(formatted, data ?? "");
         break;
-      case 'error':
-        console.error(formatted, data ?? '');
+      case "error":
+        console.error(formatted, data ?? "");
         break;
     }
   }
 
   debug(message: string, data?: unknown) {
-    this.log('debug', message, data);
+    this.log("debug", message, data);
   }
 
   info(message: string, data?: unknown) {
-    this.log('info', message, data);
+    this.log("info", message, data);
   }
 
   warn(message: string, data?: unknown) {
-    this.log('warn', message, data);
+    this.log("warn", message, data);
   }
 
   error(message: string, error?: unknown) {
-    this.log('error', message, error);
+    this.log("error", message, error);
   }
 }
 

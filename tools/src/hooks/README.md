@@ -9,6 +9,7 @@ TypeScript hooks for Claude Code with strongly-typed inputs using our session pa
 Automatically commits changes made by Claude Code subagents when they complete.
 
 **Features:**
+
 - Uses Claude Agent SDK to invoke `/git:commit` slash command
 - Passes subagent invocation context to the command for intelligent commit generation
 - Uses session parser to extract detailed subagent information
@@ -17,6 +18,7 @@ Automatically commits changes made by Claude Code subagents when they complete.
 - Strongly-typed using hook service
 
 **How It Works:**
+
 1. Hook detects subagent completion
 2. Extracts subagent details from session (agent type, prompt, IDs)
 3. Stages all changes (excluding log file)
@@ -26,6 +28,7 @@ Automatically commits changes made by Claude Code subagents when they complete.
 
 **Commit Message Format:**
 The actual format depends on `/git:commit` analysis, but typically:
+
 ```
 <type>(<scope>): <subject>
 
@@ -43,6 +46,7 @@ Prompt:
 ```
 
 **Example Commit:**
+
 ```
 feat(agent): add slash command creator subagent
 
@@ -63,6 +67,7 @@ specializes in creating optimized custom slash commands...
 
 **Why Agent SDK?**
 Using the Agent SDK to invoke `/git:commit` provides:
+
 - **Intelligent analysis** of what changed (not just generic "chore(agent)")
 - **Semantic commit types** based on actual changes (feat/fix/docs/etc.)
 - **Smart grouping** - can split large multi-system changes into focused commits
@@ -111,12 +116,12 @@ The `hook-input.ts` service provides strongly-typed parsing of hook inputs.
 ### Quick Usage
 
 ```typescript
-import { createSubagentStopHook } from '../services/hook-input.js';
-import type { SubagentStopInput } from '../services/hook-input.js';
+import { createSubagentStopHook } from "../services/hook-input";
+import type { SubagentStopInput } from "../services/hook-input";
 
 async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
-  console.log('Session ID:', input.session_id);
-  console.log('Transcript:', input.transcript_path);
+  console.log("Session ID:", input.session_id);
+  console.log("Transcript:", input.transcript_path);
   // Your logic here
 }
 
@@ -166,16 +171,16 @@ UserPromptSubmitInput {
 ### Using the HookHandler Base Class
 
 ```typescript
-import { HookHandler } from '../services/hook-input.js';
-import type { SubagentStopInput } from '../services/hook-input.js';
+import { HookHandler } from "../services/hook-input";
+import type { SubagentStopInput } from "../services/hook-input";
 
 class MySubagentHook extends HookHandler<SubagentStopInput> {
   validateInput(input: HookInput): input is SubagentStopInput {
-    return input.hook_event_name === 'SubagentStop';
+    return input.hook_event_name === "SubagentStop";
   }
 
   async execute(): Promise<void> {
-    console.log('Processing subagent stop for:', this.input.session_id);
+    console.log("Processing subagent stop for:", this.input.session_id);
     // Your logic here
   }
 }
@@ -191,8 +196,8 @@ handler.run();
 
 ```typescript
 #!/usr/bin/env node
-import { createSubagentStopHook } from '../services/hook-input.js';
-import type { SubagentStopInput } from '../services/hook-input.js';
+import { createSubagentStopHook } from "../services/hook-input";
+import type { SubagentStopInput } from "../services/hook-input";
 
 async function handleHook(input: SubagentStopInput): Promise<void> {
   // Your strongly-typed hook logic
@@ -210,8 +215,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 ```typescript
 #!/usr/bin/env node
-import { HookHandler, HookInputParser } from '../services/hook-input.js';
-import type { PreToolUseInput } from '../services/hook-input.js';
+import { HookHandler, HookInputParser } from "../services/hook-input";
+import type { PreToolUseInput } from "../services/hook-input";
 
 class MyToolHook extends HookHandler<PreToolUseInput> {
   validateInput(input: HookInput): input is PreToolUseInput {
@@ -234,7 +239,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 ```typescript
 #!/usr/bin/env node
-import { HookInputParser } from '../services/hook-input.js';
+import { HookInputParser } from "../services/hook-input";
 
 async function main() {
   const input = await HookInputParser.parseStdin();
@@ -258,6 +263,7 @@ pnpm build
 ```
 
 Output:
+
 ```
 dist/
 └── hooks/
@@ -272,11 +278,13 @@ dist/
 All hooks use a structured logging system that stores logs in platform-appropriate locations:
 
 **Log Locations:**
+
 - Windows: `%APPDATA%\<workspace>\tools\logs\YYYY-MM-DD.jsonl`
 - macOS: `~/Library/Application Support/<workspace>/tools/logs/YYYY-MM-DD.jsonl`
 - Linux: `~/.local/share/<workspace>/tools/logs/YYYY-MM-DD.jsonl`
 
 **Features:**
+
 - Structured JSON logs with timestamps and context
 - Multiple log levels (debug, info, warn, error)
 - Automatic daily log rotation
@@ -324,24 +332,28 @@ pnpm logs:tools
 ### Using Logging in Hooks
 
 ```typescript
-import { createHookLogger } from '../services/logger.js';
-import type { SubagentStopInput } from '../services/hook-input.js';
+import { createHookLogger } from "../services/logger";
+import type { SubagentStopInput } from "../services/hook-input";
 
 async function handleSubagentStop(input: SubagentStopInput): Promise<void> {
   // Create logger with session context
-  const logger = createHookLogger('my-hook', input.session_id, input.transcript_path);
+  const logger = createHookLogger(
+    "my-hook",
+    input.session_id,
+    input.transcript_path
+  );
 
-  await logger.info('Hook started');
-  await logger.debug('Processing details', { data: someData });
-  await logger.warn('Potential issue detected', { issue: details });
-  await logger.error('Operation failed', { error: err });
+  await logger.info("Hook started");
+  await logger.debug("Processing details", { data: someData });
+  await logger.warn("Potential issue detected", { issue: details });
+  await logger.error("Operation failed", { error: err });
 
   // Update context during execution
-  logger.updateContext({ step: 'validation' });
+  logger.updateContext({ step: "validation" });
 
   // Create child logger
-  const childLogger = logger.child('my-hook:git', { operation: 'commit' });
-  await childLogger.info('Creating commit');
+  const childLogger = logger.child("my-hook:git", { operation: "commit" });
+  await childLogger.info("Creating commit");
 }
 ```
 
@@ -380,12 +392,14 @@ echo '{
 ### Common Issues
 
 **Hook not running:**
+
 - Check hook is configured in `claude_desktop_config.json`
 - Verify path to hook script is correct
 - Check script has execute permissions
 - Review Claude Code logs
 
 **Hook failing:**
+
 - Check logs with `pnpm logs:query --source subagent-stop --level error`
 - Verify tools package is built (`pnpm build`)
 - Ensure session file exists and is readable
@@ -401,6 +415,7 @@ echo '{
 **Purpose:** Auto-commit subagent changes with detailed metadata
 
 **Uses:**
+
 - Session parser to extract subagent details
 - Git commands to commit changes
 - Structured commit messages
@@ -408,16 +423,19 @@ echo '{
 ### Future Hooks (Ideas)
 
 **Pre-Tool Validation:**
+
 - Validate Bash commands before execution
 - Check file paths exist before Read/Write
 - Enforce naming conventions
 
 **Post-Tool Logging:**
+
 - Log all file modifications
 - Track API costs from tool usage
 - Monitor performance metrics
 
 **User Prompt Enhancement:**
+
 - Add context from previous sessions
 - Inject project-specific guidelines
 - Auto-add relevant file paths
@@ -427,13 +445,15 @@ echo '{
 ### Example: Tool Usage Logger
 
 ```typescript
-import { createPostToolUseHook } from '../services/hook-input.js';
-import type { PostToolUseInput } from '../services/hook-input.js';
-import { appendFile } from 'node:fs/promises';
+import { createPostToolUseHook } from "../services/hook-input";
+import type { PostToolUseInput } from "../services/hook-input";
+import { appendFile } from "node:fs/promises";
 
 async function logToolUsage(input: PostToolUseInput): Promise<void> {
-  const log = `${new Date().toISOString()} | ${input.tool_name} | ${input.is_error ? 'ERROR' : 'SUCCESS'}\n`;
-  await appendFile('tool-usage.log', log);
+  const log = `${new Date().toISOString()} | ${input.tool_name} | ${
+    input.is_error ? "ERROR" : "SUCCESS"
+  }\n`;
+  await appendFile("tool-usage.log", log);
 }
 
 const main = createPostToolUseHook(logToolUsage);
@@ -442,14 +462,14 @@ const main = createPostToolUseHook(logToolUsage);
 ### Example: Bash Command Validator
 
 ```typescript
-import { createPreToolUseHook } from '../services/hook-input.js';
-import type { PreToolUseInput } from '../services/hook-input.js';
+import { createPreToolUseHook } from "../services/hook-input";
+import type { PreToolUseInput } from "../services/hook-input";
 
 async function validateBashCommand(input: PreToolUseInput): Promise<void> {
-  if (input.tool_name !== 'Bash') return;
+  if (input.tool_name !== "Bash") return;
 
   const command = input.tool_input.command as string;
-  const dangerous = ['rm -rf /', 'dd if=', 'mkfs'];
+  const dangerous = ["rm -rf /", "dd if=", "mkfs"];
 
   if (dangerous.some((cmd) => command.includes(cmd))) {
     console.error(`Dangerous command blocked: ${command}`);

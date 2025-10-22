@@ -1,60 +1,60 @@
 {
-  "name": "@fullstack-starter/root",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "packageManager": "pnpm@9.15.0",
-  "engines": {
-    "node": ">=20.18.0",
-    "pnpm": ">=9.0.0"
-  },
-  "scripts": {
-    "prepare": "husky || true",
-    "setup": "node scripts/setup.mjs",
-    "dev": "turbo run dev --parallel",
-    "dev:web": "turbo run dev --filter=@fullstack-starter/web",
-    "dev:api": "turbo run dev --filter=@fullstack-starter/api",
-    "build": "turbo run build",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "lint:assertions": "node scripts/check-type-assertions.mjs",
-    "lint:assertions:help": "echo 'Manual tool to review type assertions. Run: pnpm lint:assertions'",
-    "format": "biome format --write .",
-    "format:check": "biome format .",
-    "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
-    "test:watch": "turbo run test:watch",
-    "clean": "turbo run clean && rm -rf node_modules .turbo",
-    "smoke": "turbo run smoke",
-    "ci:bootstrap": "node scripts/setup.mjs --check",
-    "ci:local": "bash scripts/ci-local.sh",
-    "ci:quick": "bash scripts/ci-quick.sh",
-    "tools": "pnpm --filter @fullstack-starter/tools tools",
-    "web:scaffold": "node scripts/scaffold-feature.mjs",
-    "web:route": "node scripts/scaffold-route.mjs",
-    "api:migrate": "turbo run migrate --filter=@fullstack-starter/api",
-    "api:seed": "turbo run seed --filter=@fullstack-starter/api",
-    "api:db:studio": "turbo run db:studio --filter=@fullstack-starter/api",
-    "api:queue": "turbo run queue --filter=@fullstack-starter/api",
-    "api:openapi": "turbo run openapi --filter=@fullstack-starter/api",
-    "changeset": "changeset",
-    "version-packages": "changeset version",
-    "release": "turbo run build --filter='./packages/*' && changeset publish"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@changesets/cli": "^2.27.10",
-    "dotenv": "^16.4.7",
-    "dotenv-flow": "^4.1.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^15.3.0",
-    "turbo": "^2.3.3",
-    "typescript": "^5.7.2",
-    "zod": "^3.24.1"
-  },
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx,json,md,mdx,css,yaml,yml}": [
-      "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
-    ]
-  }
+    "name": "@fullstack-starter/root",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "packageManager": "pnpm@9.15.0",
+    "engines": {
+        "node": ">=20.18.0",
+        "pnpm": ">=9.0.0"
+    },
+    "scripts": {
+        "prepare": "husky || true",
+        "setup": "node scripts/setup.mjs",
+        "dev": "turbo run dev --parallel",
+        "dev:web": "turbo run dev --filter=@fullstack-starter/web",
+        "dev:api": "turbo run dev --filter=@fullstack-starter/api",
+        "build": "turbo run build",
+        "lint": "biome check .",
+        "lint:fix": "biome check --write .",
+        "lint:assertions": "node scripts/check-type-assertions.mjs",
+        "lint:assertions:help": "echo 'Manual tool to review type assertions. Run: pnpm lint:assertions'",
+        "format": "biome format --write .",
+        "format:check": "biome format .",
+        "typecheck": "turbo run typecheck",
+        "test": "turbo run test",
+        "test:watch": "turbo run test:watch",
+        "clean": "turbo run clean && rm -rf node_modules .turbo",
+        "smoke": "turbo run smoke",
+        "ci:bootstrap": "node scripts/setup.mjs --check",
+        "ci:local": "bash scripts/ci-local.sh",
+        "ci:quick": "bash scripts/ci-quick.sh",
+        "tools": "node tools/dist/cli/main.js",
+        "web:scaffold": "node scripts/scaffold-feature.mjs",
+        "web:route": "node scripts/scaffold-route.mjs",
+        "api:migrate": "turbo run migrate --filter=@fullstack-starter/api",
+        "api:seed": "turbo run seed --filter=@fullstack-starter/api",
+        "api:db:studio": "turbo run db:studio --filter=@fullstack-starter/api",
+        "api:queue": "turbo run queue --filter=@fullstack-starter/api",
+        "api:openapi": "turbo run openapi --filter=@fullstack-starter/api",
+        "changeset": "changeset",
+        "version-packages": "changeset version",
+        "release": "turbo run build --filter='./packages/*' && changeset publish"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^1.9.4",
+        "@changesets/cli": "^2.27.10",
+        "dotenv": "^16.4.7",
+        "dotenv-flow": "^4.1.0",
+        "husky": "^9.1.7",
+        "lint-staged": "^15.3.0",
+        "turbo": "^2.3.3",
+        "typescript": "^5.7.2",
+        "zod": "^3.24.1"
+    },
+    "lint-staged": {
+        "*.{ts,tsx,js,jsx,json,md,mdx,css,yaml,yml}": [
+            "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
+        ]
+    }
 }

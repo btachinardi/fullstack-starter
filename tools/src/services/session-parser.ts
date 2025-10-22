@@ -5,17 +5,18 @@
  * to session data with filtering, querying, and analysis capabilities.
  */
 
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import type {
   AssistantEntry,
   ParsedSession,
   SessionEntry,
   SystemEntry,
   ToolName,
+  ToolResult,
   ToolUse,
   UserEntry,
-} from '../types/session.js';
+} from "../types/session";
 import {
   isAssistantEntry,
   isSessionEntry,
@@ -23,13 +24,19 @@ import {
   isSystemEntry,
   isToolUse,
   isUserEntry,
-} from '../types/session.js';
+} from "../types/session";
+
+// Enriched tool use with matched result
+export interface EnrichedToolUse extends ToolUse {
+  result?: ToolResult;
+  resultTimestamp?: string;
+}
 
 export class SessionParser {
   private entries: SessionEntry[] = [];
-  private sessionId = '';
-  private version = '';
-  private cwd = '';
+  private sessionId = "";
+  private version = "";
+  private cwd = "";
   private gitBranch?: string;
 
   /**
@@ -37,10 +44,10 @@ export class SessionParser {
    */
   async load(filePath: string): Promise<ParsedSession> {
     const absolutePath = resolve(filePath);
-    const content = await readFile(absolutePath, 'utf-8');
+    const content = await readFile(absolutePath, "utf-8");
 
     // Parse JSONL (each line is a JSON object)
-    const lines = content.split('\n').filter((line) => line.trim());
+    const lines = content.split("\n").filter((line) => line.trim());
 
     this.entries = [];
 
@@ -48,20 +55,25 @@ export class SessionParser {
       try {
         const parsed: unknown = JSON.parse(line);
         if (!isSessionEntry(parsed)) {
-          console.warn(`Skipping invalid session entry: ${line.substring(0, 100)}...`);
+          console.warn(
+            `Skipping invalid session entry: ${line.substring(0, 100)}...`
+          );
           continue;
         }
         this.entries.push(parsed);
 
         // Extract session metadata from first entry with these fields
-        if (parsed.type !== 'summary' && 'sessionId' in parsed) {
+        if (parsed.type !== "summary" && "sessionId" in parsed) {
           if (!this.sessionId) this.sessionId = parsed.sessionId;
           if (!this.version) this.version = parsed.version;
           if (!this.cwd) this.cwd = parsed.cwd;
-          if (!this.gitBranch && parsed.gitBranch) this.gitBranch = parsed.gitBranch;
+          if (!this.gitBranch && parsed.gitBranch)
+            this.gitBranch = parsed.gitBranch;
         }
       } catch (_error) {
-        console.warn(`Skipping invalid JSON line: ${line.substring(0, 100)}...`);
+        console.warn(
+          `Skipping invalid JSON line: ${line.substring(0, 100)}...`
+        );
       }
     }
 
@@ -80,23 +92,25 @@ export class SessionParser {
     const toolResults = this.entries.filter((e) => {
       if (!isAssistantEntry(e)) return false;
       const content = e.message.content;
-      if (typeof content === 'string') return false;
-      return content.some((c) => c.type === 'tool_result');
+      if (typeof content === "string") return false;
+      return content.some((c) => c.type === "tool_result");
     }).length;
 
-    const errors = this.entries.filter((e) => isSystemEntry(e) && e.level === 'error').length;
+    const errors = this.entries.filter(
+      (e) => isSystemEntry(e) && e.level === "error"
+    ).length;
 
     const timestamps = this.entries
-      .filter((e) => 'timestamp' in e && e.timestamp)
-      .map((e) => ('timestamp' in e ? e.timestamp : ''));
+      .filter((e) => "timestamp" in e && e.timestamp)
+      .map((e) => ("timestamp" in e ? e.timestamp : ""));
 
     return {
       sessionId: this.sessionId,
       version: this.version,
       cwd: this.cwd,
       gitBranch: this.gitBranch,
-      startTime: timestamps[0] || '',
-      endTime: timestamps[timestamps.length - 1] || '',
+      startTime: timestamps[0] || "",
+      endTime: timestamps[timestamps.length - 1] || "",
       entries: this.entries,
       metadata: {
         totalEntries: this.entries.length,
@@ -141,7 +155,7 @@ export class SessionParser {
       if (!isAssistantEntry(entry)) continue;
 
       const content = entry.message.content;
-      if (typeof content === 'string') continue;
+      if (typeof content === "string") continue;
 
       for (const item of content) {
         if (isToolUse(item)) {
@@ -180,10 +194,10 @@ export class SessionParser {
 
     for (const entry of this.getAssistantMessages()) {
       const content = entry.message.content;
-      if (typeof content === 'string') continue;
+      if (typeof content === "string") continue;
 
       for (const item of content) {
-        if (isToolUse(item) && item.name === 'Task') {
+        if (isToolUse(item) && item.name === "Task") {
           const input = item.input as {
             subagent_type?: string;
             prompt?: string;
@@ -193,9 +207,9 @@ export class SessionParser {
           invocations.push({
             entry,
             tool: item,
-            subagentType: input.subagent_type || 'unknown',
-            prompt: input.prompt || '',
-            description: input.description || '',
+            subagentType: input.subagent_type || "unknown",
+            prompt: input.prompt || "",
+            description: input.description || "",
           });
         }
       }
@@ -210,7 +224,7 @@ export class SessionParser {
   getFilesRead(): string[] {
     const files = new Set<string>();
 
-    for (const tool of this.getToolUsesByName('Read')) {
+    for (const tool of this.getToolUsesByName("Read")) {
       const input = tool.input as { file_path?: string };
       if (input.file_path) {
         files.add(input.file_path);
@@ -226,7 +240,7 @@ export class SessionParser {
   getFilesWritten(): string[] {
     const files = new Set<string>();
 
-    for (const tool of this.getToolUsesByName('Write')) {
+    for (const tool of this.getToolUsesByName("Write")) {
       const input = tool.input as { file_path?: string };
       if (input.file_path) {
         files.add(input.file_path);
@@ -242,7 +256,7 @@ export class SessionParser {
   getFilesEdited(): string[] {
     const files = new Set<string>();
 
-    for (const tool of this.getToolUsesByName('Edit')) {
+    for (const tool of this.getToolUsesByName("Edit")) {
       const input = tool.input as { file_path?: string };
       if (input.file_path) {
         files.add(input.file_path);
@@ -258,7 +272,7 @@ export class SessionParser {
   getBashCommands(): Array<{ command: string; description?: string }> {
     const commands: Array<{ command: string; description?: string }> = [];
 
-    for (const tool of this.getToolUsesByName('Bash')) {
+    for (const tool of this.getToolUsesByName("Bash")) {
       const input = tool.input as { command?: string; description?: string };
       if (input.command) {
         commands.push({
@@ -276,41 +290,47 @@ export class SessionParser {
    */
   getConversationFlow(): Array<{
     timestamp: string;
-    role: 'user' | 'assistant';
+    role: "user" | "assistant";
     content: string;
   }> {
     const conversation: Array<{
       timestamp: string;
-      role: 'user' | 'assistant';
+      role: "user" | "assistant";
       content: string;
     }> = [];
 
     for (const entry of this.entries) {
       if (isUserEntry(entry)) {
+        const content = typeof entry.message.content === 'string'
+          ? entry.message.content
+          : JSON.stringify(entry.message.content);
+
         conversation.push({
           timestamp: entry.timestamp,
-          role: 'user',
-          content: entry.message.content,
+          role: "user",
+          content,
         });
       } else if (isAssistantEntry(entry)) {
         const content = entry.message.content;
-        if (typeof content === 'string') {
+        if (typeof content === "string") {
           conversation.push({
             timestamp: entry.timestamp,
-            role: 'assistant',
+            role: "assistant",
             content,
           });
         } else {
           // Extract text content
           const textParts = content
-            .filter((c): c is { type: 'text'; text: string } => c.type === 'text')
+            .filter(
+              (c): c is { type: "text"; text: string } => c.type === "text"
+            )
             .map((c) => c.text)
-            .join('\n');
+            .join("\n");
 
           if (textParts) {
             conversation.push({
               timestamp: entry.timestamp,
-              role: 'assistant',
+              role: "assistant",
               content: textParts,
             });
           }
@@ -329,10 +349,10 @@ export class SessionParser {
 
     for (const entry of this.getAssistantMessages()) {
       const content = entry.message.content;
-      if (typeof content === 'string') continue;
+      if (typeof content === "string") continue;
 
       for (const item of content) {
-        if (item.type === 'thinking' && 'thinking' in item) {
+        if (item.type === "thinking" && "thinking" in item) {
           thinkingBlocks.push({
             timestamp: entry.timestamp,
             thinking: item.thinking,
@@ -377,6 +397,138 @@ export class SessionParser {
   }
 
   /**
+   * Get tool uses enriched with their results from user messages
+   */
+  getEnrichedToolUses(): EnrichedToolUse[] {
+    const toolUses: EnrichedToolUse[] = [];
+    const toolResultMap = new Map<string, { result: ToolResult; timestamp: string }>();
+
+    // First, collect all tool results from user messages
+    for (const entry of this.entries) {
+      if (!isUserEntry(entry)) continue;
+
+      const content = entry.message.content as unknown;
+
+      // Handle array of tool results
+      if (Array.isArray(content)) {
+        for (const item of content) {
+          if (
+            typeof item === "object" &&
+            item !== null &&
+            "type" in item &&
+            item.type === "tool_result" &&
+            "tool_use_id" in item
+          ) {
+            const toolResult = item as ToolResult;
+            toolResultMap.set(toolResult.tool_use_id, {
+              result: toolResult,
+              timestamp: entry.timestamp,
+            });
+          }
+        }
+        continue;
+      }
+
+      // Handle single tool result
+      if (
+        typeof content === "object" &&
+        content !== null &&
+        "type" in content &&
+        content.type === "tool_result" &&
+        "tool_use_id" in content
+      ) {
+        const toolResult = content as ToolResult;
+        toolResultMap.set(toolResult.tool_use_id, {
+          result: toolResult,
+          timestamp: entry.timestamp,
+        });
+      }
+    }
+
+    // Now match tool uses with their results
+    for (const entry of this.entries) {
+      if (!isAssistantEntry(entry)) continue;
+
+      const content = entry.message.content;
+      if (typeof content === "string") continue;
+
+      for (const item of content) {
+        if (isToolUse(item)) {
+          const enriched: EnrichedToolUse = { ...item };
+          const resultData = toolResultMap.get(item.id);
+          if (resultData) {
+            enriched.result = resultData.result;
+            enriched.resultTimestamp = resultData.timestamp;
+          }
+          toolUses.push(enriched);
+        }
+      }
+    }
+
+    return toolUses;
+  }
+
+  /**
+   * Get entries for timeline view (excluding tool result user messages)
+   * Tool results are included in assistant entries via enriched tool uses
+   */
+  getTimelineEntries(): SessionEntry[] {
+    const toolResultUserUuids = new Set<string>();
+
+    // Identify user messages that are actually tool results
+    for (const entry of this.entries) {
+      if (!isUserEntry(entry)) continue;
+
+      const content = entry.message.content as unknown;
+
+      // Check if content is an array of tool results
+      if (Array.isArray(content) && content.length > 0) {
+        const firstItem = content[0];
+        if (
+          typeof firstItem === "object" &&
+          firstItem !== null &&
+          "type" in firstItem &&
+          firstItem.type === "tool_result"
+        ) {
+          toolResultUserUuids.add(entry.uuid);
+          continue;
+        }
+      }
+
+      // Check if content is a single tool result object
+      if (
+        typeof content === "object" &&
+        content !== null &&
+        !Array.isArray(content) &&
+        "type" in content &&
+        content.type === "tool_result"
+      ) {
+        toolResultUserUuids.add(entry.uuid);
+      }
+    }
+
+    // Return all entries except tool result user messages
+    return this.entries.filter((entry) => {
+      // SummaryEntry and FileHistorySnapshot don't have uuid
+      if (!("uuid" in entry)) return true;
+      return !toolResultUserUuids.has(entry.uuid);
+    });
+  }
+
+  /**
+   * Check if a user entry is actually a tool result
+   */
+  isToolResultUserMessage(entry: UserEntry): boolean {
+    const content = entry.message.content as unknown;
+    return (
+      typeof content === "object" &&
+      content !== null &&
+      "type" in content &&
+      content.type === "tool_result"
+    );
+  }
+
+  /**
    * Find entries by timestamp range
    */
   getEntriesByTimeRange(start: string, end: string): SessionEntry[] {
@@ -384,7 +536,7 @@ export class SessionParser {
     const endTime = new Date(end).getTime();
 
     return this.entries.filter((entry) => {
-      if (!('timestamp' in entry) || !entry.timestamp) return false;
+      if (!("timestamp" in entry) || !entry.timestamp) return false;
       const entryTime = new Date(entry.timestamp).getTime();
       return entryTime >= startTime && entryTime <= endTime;
     });
@@ -397,7 +549,9 @@ export class SessionParser {
     const search = caseSensitive ? searchText : searchText.toLowerCase();
 
     return this.entries.filter((entry) => {
-      const entryStr = caseSensitive ? JSON.stringify(entry) : JSON.stringify(entry).toLowerCase();
+      const entryStr = caseSensitive
+        ? JSON.stringify(entry)
+        : JSON.stringify(entry).toLowerCase();
       return entryStr.includes(search);
     });
   }

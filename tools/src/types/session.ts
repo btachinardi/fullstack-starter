@@ -109,8 +109,10 @@ export interface UserEntry extends BaseEntry {
   type: 'user';
   message: {
     role: 'user';
-    content: string;
+    content: string | Array<{ type: string; text?: string; [key: string]: unknown }>;
   };
+  /** Indicates this is a meta message (e.g., slash command prompt) */
+  isMeta?: boolean;
 }
 
 export interface AssistantEntry extends BaseEntry {

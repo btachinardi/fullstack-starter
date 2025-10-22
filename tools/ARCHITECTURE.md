@@ -56,6 +56,7 @@ The tools package follows a **separation of concerns** architecture with strongl
 **Purpose:** Handle user interaction and presentation
 
 **Responsibilities:**
+
 - Parse command-line arguments
 - Route to appropriate tool function
 - Transform CLI args into function parameters
@@ -64,15 +65,14 @@ The tools package follows a **separation of concerns** architecture with strongl
 - Provide spinner/progress indicators
 
 **Example:**
+
 ```typescript
-session
-  .command('info <file>')
-  .action(async (file: string) => {
-    const spinner = ora('Parsing session...').start();
-    const result = await sessionTools.sessionInfo(file);
-    spinner.succeed('Session parsed successfully');
-    // Format and display result
-  });
+session.command("info <file>").action(async (file: string) => {
+  const spinner = ora("Parsing session...").start();
+  const result = await sessionTools.sessionInfo(file);
+  spinner.succeed("Session parsed successfully");
+  // Format and display result
+});
 ```
 
 ### 2. Tool Functions Layer (`src/tools/*.ts`)
@@ -80,6 +80,7 @@ session
 **Purpose:** Pure, testable business logic
 
 **Responsibilities:**
+
 - Implement tool-specific logic
 - Accept strongly-typed parameters
 - Return structured data (not formatted strings)
@@ -87,16 +88,23 @@ session
 - Be easily testable in isolation
 
 **Example:**
+
 ```typescript
-export async function sessionInfo(filePath: string): Promise<SessionInfoResult> {
+export async function sessionInfo(
+  filePath: string
+): Promise<SessionInfoResult> {
   const parser = new SessionParser();
   const session = await parser.load(filePath);
   const tokens = parser.getTokenUsage();
 
   return {
     sessionId: session.sessionId,
-    stats: { /* ... */ },
-    tokens: { /* ... */ },
+    stats: {
+      /* ... */
+    },
+    tokens: {
+      /* ... */
+    },
   };
 }
 ```
@@ -106,17 +114,25 @@ export async function sessionInfo(filePath: string): Promise<SessionInfoResult> 
 **Purpose:** Core parsing and processing logic
 
 **Responsibilities:**
+
 - Parse session files
 - Process and transform data
 - Provide query/filter methods
 - Abstract complexity from tools
 
 **Example:**
+
 ```typescript
 export class SessionParser {
-  async load(filePath: string): Promise<ParsedSession> { /* ... */ }
-  getToolUses(): ToolUse[] { /* ... */ }
-  getSubagentInvocations(): SubagentInvocation[] { /* ... */ }
+  async load(filePath: string): Promise<ParsedSession> {
+    /* ... */
+  }
+  getToolUses(): ToolUse[] {
+    /* ... */
+  }
+  getSubagentInvocations(): SubagentInvocation[] {
+    /* ... */
+  }
 }
 ```
 
@@ -125,16 +141,24 @@ export class SessionParser {
 **Purpose:** TypeScript type definitions
 
 **Responsibilities:**
+
 - Define all data structures
 - Provide type guards for safe narrowing
 - Document data shapes
 - Enable compile-time safety
 
 **Example:**
+
 ```typescript
-export interface SessionEntry { /* ... */ }
-export interface ToolUse { /* ... */ }
-export function isToolUse(content: MessageContent): content is ToolUse { /* ... */ }
+export interface SessionEntry {
+  /* ... */
+}
+export interface ToolUse {
+  /* ... */
+}
+export function isToolUse(content: MessageContent): content is ToolUse {
+  /* ... */
+}
 ```
 
 ## Single Entry Point Design
@@ -159,6 +183,7 @@ tools <tool-name> <command> [options] [arguments]
 ```
 
 **Examples:**
+
 ```bash
 tools session info file.jsonl
 tools session tools file.jsonl --count
@@ -191,19 +216,21 @@ TypeScript uses `.js` extensions in imports when targeting ESM (ECMAScript Modul
 
 ```typescript
 // Even though this is a .ts file:
-import { sessionInfo } from './tools/session.js';  // ✅ Correct
+import { sessionInfo } from "./tools/session"; // ✅ Correct
 
 // NOT:
-import { sessionInfo } from './tools/session.ts';  // ❌ Wrong
-import { sessionInfo } from './tools/session';     // ❌ Wrong (in ESM)
+import { sessionInfo } from "./tools/session.ts"; // ❌ Wrong
+import { sessionInfo } from "./tools/session"; // ❌ Wrong (in ESM)
 ```
 
 **Reason:**
+
 - TypeScript compiles `.ts` → `.js`
 - Node.js ESM requires explicit file extensions
-- The import must reference the *compiled* file, not the source
+- The import must reference the _compiled_ file, not the source
 
 **Configuration:**
+
 ```json
 // tsconfig.json
 {
@@ -257,7 +284,7 @@ git
   });
 
 // 3. src/index.ts
-export * from './tools/git.js';
+export * from './tools/git';
 
 // 4. package.json
 {
@@ -270,13 +297,14 @@ export * from './tools/git.js';
 ## Testing Strategy
 
 ### Tool Functions (Pure)
-```typescript
-import { describe, it, expect } from 'vitest';
-import { sessionInfo } from './session.js';
 
-describe('sessionInfo', () => {
-  it('should parse session and return info', async () => {
-    const result = await sessionInfo('test-session.jsonl');
+```typescript
+import { describe, it, expect } from "vitest";
+import { sessionInfo } from "./session";
+
+describe("sessionInfo", () => {
+  it("should parse session and return info", async () => {
+    const result = await sessionInfo("test-session.jsonl");
     expect(result.sessionId).toBeDefined();
     expect(result.stats.totalEntries).toBeGreaterThan(0);
   });
@@ -284,11 +312,12 @@ describe('sessionInfo', () => {
 ```
 
 ### Services
+
 ```typescript
-describe('SessionParser', () => {
-  it('should extract tool uses', async () => {
+describe("SessionParser", () => {
+  it("should extract tool uses", async () => {
     const parser = new SessionParser();
-    await parser.load('test-session.jsonl');
+    await parser.load("test-session.jsonl");
     const tools = parser.getToolUses();
     expect(Array.isArray(tools)).toBe(true);
   });
@@ -296,6 +325,7 @@ describe('SessionParser', () => {
 ```
 
 ### CLI (Integration)
+
 ```bash
 # Test via actual CLI
 pnpm build
@@ -309,17 +339,17 @@ pnpm tools session info test-file.jsonl
 ```typescript
 export default defineConfig({
   entry: {
-    index: 'src/index.ts',        // Library entry
-    'cli/main': 'src/cli/main.ts' // CLI entry
+    index: "src/index.ts", // Library entry
+    "cli/main": "src/cli/main.ts", // CLI entry
   },
-  format: ['esm'],
+  format: ["esm"],
   dts: {
-    entry: { index: 'src/index.ts' }  // Only lib gets .d.ts
+    entry: { index: "src/index.ts" }, // Only lib gets .d.ts
   },
   // Add shebang to CLI files
   esbuildOptions(options) {
-    if (options.entryNames === 'cli/main') {
-      options.banner = { js: '#!/usr/bin/env node' };
+    if (options.entryNames === "cli/main") {
+      options.banner = { js: "#!/usr/bin/env node" };
     }
   },
 });
@@ -342,13 +372,13 @@ dist/
 ```json
 {
   "name": "@fullstack-starter/tools",
-  "type": "module",          // Enable ESM
+  "type": "module", // Enable ESM
   "bin": {
-    "tools": "./dist/cli/main.js"  // CLI binary
+    "tools": "./dist/cli/main.js" // CLI binary
   },
   "scripts": {
     "tools": "node dist/cli/main.js",
-    "session:info": "pnpm tools session info",
+    "session:info": "pnpm tools session info"
     // ... convenience scripts
   }
 }
@@ -359,10 +389,10 @@ dist/
 ### Programmatic (Library)
 
 ```typescript
-import { sessionInfo, sessionTools } from '@fullstack-starter/tools';
+import { sessionInfo, sessionTools } from "@fullstack-starter/tools";
 
-const info = await sessionInfo('session.jsonl');
-const tools = await sessionTools('session.jsonl', { includeCount: true });
+const info = await sessionInfo("session.jsonl");
+const tools = await sessionTools("session.jsonl", { includeCount: true });
 ```
 
 ### CLI (Direct)

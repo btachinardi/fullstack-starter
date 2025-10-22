@@ -4,11 +4,11 @@
  * Provides functions to query and filter structured logs.
  */
 
-import { existsSync } from 'node:fs';
-import { readFile, readdir } from 'node:fs/promises';
-import { join } from 'node:path';
-import type { LogEntry, LogLevel } from '../services/logger.js';
-import { getDefaultLogDir, isLogEntry } from '../services/logger.js';
+import { existsSync } from "node:fs";
+import { readFile, readdir } from "node:fs/promises";
+import { join } from "node:path";
+import type { LogEntry, LogLevel } from "../services/logger";
+import { getDefaultLogDir, isLogEntry } from "../services/logger";
 
 // ============================================================================
 // Types
@@ -51,8 +51,8 @@ export interface LogStatsResult {
  * Parse a JSONL log file
  */
 async function parseLogFile(filePath: string): Promise<LogEntry[]> {
-  const content = await readFile(filePath, 'utf-8');
-  const lines = content.trim().split('\n').filter(Boolean);
+  const content = await readFile(filePath, "utf-8");
+  const lines = content.trim().split("\n").filter(Boolean);
 
   const entries: LogEntry[] = [];
   for (const line of lines) {
@@ -79,7 +79,7 @@ async function getLogFiles(logDir: string): Promise<string[]> {
 
   const files = await readdir(logDir);
   return files
-    .filter((f) => f.endsWith('.jsonl'))
+    .filter((f) => f.endsWith(".jsonl"))
     .sort()
     .map((f) => join(logDir, f));
 }
@@ -87,7 +87,10 @@ async function getLogFiles(logDir: string): Promise<string[]> {
 /**
  * Filter log entries based on query options
  */
-function filterEntries(entries: LogEntry[], options: LogQueryOptions): LogEntry[] {
+function filterEntries(
+  entries: LogEntry[],
+  options: LogQueryOptions
+): LogEntry[] {
   let filtered = entries;
 
   if (options.source) {
@@ -103,7 +106,9 @@ function filterEntries(entries: LogEntry[], options: LogQueryOptions): LogEntry[
   }
 
   if (options.sessionId) {
-    filtered = filtered.filter((e) => e.context?.sessionId === options.sessionId);
+    filtered = filtered.filter(
+      (e) => e.context?.sessionId === options.sessionId
+    );
   }
 
   if (options.search) {
@@ -131,7 +136,9 @@ function filterEntries(entries: LogEntry[], options: LogQueryOptions): LogEntry[
 /**
  * Query logs with filters
  */
-export async function queryLogs(options: LogQueryOptions = {}): Promise<LogEntry[]> {
+export async function queryLogs(
+  options: LogQueryOptions = {}
+): Promise<LogEntry[]> {
   const logDir = options.logDir || getDefaultLogDir();
   const files = await getLogFiles(logDir);
 
@@ -139,7 +146,7 @@ export async function queryLogs(options: LogQueryOptions = {}): Promise<LogEntry
   let filesToRead = files;
   if (options.startDate || options.endDate) {
     filesToRead = files.filter((f) => {
-      const fileName = f.split(/[\\/]/).pop()?.replace('.jsonl', '');
+      const fileName = f.split(/[\\/]/).pop()?.replace(".jsonl", "");
       if (!fileName) return false;
       if (options.startDate && fileName < options.startDate) return false;
       if (options.endDate && fileName > options.endDate) return false;
@@ -164,7 +171,9 @@ export async function queryLogs(options: LogQueryOptions = {}): Promise<LogEntry
 /**
  * Get the last N log entries (tail)
  */
-export async function tailLogs(options: LogTailOptions = {}): Promise<LogEntry[]> {
+export async function tailLogs(
+  options: LogTailOptions = {}
+): Promise<LogEntry[]> {
   const logDir = options.logDir || getDefaultLogDir();
   const lines = options.lines || 20;
 
@@ -188,7 +197,9 @@ export async function tailLogs(options: LogTailOptions = {}): Promise<LogEntry[]
 /**
  * Get log statistics
  */
-export async function logStats(options: { logDir?: string } = {}): Promise<LogStatsResult> {
+export async function logStats(
+  options: { logDir?: string } = {}
+): Promise<LogStatsResult> {
   const logDir = options.logDir || getDefaultLogDir();
   const files = await getLogFiles(logDir);
 
@@ -202,8 +213,8 @@ export async function logStats(options: { logDir?: string } = {}): Promise<LogSt
   const byTool: Record<string, number> = {};
 
   let totalEntries = 0;
-  let firstTimestamp = '';
-  let lastTimestamp = '';
+  let firstTimestamp = "";
+  let lastTimestamp = "";
 
   for (const file of files) {
     const entries = await parseLogFile(file);
@@ -214,8 +225,12 @@ export async function logStats(options: { logDir?: string } = {}): Promise<LogSt
 
       bySource[entry.source] = (bySource[entry.source] || 0) + 1;
 
-      if (entry.context?.toolName && typeof entry.context.toolName === 'string') {
-        byTool[entry.context.toolName] = (byTool[entry.context.toolName] || 0) + 1;
+      if (
+        entry.context?.toolName &&
+        typeof entry.context.toolName === "string"
+      ) {
+        byTool[entry.context.toolName] =
+          (byTool[entry.context.toolName] || 0) + 1;
       }
 
       if (!firstTimestamp || entry.timestamp < firstTimestamp) {
@@ -242,7 +257,9 @@ export async function logStats(options: { logDir?: string } = {}): Promise<LogSt
 /**
  * List all unique sources in logs
  */
-export async function listSources(options: { logDir?: string } = {}): Promise<string[]> {
+export async function listSources(
+  options: { logDir?: string } = {}
+): Promise<string[]> {
   const logDir = options.logDir || getDefaultLogDir();
   const files = await getLogFiles(logDir);
 
@@ -261,7 +278,9 @@ export async function listSources(options: { logDir?: string } = {}): Promise<st
 /**
  * List all unique tools in logs
  */
-export async function listTools(options: { logDir?: string } = {}): Promise<string[]> {
+export async function listTools(
+  options: { logDir?: string } = {}
+): Promise<string[]> {
   const logDir = options.logDir || getDefaultLogDir();
   const files = await getLogFiles(logDir);
 
@@ -270,7 +289,10 @@ export async function listTools(options: { logDir?: string } = {}): Promise<stri
   for (const file of files) {
     const entries = await parseLogFile(file);
     for (const entry of entries) {
-      if (entry.context?.toolName && typeof entry.context.toolName === 'string') {
+      if (
+        entry.context?.toolName &&
+        typeof entry.context.toolName === "string"
+      ) {
         tools.add(entry.context.toolName);
       }
     }

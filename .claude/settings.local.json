@@ -64,7 +64,8 @@
       "Bash(pnpm biome check:*)",
       "WebSearch",
       "Bash(pnpm lint:assertions:*)",
-      "Bash(pnpm lint-staged:*)"
+      "Bash(pnpm lint-staged:*)",
+      "Bash(pnpm --filter \"@fullstack-starter/tools\" build:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",
