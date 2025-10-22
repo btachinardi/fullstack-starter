@@ -146,68 +146,30 @@ export class SessionDomainBuilder {
       }
 
       if (isUserEntry(entry)) {
-        // Check for /clear command pattern
         const nextEntry = timelineEntries[i + 1];
-        const clearCommand = this.detectClearCommand(entry);
-        if (clearCommand) {
+        const { message, skipNext } = this.processUserEntry(entry, nextEntry);
+
+        // Handle special context changes
+        if (message.type === 'clear_command') {
           // Apply current context before clearing
-          clearCommand.commandContext = currentCommandContext;
-          messages.push(clearCommand);
-          // Reset command context
+          message.commandContext = currentCommandContext;
+          // Reset command context after /clear
           currentCommandContext = undefined;
-          // Skip the next entry (clear prompt) if it's a meta message
-          if (nextEntry && isUserEntry(nextEntry) && nextEntry.isMeta && 'uuid' in nextEntry) {
-            skipUuids.add(nextEntry.uuid);
-          }
-          continue;
+        } else if (message.type === 'slash_command') {
+          // Slash command sets its own context (don't overwrite)
+          // Update current context for subsequent messages
+          currentCommandContext = message.commandContext;
+        } else {
+          // Apply current command context to all other message types
+          message.commandContext = currentCommandContext;
         }
 
-        // Check for command stdout pattern
-        const stdoutMsg = this.detectCommandStdout(entry);
-        if (stdoutMsg) {
-          stdoutMsg.commandContext = currentCommandContext;
-          messages.push(stdoutMsg);
-          continue;
+        messages.push(message);
+
+        // Skip next entry if needed (for slash commands and clear commands with prompts)
+        if (skipNext && nextEntry && 'uuid' in nextEntry) {
+          skipUuids.add((nextEntry as UserEntry).uuid);
         }
-
-        // Check for request interrupted pattern
-        const interruptedMsg = this.detectRequestInterrupted(entry);
-        if (interruptedMsg) {
-          interruptedMsg.commandContext = currentCommandContext;
-          messages.push(interruptedMsg);
-          continue;
-        }
-
-        // Check for slash command pattern
-        const slashCommand = this.detectSlashCommand(entry, nextEntry);
-        if (slashCommand) {
-          // Set new command context
-          currentCommandContext = slashCommand.commandContext;
-
-          messages.push(slashCommand);
-          // Skip the next entry (command prompt)
-          if (nextEntry && 'uuid' in nextEntry) {
-            skipUuids.add((nextEntry as UserEntry).uuid);
-          }
-          continue;
-        }
-
-        // Check if this is a tool result message
-        if (this.isToolResultUserMessage(entry)) {
-          const toolResultMsg = this.buildToolResultMessage(entry);
-          if (toolResultMsg) {
-            // Apply command context
-            toolResultMsg.commandContext = currentCommandContext;
-            messages.push(toolResultMsg);
-          }
-          continue;
-        }
-
-        // Regular user message
-        const userMsg = this.buildUserMessage(entry);
-        // Apply command context
-        userMsg.commandContext = currentCommandContext;
-        messages.push(userMsg);
       } else if (isAssistantEntry(entry)) {
         // Process assistant entry content blocks
         const assistantMessages = this.buildAssistantMessages(entry, toolUseMap);
@@ -662,10 +624,15 @@ export class SessionDomainBuilder {
       const enrichedToolUses = this.parser.getEnrichedToolUses();
       const toolUseMap = new Map(enrichedToolUses.map((t) => [t.id, t]));
 
-      for (const entry of entries) {
+      for (let i = 0; i < entries.length; i++) {
+        const entry = entries[i];
+        if (!entry) continue;
+
         // Entries are already filtered to user/assistant/system only
         if (isUserEntry(entry)) {
-          messages.push(this.buildUserMessage(entry));
+          const nextEntry = entries[i + 1];
+          const { message } = this.processUserEntry(entry, nextEntry);
+          messages.push(message);
         } else if (isAssistantEntry(entry)) {
           messages.push(...this.buildAssistantMessages(entry, toolUseMap));
         } else if (isSystemEntry(entry)) {
