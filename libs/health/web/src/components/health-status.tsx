@@ -1,10 +1,10 @@
 import { useDbHealth, useHealth } from "../hooks";
-import type { HealthStatus } from "../types/health.types";
+import type { HealthStatus as HealthStatusType } from "../types/health.types";
 
 /**
  * Status badge component
  */
-function StatusBadge({ status }: { status: HealthStatus }) {
+function StatusBadge({ status }: { status: HealthStatusType }) {
 	const statusColors = {
 		ok: "bg-green-500 text-white",
 		error: "bg-red-500 text-white",
@@ -38,7 +38,7 @@ function HealthIndicatorCard({
 	lastChecked,
 }: {
 	title: string;
-	status?: HealthStatus;
+	status?: HealthStatusType;
 	details?: Record<string, unknown>;
 	isLoading: boolean;
 	error: Error | null;

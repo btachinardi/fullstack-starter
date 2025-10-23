@@ -65,6 +65,9 @@ session-exports
 *.sqlite3
 prisma/migrations/migration_lock.toml
 
+# Prisma generated client
+**/prisma/generated/**
+
 # SBOM
 sbom.json
 sbom.xml

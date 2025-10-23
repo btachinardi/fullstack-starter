@@ -10,7 +10,7 @@ import {
 	cn,
 } from "@libs/core/ui";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { authClient } from "../lib/auth-client";
 import { type AuthBranding, AuthLayout } from "./auth-layout";
 
@@ -38,6 +38,32 @@ export function VerifyEmailForm({
 	const [resendCooldown, setResendCooldown] = useState(0);
 	const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+	const verifyWithToken = useCallback(
+		async (token: string) => {
+			setIsLoading(true);
+			setError(null);
+
+			try {
+				const result = await authClient.emailVerification.verify({
+					query: { token },
+				});
+
+				if (result.error) {
+					setError(result.error.message || "Verification failed");
+					return;
+				}
+
+				// Success - redirect to dashboard
+				router.push("/dashboard");
+			} catch (err) {
+				setError(err instanceof Error ? err.message : "An error occurred");
+			} finally {
+				setIsLoading(false);
+			}
+		},
+		[router],
+	);
+
 	// Auto-verify if token is in URL
 	useEffect(() => {
 		const token = searchParams?.get("token");
@@ -56,29 +82,6 @@ export function VerifyEmailForm({
 			return () => clearTimeout(timer);
 		}
 	}, [resendCooldown]);
-
-	const verifyWithToken = async (token: string) => {
-		setIsLoading(true);
-		setError(null);
-
-		try {
-			const result = await authClient.emailVerification.verify({
-				query: { token },
-			});
-
-			if (result.error) {
-				setError(result.error.message || "Verification failed");
-				return;
-			}
-
-			// Success - redirect to dashboard
-			router.push("/dashboard");
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "An error occurred");
-		} finally {
-			setIsLoading(false);
-		}
-	};
 
 	const handleInputChange = (index: number, value: string) => {
 		// Only allow numbers
