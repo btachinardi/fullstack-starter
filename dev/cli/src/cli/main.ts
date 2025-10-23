@@ -1403,7 +1403,12 @@ tasks
 	.option("-v, --verbose", "Show detailed progress messages")
 	.action(
 		async (taskId: string, options: { doc?: string; verbose?: boolean }) => {
-			await updateTaskStatusCommand(taskId, "completed", options.doc, options.verbose);
+			await updateTaskStatusCommand(
+				taskId,
+				"completed",
+				options.doc,
+				options.verbose,
+			);
 		},
 	);
 
@@ -1418,7 +1423,12 @@ tasks
 	.option("-v, --verbose", "Show detailed progress messages")
 	.action(
 		async (taskId: string, options: { doc?: string; verbose?: boolean }) => {
-			await updateTaskStatusCommand(taskId, "cancelled", options.doc, options.verbose);
+			await updateTaskStatusCommand(
+				taskId,
+				"cancelled",
+				options.doc,
+				options.verbose,
+			);
 		},
 	);
 
@@ -1433,7 +1443,12 @@ tasks
 	.option("-v, --verbose", "Show detailed progress messages")
 	.action(
 		async (taskId: string, options: { doc?: string; verbose?: boolean }) => {
-			await updateTaskStatusCommand(taskId, "todo", options.doc, options.verbose);
+			await updateTaskStatusCommand(
+				taskId,
+				"todo",
+				options.doc,
+				options.verbose,
+			);
 		},
 	);
 

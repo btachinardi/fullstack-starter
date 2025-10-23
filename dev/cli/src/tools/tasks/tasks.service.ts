@@ -381,7 +381,8 @@ export async function getDocumentProgress(documentPath: string): Promise<{
 		totalTasks,
 		completedTasks,
 		percentageComplete,
-		documentName: document.frontmatter.title || basename(documentPath, ".tasks.md"),
+		documentName:
+			document.frontmatter.title || basename(documentPath, ".tasks.md"),
 	};
 }
 

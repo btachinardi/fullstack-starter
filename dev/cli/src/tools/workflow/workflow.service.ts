@@ -17,7 +17,7 @@ import type { WorkflowOptions, WorkflowResult } from "./workflow.types.js";
  * @returns Result object
  */
 export async function workflowMain(
-	options: WorkflowOptions,
+	_options: WorkflowOptions,
 ): Promise<WorkflowResult> {
 	// TODO: Implement your tool logic here
 
@@ -33,6 +33,6 @@ export async function workflowMain(
 /**
  * Helper function example
  */
-function helperFunction(): void {
+function _helperFunction(): void {
 	// TODO: Implement helper logic
 }

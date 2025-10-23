@@ -8,16 +8,9 @@
 // Input/Output Types
 // ============================================================================
 
-export interface WorkflowOptions {
-	// Add your option properties here
-	// Example: filePath?: string;
-}
+export type WorkflowOptions = {};
 
-export interface WorkflowResult {
-	// Add your result properties here
-	// Example: success: boolean;
-	// Example: message: string;
-}
+export type WorkflowResult = {};
 
 // ============================================================================
 // Domain Types
