@@ -1,0 +1,38 @@
+{
+	"name": "@libs/api",
+	"version": "0.0.0",
+	"private": true,
+	"license": "MIT",
+	"scripts": {
+		"dev": "pnpm build --watch",
+		"build": "tsc -b -v"
+	},
+	"main": "./dist/entry.js",
+	"types": "./dist/entry.d.ts",
+	"files": [
+		"./dist/**"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/entry.js",
+			"require": "./dist/entry.js"
+		},
+		"./*": {
+			"import": "./dist/*.js",
+			"require": "./dist/*.js"
+		}
+	},
+	"dependencies": {
+		"@nestjs/mapped-types": "^2.1.0"
+	},
+	"devDependencies": {
+		"@configs/typescript": "workspace:*",
+		"@types/node": "^24.9.1",
+		"ts-loader": "^9.5.4",
+		"ts-node": "^10.9.2",
+		"typescript": "5.9.3"
+	}
+}
