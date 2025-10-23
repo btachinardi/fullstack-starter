@@ -1,18 +1,18 @@
 "use client";
 
-import { Badge } from "@workspace/ui/components/badge";
+import { Badge } from "@libs/ui/components/badge";
 import {
 	Carousel,
 	type CarouselApi,
 	CarouselContent,
 	CarouselItem,
-} from "@workspace/ui/components/carousel";
+} from "@libs/ui/components/carousel";
 import {
 	HoverCard,
 	HoverCardContent,
 	HoverCardTrigger,
-} from "@workspace/ui/components/hover-card";
-import { cn } from "@workspace/ui/lib/utils";
+} from "@libs/ui/components/hover-card";
+import { cn } from "@libs/ui/lib/utils";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import {
 	type ComponentProps,
@@ -68,7 +68,7 @@ export const InlineCitationCardTrigger = ({
 			variant="secondary"
 			{...props}
 		>
-			{sources.length ? (
+			{sources.length && sources[0] ? (
 				<>
 					{new URL(sources[0]).hostname}{" "}
 					{sources.length > 1 && `+${sources.length - 1}`}

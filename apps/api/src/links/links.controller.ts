@@ -1,4 +1,4 @@
-import type { CreateLinkDto, UpdateLinkDto } from "@libs/api";
+import type { CreateLinkDto, UpdateLinkDto } from "@libs/core/api";
 import {
 	Body,
 	Controller,

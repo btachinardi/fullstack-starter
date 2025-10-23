@@ -20,7 +20,6 @@
 			"Bash(npm install:*)",
 			"Bash(npm run:*)",
 			"Bash(npm uninstall:*)",
-
 			"// Development workflow - tools and execution",
 			"Bash(pnpm tools:*)",
 			"Bash(pnpm exec:*)",
@@ -36,14 +35,12 @@
 			"Bash(node tools/dist:*)",
 			"Bash(node:*)",
 			"Bash(npx tsc:*)",
-
 			"// Git - read operations",
 			"Bash(git status:*)",
 			"Bash(git diff:*)",
 			"Bash(git log:*)",
 			"Bash(git show:*)",
 			"Bash(git branch:*)",
-
 			"// Git - safe workflow",
 			"Bash(git checkout:*)",
 			"Bash(git add:*)",
@@ -53,11 +50,9 @@
 			"Bash(git reset:*)",
 			"Bash(git rebase:*)",
 			"Bash(git merge:*)",
-
 			"// GitHub CLI",
 			"Bash(gh pr:*)",
 			"Bash(gh issue:*)",
-
 			"// Shell utilities and file operations",
 			"Bash(cat:*)",
 			"Bash(echo:*)",
@@ -72,26 +67,31 @@
 			"Bash(pkill:*)",
 			"Bash(taskkill:*)",
 			"Bash(winget install:*)",
-
 			"// Shell scripting patterns",
 			"Bash(while read file)",
 			"Bash(for file in:*)",
 			"Bash(do:*)",
 			"Bash(done)",
 			"Bash(/dev/null)",
-
 			"// File reading - project-specific paths",
 			"Read(**/tools/logs/**)",
 			"Read(**/.claude/**)",
 			"Read(**/ai/**)",
 			"Read(//c/tmp/**)",
-
 			"// Web access",
 			"WebFetch(domain:github.com)",
 			"WebFetch(domain:stackoverflow.com)",
 			"WebFetch(domain:jxnl.co)",
 			"WebFetch(domain:www.anthropic.com)",
-			"WebSearch"
+			"WebSearch",
+			"Bash(pnpm dev:api:*)",
+			"Bash(pnpm check:*)",
+			"Bash(npx prisma generate:*)",
+			"Bash(VERBOSE=1 node cli/tools/dist/main.js prisma build:*)",
+			"Bash(pnpm prisma:build:*)",
+			"Bash(for dir in test-auth test-payments test-blog test-app test-circular-a test-circular-b)",
+			"Bash(pnpm prisma:generate:*)",
+			"Bash(pnpm check:fix:*)"
 		],
 		"deny": [
 			"// Git - destructive operations (BLOCKED FOR SAFETY)",
@@ -101,7 +101,6 @@
 			"Bash(git clean -f:*)",
 			"Bash(git clean -fd:*)",
 			"Bash(git branch -D:*)",
-
 			"// Package publishing (BLOCKED FOR SAFETY)",
 			"Bash(pnpm publish:*)",
 			"Bash(npm publish:*)"

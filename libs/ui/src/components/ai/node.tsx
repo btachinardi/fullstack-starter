@@ -6,8 +6,8 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from "@workspace/ui/components/card";
-import { cn } from "@workspace/ui/lib/utils";
+} from "@libs/ui/components/card";
+import { cn } from "@libs/ui/lib/utils";
 import { Handle, Position } from "@xyflow/react";
 import type { ComponentProps } from "react";
 

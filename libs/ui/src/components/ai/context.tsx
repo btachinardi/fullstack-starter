@@ -1,13 +1,13 @@
 "use client";
 
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@libs/ui/components/button";
 import {
 	HoverCard,
 	HoverCardContent,
 	HoverCardTrigger,
-} from "@workspace/ui/components/hover-card";
-import { Progress } from "@workspace/ui/components/progress";
-import { cn } from "@workspace/ui/lib/utils";
+} from "@libs/ui/components/hover-card";
+import { Progress } from "@libs/ui/components/progress";
+import { cn } from "@libs/ui/lib/utils";
 import type { LanguageModelUsage } from "ai";
 import { type ComponentProps, createContext, useContext } from "react";
 import { estimateCost, type ModelId } from "tokenlens";

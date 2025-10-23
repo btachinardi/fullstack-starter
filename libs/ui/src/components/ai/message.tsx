@@ -2,8 +2,8 @@ import {
 	Avatar,
 	AvatarFallback,
 	AvatarImage,
-} from "@workspace/ui/components/avatar";
-import { cn } from "@workspace/ui/lib/utils";
+} from "@libs/ui/components/avatar";
+import { cn } from "@libs/ui/lib/utils";
 import type { UIMessage } from "ai";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps, HTMLAttributes } from "react";

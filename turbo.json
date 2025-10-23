@@ -12,6 +12,10 @@
 		"//#check:fix": {
 			"cache": false
 		},
+		"//#check:strict": {},
+		"//#check:fix:strict": {
+			"cache": false
+		},
 		"typecheck": {
 			"dependsOn": ["^typecheck"]
 		},

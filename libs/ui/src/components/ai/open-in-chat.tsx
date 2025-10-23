@@ -1,4 +1,4 @@
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@libs/ui/components/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -6,8 +6,8 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@workspace/ui/components/dropdown-menu";
-import { cn } from "@workspace/ui/lib/utils";
+} from "@libs/ui/components/dropdown-menu";
+import { cn } from "@libs/ui/lib/utils";
 import {
 	ChevronDownIcon,
 	ExternalLinkIcon,

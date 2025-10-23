@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Textarea } from "@workspace/ui/components/textarea";
-import { cn } from "@workspace/ui/lib/utils";
+import { Button } from "@libs/ui/components/button";
+import { Input } from "@libs/ui/components/input";
+import { Textarea } from "@libs/ui/components/textarea";
+import { cn } from "@libs/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 

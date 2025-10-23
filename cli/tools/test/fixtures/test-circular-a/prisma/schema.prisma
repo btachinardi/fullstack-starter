@@ -1,0 +1,24 @@
+// ============================================================================
+// Test Circular Dependency A
+// ============================================================================
+// This schema imports B, which imports A - should trigger circular dependency error
+
+// @prisma-import: ../../test-circular-b/prisma/schema.prisma
+
+generator client {
+	provider = "prisma-client-js"
+	output   = "../generated/prisma"
+}
+
+datasource db {
+	provider = "postgresql"
+	url      = env("DATABASE_URL")
+	schemas  = ["circular_a"]
+}
+
+model ModelA {
+	id   String @id @default(cuid())
+	name String
+
+	@@schema("circular_a")
+}

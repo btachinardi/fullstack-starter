@@ -1,0 +1,259 @@
+/**
+ * Schema Merger
+ *
+ * Merges multiple Prisma schemas with generation boundaries and namespace transformations.
+ */
+
+import type { MergedSchema, ParsedSchema } from "./types";
+
+/**
+ * Merge schemas in dependency order
+ */
+export async function mergeSchemas(
+	orderedSchemas: ParsedSchema[],
+): Promise<MergedSchema> {
+	if (orderedSchemas.length === 0) {
+		throw new Error("No schemas to merge");
+	}
+
+	// Application schema is last
+	const appSchema = orderedSchemas[orderedSchemas.length - 1];
+	const importedSchemas = orderedSchemas.slice(0, -1);
+
+	const sections: string[] = [];
+
+	// 0. Preserve plugin directives from app schema
+	if (appSchema.plugins.length > 0) {
+		const pluginComments: string[] = [];
+		for (const plugin of appSchema.plugins) {
+			pluginComments.push(`// @prisma-plugin: ${plugin.name}`);
+			if (Object.keys(plugin.config).length > 0) {
+				pluginComments.push(
+					`// @prisma-plugin-config: ${JSON.stringify(plugin.config)}`,
+				);
+			}
+		}
+		sections.push(pluginComments.join("\n"));
+	}
+
+	// 1. Preserve import comments from app schema
+	if (appSchema.imports.length > 0) {
+		const importComments = appSchema.imports
+			.map((imp) => `// @prisma-import: ${imp}`)
+			.join("\n");
+		sections.push(importComments);
+	}
+
+	// 1. Datasource and Generator (from app schema)
+	if (appSchema.datasource) {
+		sections.push(
+			generateDatasourceBlock(appSchema.datasource, orderedSchemas),
+		);
+	}
+
+	if (appSchema.generators.length > 0) {
+		sections.push(generateGeneratorBlock(appSchema.generators[0]));
+	}
+
+	// 2. Generation boundary start
+	if (importedSchemas.length > 0) {
+		sections.push(generateBoundaryStart(importedSchemas));
+
+		// 3. Imported schemas with namespace transformation
+		for (const schema of importedSchemas) {
+			const namespace = schema.dbSchema || extractLibraryName(schema.filePath);
+
+			// Transform models
+			if (schema.models.length > 0) {
+				const transformedModels = transformModelsWithNamespace(
+					schema.models,
+					namespace,
+				);
+				sections.push(transformedModels);
+			}
+
+			// Transform enums
+			if (schema.enums.length > 0) {
+				const transformedEnums = transformModelsWithNamespace(
+					schema.enums,
+					namespace,
+				);
+				sections.push(transformedEnums);
+			}
+		}
+
+		// 4. Generation boundary end
+		sections.push(generateBoundaryEnd());
+	}
+
+	// 5. Application native models
+	const appModelsContent = extractNativeModels(appSchema);
+	if (appModelsContent) {
+		sections.push(appModelsContent);
+	}
+
+	const content = sections.filter((s) => s.trim().length > 0).join("\n\n");
+
+	// Collect all database schemas
+	const dbSchemas = new Set<string>();
+	for (const schema of orderedSchemas) {
+		if (schema.dbSchema) {
+			dbSchemas.add(schema.dbSchema);
+		}
+		if (schema.datasource) {
+			for (const s of schema.datasource.schemas) {
+				dbSchemas.add(s);
+			}
+		}
+	}
+
+	return {
+		content,
+		sources: importedSchemas.map((s) => s.filePath),
+		timestamp: new Date().toISOString(),
+		dbSchemas: Array.from(dbSchemas),
+		datasource: appSchema.datasource!,
+		generator: appSchema.generators[0],
+	};
+}
+
+/**
+ * Generate datasource block
+ */
+function generateDatasourceBlock(
+	datasource: any,
+	schemas: ParsedSchema[],
+): string {
+	// Collect all schemas from datasource configs AND model directives
+	const allSchemas = new Set<string>();
+
+	for (const schema of schemas) {
+		// Add from datasource.schemas
+		if (schema.datasource?.schemas) {
+			for (const s of schema.datasource.schemas) {
+				allSchemas.add(s);
+			}
+		}
+
+		// Add from @@schema directives
+		if (schema.dbSchema) {
+			allSchemas.add(schema.dbSchema);
+		}
+
+		// Extract from model content
+		for (const model of schema.models) {
+			const schemaMatch = /@@schema\("([^"]+)"\)/.exec(model);
+			if (schemaMatch) {
+				allSchemas.add(schemaMatch[1]);
+			}
+		}
+	}
+
+	const schemasArray = Array.from(allSchemas).sort();
+
+	return `datasource db {
+  provider = "${datasource.provider}"
+  url      = ${datasource.url}
+  schemas  = [${schemasArray.map((s) => `"${s}"`).join(", ")}]
+}`;
+}
+
+/**
+ * Generate generator block
+ */
+function generateGeneratorBlock(generator: any): string {
+	let block = `generator client {
+  provider = "${generator.provider}"`;
+
+	if (generator.output) {
+		block += `\n  output   = "${generator.output}"`;
+	}
+
+	// Filter out deprecated preview features
+	const validFeatures = generator.previewFeatures.filter(
+		(f: string) => f !== "multiSchema",
+	);
+
+	if (validFeatures.length > 0) {
+		block += `\n  previewFeatures = [${validFeatures.map((f: string) => `"${f}"`).join(", ")}]`;
+	}
+
+	block += "\n}";
+	return block;
+}
+
+/**
+ * Generate boundary start marker
+ */
+function generateBoundaryStart(importedSchemas: ParsedSchema[]): string {
+	const sources = importedSchemas.map((s) => s.filePath);
+	const timestamp = new Date().toISOString();
+
+	return `// ============================================================================
+// GENERATED SECTION - DO NOT EDIT MANUALLY
+// This section is automatically generated by the Prisma Build Tool
+// Generated from:
+${sources.map((s) => `//   - ${s}`).join("\n")}
+// Last updated: ${timestamp}
+// ============================================================================`;
+}
+
+/**
+ * Generate boundary end marker
+ */
+function generateBoundaryEnd(): string {
+	return `// ============================================================================
+// END GENERATED SECTION
+// ============================================================================`;
+}
+
+/**
+ * Transform models with namespace
+ */
+function transformModelsWithNamespace(
+	models: string[],
+	namespace: string,
+): string {
+	return models
+		.map((model) => {
+			// Check if model already has @@schema directive
+			if (model.includes("@@schema(")) {
+				return model;
+			}
+
+			// Add @@schema directive before closing brace
+			return model.replace(/\n\}$/, `\n  @@schema("${namespace}")\n}`);
+		})
+		.join("\n\n");
+}
+
+/**
+ * Extract native models from application schema
+ */
+function extractNativeModels(schema: ParsedSchema): string {
+	// If there's a generation boundary, extract content after it
+	if (schema.generationBoundary) {
+		const afterBoundary = schema.content.substring(
+			schema.content.indexOf("// END GENERATED SECTION") +
+				"// END GENERATED SECTION".length,
+		);
+		return afterBoundary.trim();
+	}
+
+	// Otherwise, extract all models
+	return schema.models.join("\n\n");
+}
+
+/**
+ * Extract library name from file path
+ */
+function extractLibraryName(filePath: string): string {
+	// Extract from path like libs/api/prisma/schema.prisma -> api
+	const match = /libs\/([^/]+)\//.exec(filePath);
+	if (match) {
+		return match[1];
+	}
+
+	// Fallback to "public"
+	return "public";
+}

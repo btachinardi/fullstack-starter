@@ -4,7 +4,9 @@
 		"baseUrl": ".",
 		"paths": {
 			"@/*": ["./*"],
-			"@libs/ui/*": ["../../libs/ui/src/*"]
+			"@libs/core/ui/*": ["../../libs/core/ui/src/*", "../../libs/core/ui/*"],
+			"@libs/core/web/*": ["../../libs/core/web/src/*"],
+			"@libs/core/utils/*": ["../../libs/core/utils/src/*"]
 		},
 		"plugins": [
 			{

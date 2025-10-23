@@ -1,0 +1,81 @@
+# ============================================================================
+# Docker Compose - Development Overrides
+# ============================================================================
+# This file provides development-specific overrides for hot-reload and debugging.
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Features:
+#   - Volume mounts for hot-reload
+#   - Development build targets
+#   - Exposed debug ports
+#   - Less restrictive restart policies
+
+version: '3.9'
+
+services:
+  # ==========================================================================
+  # PostgreSQL Database (Development)
+  # ==========================================================================
+  postgres:
+    environment:
+      # More verbose logging in development
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+    ports:
+      # Expose postgres port for local DB clients
+      - "5432:5432"
+
+  # ==========================================================================
+  # NestJS API Server (Development)
+  # ==========================================================================
+  api:
+    build:
+      target: development
+      args:
+        NODE_ENV: development
+    restart: "no"
+    environment:
+      NODE_ENV: development
+      # Enable NestJS debug logging
+      LOG_LEVEL: debug
+    volumes:
+      # Mount source code for hot-reload
+      - ./apps/api:/app/apps/api
+      - ./libs:/app/libs
+      - ./configs:/app/configs
+      # Preserve node_modules
+      - /app/node_modules
+      - /app/apps/api/node_modules
+      - /app/libs/api/node_modules
+    command: pnpm --filter @apps/api dev
+    ports:
+      # Expose Node.js debug port
+      - "9229:9229"
+
+  # ==========================================================================
+  # Next.js Web Application (Development)
+  # ==========================================================================
+  web:
+    build:
+      target: development
+      args:
+        NODE_ENV: development
+    restart: "no"
+    environment:
+      NODE_ENV: development
+      # Enable Next.js telemetry in development
+      NEXT_TELEMETRY_DISABLED: 0
+    volumes:
+      # Mount source code for hot-reload
+      - ./apps/web:/app/apps/web
+      - ./libs:/app/libs
+      - ./configs:/app/configs
+      # Preserve node_modules and Next.js cache
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
+    command: pnpm --filter @apps/web dev
+    ports:
+      # Next.js dev server typically uses 3000
+      - "3000:3000"

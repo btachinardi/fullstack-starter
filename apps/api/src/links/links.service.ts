@@ -1,4 +1,4 @@
-import type { CreateLinkDto, Link, UpdateLinkDto } from "@libs/api";
+import type { CreateLinkDto, Link, UpdateLinkDto } from "@libs/core/api";
 import { Injectable } from "@nestjs/common";
 
 @Injectable()

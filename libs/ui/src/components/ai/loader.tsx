@@ -1,4 +1,4 @@
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@libs/ui/lib/utils";
 import type { HTMLAttributes } from "react";
 
 type LoaderIconProps = {

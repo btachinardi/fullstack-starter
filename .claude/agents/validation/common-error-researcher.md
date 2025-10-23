@@ -584,7 +584,7 @@ Delivered report with 5 solutions, identified that issue was missing TypeOrmModu
 **Input:**
 
 ```
-Error: Could not resolve dependency: @starter/query@workspace:* from apps/web/package.json
+Error: Could not resolve dependency: @workspace/query:* from apps/web/package.json
 
 Technology stack:
 - PNPM 9.15.0

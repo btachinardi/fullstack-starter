@@ -1485,6 +1485,63 @@ tasks
 	});
 
 // ============================================================================
+// Prisma Tool
+// ============================================================================
+
+const prisma = program
+	.command("prisma")
+	.description("Prisma schema composition and build tools");
+
+// ----------------------------------------------------------------------------
+// prisma build
+// ----------------------------------------------------------------------------
+
+prisma
+	.command("build <schema>")
+	.description("Build composed Prisma schema from imports")
+	.option("--test", "Test mode (validate only, no write)")
+	.option("--watch", "Watch for changes and rebuild")
+	.option("--verbose", "Verbose logging")
+	.option("--dry-run", "Show what would be generated")
+	.action(
+		async (
+			schema: string,
+			options: {
+				test?: boolean;
+				watch?: boolean;
+				verbose?: boolean;
+				dryRun?: boolean;
+			},
+		) => {
+			const spinner = ora("Building Prisma schema...").start();
+
+			try {
+				const { buildSchema } = await import("../commands/prisma/build");
+
+				await buildSchema({
+					schemaPath: schema,
+					test: options.test,
+					watch: options.watch,
+					verbose: options.verbose,
+					dryRun: options.dryRun,
+				});
+
+				spinner.succeed("Schema built successfully");
+			} catch (error) {
+				spinner.fail("Failed to build schema");
+				console.error(chalk.red(getErrorMessage(error)));
+
+				// Show stack trace in verbose mode
+				if (error instanceof Error && error.stack) {
+					console.error(chalk.gray(error.stack));
+				}
+
+				process.exit(1);
+			}
+		},
+	);
+
+// ============================================================================
 // Tasks Helper Functions
 // ============================================================================
 

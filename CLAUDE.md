@@ -21,7 +21,7 @@ A batteries-included monorepo for full-stack TypeScript applications with high q
 ### Code Quality Tooling
 
 - **TypeScript 5.7**: Strict mode enforcement across all packages
-- **Biome 1.9+**: Unified linter and formatter (Rust-based, replaces ESLint + Prettier)
+- **Biome 2.2.7+**: Unified linter and formatter (Rust-based)
 - **Husky + lint-staged**: Pre-commit hooks for quality gates
 - **Gitleaks**: Secret detection in commits
 - **Security Audits**: pnpm audit for dependency vulnerabilities
@@ -31,8 +31,7 @@ A batteries-included monorepo for full-stack TypeScript applications with high q
 ```bash
 pnpm dev              # Start all apps in watch mode (parallel)
 pnpm build            # Build all packages/apps topologically
-pnpm lint             # Run ESLint across workspace
-pnpm format           # Format all code with Prettier
+pnpm check            # Perform lint and format using biome
 pnpm typecheck        # TypeScript validation across workspace
 pnpm test             # Run all test suites
 pnpm clean            # Remove all build artifacts and node_modules
@@ -57,7 +56,7 @@ pnpm ci:bootstrap     # Validate environment setup
 
 ### Apps (`apps/`)
 
-#### **api** (`@fullstack-starter/api`)
+#### **api** (`@apps/api`)
 
 **NestJS REST API with Prisma ORM**
 
@@ -65,9 +64,9 @@ pnpm ci:bootstrap     # Validate environment setup
 - **Features**: OpenAPI/Swagger docs, validation (class-validator), dependency injection
 - **Dev**: `pnpm dev:api` (watch mode on default port)
 - **Type**: CommonJS module
-- **Dependencies**: `@starter/api`, `@starter/db`, `@starter/utils`
+- **Dependencies**: `@libs/api`, `@libs/db`, `@libs/utils`
 
-#### **web** (`@fullstack-starter/web`)
+#### **web** (`@apps/web`)
 
 **React SPA with Vite and TanStack ecosystem**
 
@@ -75,37 +74,27 @@ pnpm ci:bootstrap     # Validate environment setup
 - **Features**: Type-safe routing, server state management, component library
 - **Dev**: `pnpm dev:web` (Vite dev server, default port 3000)
 - **Type**: ESM module
-- **Dependencies**: `@starter/data-access`, `@starter/ui`, `@starter/query`, `@starter/router`, `@starter/utils`
+- **Dependencies**: `@libs/data-access`, `@libs/ui`, `@libs/query`, `@libs/router`, `@libs/utils`
 
 ---
 
 ### Configuration (`configs/`)
 
-**eslint** (`@starter/eslint`)
-
-- Shared ESLint rules (base, React, Node.js variants)
-- Integration with Prettier, TypeScript, import sorting
-
-**prettier** (`@starter/prettier`)
-
-- Standardized code formatting rules
-- Consistent style across all workspace packages
-
-**typescript** (`@starter/typescript`)
+**typescript** (`@configs/typescript`)
 
 - Base TypeScript compiler configurations
 - Strict mode, ES2022 target, declaration file generation
 - Variants: base, react, node
 
-**vite** (`@starter/vite`)
+**jest** (`@configs/jest`)
 
-- Shared Vite build configuration for React apps
-- Pre-configured code splitting (vendor, router, query chunks)
-- Default dev server settings (port 3000)
+- Jest configuration
+- Jest presets
+- Jest plugins
 
 ---
 
-### Packages (`packages/`)
+### Libraries (`libs/`)
 
 #### Data & API Layer
 
@@ -166,22 +155,22 @@ pnpm ci:bootstrap     # Validate environment setup
 
 - Unified utility package for both web and Node.js environments
 - **Web utilities**: Error classes (AppError, NetworkError, AuthError, ValidationError), logger, CSS utilities (`cn`)
-- **Node utilities** (`@starter/utils`): Server error classes with HTTP status codes, Node-specific logger
+- **Node utilities** (`@libs/utils`): Server error classes with HTTP status codes, Node-specific logger
 - Format utilities and shared functionality
 - Supports both ESM and CommonJS via `typesVersions`
 
 ---
 
-### Tools (`tools/`)
+### Tools (`cli/tools/`)
 
-**@fullstack-starter/tools**
+**@cli/tools**
 
 - **CLI utilities** for project management and development workflows
 - **Session Management**: Inspect Claude Code session data (info, agents, tools, files, conversation, bash history)
 - **Log Analysis**: Tail, query, and analyze logs with stats and source tracking
 - **Stack**: Commander.js, Chalk, Ora (spinners), Claude Agent SDK
 - **Build**: TypeScript + tsup (bundler)
-- **Usage**: `pnpm tools <command>` or `node tools/dist/cli/main.js`
+- **Usage**: `pnpm tools <command>` or `node cli/tools/dist/cli/main.js`
 
 **Key Commands**:
 
@@ -201,11 +190,9 @@ pnpm tools logs query <term>     # Search logs
 ```
 ├── apps/              # Deployable applications (api, web)
 ├── configs/           # Shared tooling configurations
-│   ├── eslint
-│   ├── prettier
 │   ├── typescript
-│   └── vite
-├── packages/          # Shared libraries
+│   └── jest
+├── libs/              # Shared libraries
 │   ├── api            # NestJS utilities and DTOs
 │   ├── db             # Prisma client wrapper
 │   ├── query          # TanStack Query wrapper
@@ -214,7 +201,8 @@ pnpm tools logs query <term>     # Search logs
 │   ├── data-access    # API client layer
 │   ├── ui             # Component library
 │   └── utils          # Unified utilities (web + node)
-└── tools/             # Development CLI utilities
+└── cli/               # Development CLI utilities
+    └── tools          # General purpose CLI utilities
 ```
 
 ### Dependency Flow
@@ -253,10 +241,10 @@ pnpm tools logs query <term>     # Search logs
 
 ### Adding New Packages
 
-1. Create package in `packages/<name>`
-2. Add `package.json` with `@starter/<name>` as package name
+1. Create package in `libs/<name>`
+2. Add `package.json` with `@libs/<name>` as package name
 3. Extend appropriate config packages (eslint, typescript, etc.)
-4. Update dependent packages to import via `@starter/<name>`
+4. Update dependent packages to import via `@libs/<name>`
 5. Add to Turborepo pipeline in `turbo.json` if needed
 
 ---
@@ -266,7 +254,7 @@ pnpm tools logs query <term>     # Search logs
 - **Frontend**: React 18, Vite 6, TanStack Query/Router/Store, Tailwind CSS
 - **Backend**: NestJS 10, Fastify, Prisma 6, PostgreSQL
 - **Testing**: Vitest (unit/integration), Jest (API), Playwright (E2E - planned)
-- **Tooling**: PNPM Workspaces, Turborepo, ESLint, Prettier, TypeScript 5.7
+- **Tooling**: PNPM Workspaces, Turborepo, Biome, TypeScript 5.7
 - **DevOps**: Docker Compose (local), GitHub Actions (CI), Render.com (deploy - planned)
 
 ---

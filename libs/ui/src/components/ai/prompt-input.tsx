@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@libs/ui/components/button";
 import {
 	Command,
 	CommandEmpty,
@@ -9,37 +9,37 @@ import {
 	CommandItem,
 	CommandList,
 	CommandSeparator,
-} from "@workspace/ui/components/command";
+} from "@libs/ui/components/command";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@workspace/ui/components/dropdown-menu";
+} from "@libs/ui/components/dropdown-menu";
 import {
 	HoverCard,
 	HoverCardContent,
 	HoverCardTrigger,
-} from "@workspace/ui/components/hover-card";
+} from "@libs/ui/components/hover-card";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupButton,
 	InputGroupTextarea,
-} from "@workspace/ui/components/input-group";
+} from "@libs/ui/components/input-group";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@workspace/ui/components/select";
+} from "@libs/ui/components/select";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@workspace/ui/components/tooltip";
-import { cn } from "@workspace/ui/lib/utils";
+} from "@libs/ui/components/tooltip";
+import { cn } from "@libs/ui/lib/utils";
 import type { ChatStatus, FileUIPart } from "ai";
 import {
 	ImageIcon,
@@ -1119,7 +1119,7 @@ export const PromptInputSpeechButton = ({
 				const results = Array.from(event.results);
 
 				for (const result of results) {
-					if (result.isFinal) {
+					if (result.isFinal && result[0]) {
 						finalTranscript += result[0].transcript;
 					}
 				}

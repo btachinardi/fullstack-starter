@@ -1,5 +1,9 @@
 packages:
     - "apps/*"
     - "cli/*"
+    - "dev/*"
     - "libs/*"
+    - "libs/core/*"
+    - "libs/auth/*"
+    - "libs/health/*"
     - "configs/*"
