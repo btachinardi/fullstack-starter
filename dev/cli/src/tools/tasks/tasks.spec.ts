@@ -604,4 +604,207 @@ tasks:
 			expect(result.errors.some((e) => e.field === "title")).toBe(true);
 		});
 	});
+
+	describe("startNextTask", () => {
+		beforeEach(async () => {
+			await writeFile(testDocPath, SAMPLE_TASK_DOC);
+		});
+
+		it("should find and start the first TODO task", async () => {
+			const result = await tasks.startNextTask(testDocPath);
+
+			expect(result.success).toBe(true);
+			expect(result.task).toBeDefined();
+			if (result.success && result.task) {
+				expect(result.task.id).toBe("1.1");
+				expect(result.task.status).toBe("in progress");
+				expect(result.listName).toBe("db");
+				expect(result.message).toContain("todo → in progress");
+			}
+
+			// Verify task status was persisted
+			const doc = await tasks.parseTaskDocument(testDocPath);
+			const firstList = doc.taskLists[0];
+			expect(firstList).toBeDefined();
+			if (!firstList) return;
+
+			const task = firstList.tasks[0];
+			expect(task).toBeDefined();
+			if (task) {
+				expect(task.status).toBe("in progress");
+			}
+		});
+
+		it("should skip in-progress and completed tasks", async () => {
+			// Mark 1.1 as in progress and 1.2 as completed
+			await tasks.updateTaskStatus(testDocPath, "1.1", "in progress");
+			await tasks.updateTaskStatus(testDocPath, "1.2", "completed");
+
+			const result = await tasks.startNextTask(testDocPath);
+
+			expect(result.success).toBe(false);
+			expect(result.message).toContain("No TODO tasks found");
+		});
+
+		it("should find TODO task in second list if first list has none", async () => {
+			// Mark all db tasks as completed
+			await tasks.updateTaskStatus(testDocPath, "1.1", "completed");
+			await tasks.updateTaskStatus(testDocPath, "1.2", "completed");
+			// Mark first api task as completed
+			await tasks.updateTaskStatus(testDocPath, "2.1", "completed");
+
+			// Add a new TODO task to api list
+			await tasks.addTask(testDocPath, {
+				list: "api",
+				title: "New API task",
+				type: "endpoint",
+				project: "apps/api",
+			});
+
+			const result = await tasks.startNextTask(testDocPath);
+
+			expect(result.success).toBe(true);
+			if (result.success && result.task) {
+				expect(result.listName).toBe("api");
+				expect(result.task.status).toBe("in progress");
+			}
+		});
+
+		it("should return error when no TODO tasks exist", async () => {
+			// Mark all tasks as completed
+			await tasks.updateTaskStatus(testDocPath, "1.1", "completed");
+			await tasks.updateTaskStatus(testDocPath, "1.2", "completed");
+			await tasks.updateTaskStatus(testDocPath, "2.1", "completed");
+			await tasks.updateTaskStatus(testDocPath, "2.2", "completed");
+
+			const result = await tasks.startNextTask(testDocPath);
+
+			expect(result.success).toBe(false);
+			expect(result.message).toContain("No TODO tasks found");
+		});
+
+		it("should skip cancelled tasks when finding next", async () => {
+			// Cancel first task
+			await tasks.updateTaskStatus(testDocPath, "1.1", "cancelled");
+
+			const result = await tasks.startNextTask(testDocPath);
+
+			expect(result.success).toBe(true);
+			if (result.success && result.task) {
+				expect(result.task.id).toBe("1.2"); // Should skip 1.1 and start 1.2
+				expect(result.task.status).toBe("in progress");
+			}
+		});
+	});
+
+	describe("getDocumentProgress", () => {
+		beforeEach(async () => {
+			await writeFile(testDocPath, SAMPLE_TASK_DOC);
+		});
+
+		it("should calculate progress correctly", async () => {
+			// Sample doc has: 2 todo, 1 in progress, 1 completed
+			const progress = await tasks.getDocumentProgress(testDocPath);
+
+			expect(progress.totalTasks).toBe(4);
+			expect(progress.completedTasks).toBe(1);
+			expect(progress.percentageComplete).toBe(25); // 1/4 = 25%
+			expect(progress.documentName).toBe("Test Feature");
+		});
+
+		it("should exclude cancelled tasks from total count", async () => {
+			// Cancel one task
+			await tasks.updateTaskStatus(testDocPath, "1.1", "cancelled");
+
+			const progress = await tasks.getDocumentProgress(testDocPath);
+
+			// Should have 3 tasks (excluding cancelled), 1 completed
+			expect(progress.totalTasks).toBe(3);
+			expect(progress.completedTasks).toBe(1);
+			expect(progress.percentageComplete).toBe(33); // 1/3 = 33%
+		});
+
+		it("should show 100% when all active tasks completed", async () => {
+			// Cancel two tasks and complete the rest
+			await tasks.updateTaskStatus(testDocPath, "1.1", "cancelled");
+			await tasks.updateTaskStatus(testDocPath, "1.2", "cancelled");
+			await tasks.updateTaskStatus(testDocPath, "2.1", "completed");
+			await tasks.updateTaskStatus(testDocPath, "2.2", "completed");
+
+			const progress = await tasks.getDocumentProgress(testDocPath);
+
+			// Should have 2 active tasks, both completed
+			expect(progress.totalTasks).toBe(2);
+			expect(progress.completedTasks).toBe(2);
+			expect(progress.percentageComplete).toBe(100);
+		});
+
+		it("should handle all cancelled tasks", async () => {
+			// Cancel all tasks
+			await tasks.updateTaskStatus(testDocPath, "1.1", "cancelled");
+			await tasks.updateTaskStatus(testDocPath, "1.2", "cancelled");
+			await tasks.updateTaskStatus(testDocPath, "2.1", "cancelled");
+			await tasks.updateTaskStatus(testDocPath, "2.2", "cancelled");
+
+			const progress = await tasks.getDocumentProgress(testDocPath);
+
+			expect(progress.totalTasks).toBe(0);
+			expect(progress.completedTasks).toBe(0);
+			expect(progress.percentageComplete).toBe(0);
+		});
+
+		it("should count TODO and in-progress tasks in total", async () => {
+			// Complete one, leave rest as todo/in-progress
+			await tasks.updateTaskStatus(testDocPath, "2.2", "completed");
+
+			const progress = await tasks.getDocumentProgress(testDocPath);
+
+			// 2 todo + 1 in progress + 1 completed = 4 total
+			expect(progress.totalTasks).toBe(4);
+			expect(progress.completedTasks).toBe(1);
+			expect(progress.percentageComplete).toBe(25);
+		});
+
+		it("should use document title as name", async () => {
+			const progress = await tasks.getDocumentProgress(testDocPath);
+
+			expect(progress.documentName).toBe("Test Feature");
+		});
+
+		it("should calculate correct percentage for partial completion", async () => {
+			// Sample doc already has 1 completed (2.2)
+			// Complete 2 more to have 3 out of 4 total
+			await tasks.updateTaskStatus(testDocPath, "1.1", "completed");
+			await tasks.updateTaskStatus(testDocPath, "1.2", "completed");
+
+			const progress = await tasks.getDocumentProgress(testDocPath);
+
+			expect(progress.totalTasks).toBe(4);
+			expect(progress.completedTasks).toBe(3); // 2.2, 1.1, 1.2
+			expect(progress.percentageComplete).toBe(75); // 3/4 = 75%
+		});
+
+		it("should round percentage to nearest integer", async () => {
+			// Add more tasks to test rounding
+			await tasks.addTask(testDocPath, {
+				list: "api",
+				title: "Task 3",
+				type: "endpoint",
+				project: "apps/api",
+			});
+			await tasks.addTask(testDocPath, {
+				list: "api",
+				title: "Task 4",
+				type: "endpoint",
+				project: "apps/api",
+			});
+
+			// Complete 1 out of 6 tasks = 16.666...%
+			const progress = await tasks.getDocumentProgress(testDocPath);
+
+			expect(progress.totalTasks).toBe(6);
+			expect(progress.completedTasks).toBe(1);
+			expect(progress.percentageComplete).toBe(17); // Rounded from 16.666...
+		});
+	});
 });

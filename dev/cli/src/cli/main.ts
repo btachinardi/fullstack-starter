@@ -1261,6 +1261,118 @@ tasks
 	});
 
 // ----------------------------------------------------------------------------
+// tasks next
+// ----------------------------------------------------------------------------
+
+tasks
+	.command("next")
+	.description("Start the next TODO task (mark as in progress)")
+	.option("-d, --doc <name>", "Document name, path, or partial path")
+	.option("-v, --verbose", "Show detailed progress messages")
+	.action(async (options: { doc?: string; verbose?: boolean }) => {
+		const spinner = options.verbose
+			? ora("Finding next TODO task...").start()
+			: null;
+
+		try {
+			// Discover document
+			const documents = await taskTools.discoverDocuments({ doc: options.doc });
+
+			if (documents.length === 0) {
+				if (spinner) {
+					spinner.fail("No task documents found");
+				}
+				console.log(chalk.yellow("No matching task documents found."));
+				return;
+			}
+
+			const selectedDoc =
+				documents.length === 1
+					? documents[0]
+					: await taskTools.selectDocument(documents);
+
+			if (!selectedDoc) {
+				if (spinner) {
+					spinner.fail("No document selected");
+				}
+				console.error(chalk.red("No document selected"));
+				return;
+			}
+
+			// Start next task
+			const result = await taskTools.startNextTask(selectedDoc.path);
+
+			if (!result.success) {
+				if (spinner) {
+					spinner.fail(result.message);
+				}
+				console.log(
+					chalk.yellow(
+						"No TODO tasks found. All tasks are either in progress, completed, or cancelled.",
+					),
+				);
+				return;
+			}
+
+			if (spinner) {
+				spinner.succeed(result.message);
+			}
+
+			const { task, listName } = result;
+
+			// Display task details (similar to tasks get)
+			console.log(chalk.bold(`\n📋 Task: ${task.id} - ${task.title}\n`));
+
+			console.log(`${chalk.cyan("Title:")}       ${task.title}`);
+			console.log(`${chalk.cyan("Type:")}        ${task.type}`);
+			console.log(`${chalk.cyan("Project:")}     ${task.project}`);
+			console.log(`${chalk.cyan("List:")}        tasks:${listName}`);
+			console.log(
+				`${chalk.cyan("Status:")}      ${getStatusColor(task.status)(task.status)}`,
+			);
+
+			if (task.depends_on && task.depends_on.length > 0) {
+				console.log(
+					`${chalk.cyan("Depends on:")}  ${task.depends_on.join(", ")}`,
+				);
+			}
+
+			if (task.description) {
+				console.log(chalk.bold("\nDescription:"));
+				console.log(`  ${task.description}`);
+			}
+
+			if (task.deliverables && task.deliverables.length > 0) {
+				console.log(chalk.bold("\nDeliverables:"));
+				for (const d of task.deliverables) {
+					console.log(`  ${chalk.gray("•")} ${d}`);
+				}
+			}
+
+			if (task.requirements && task.requirements.length > 0) {
+				console.log(chalk.bold("\nRequirements:"));
+				for (const r of task.requirements) {
+					console.log(`  ${chalk.gray("•")} ${r}`);
+				}
+			}
+
+			// Show completion tip
+			console.log(chalk.bold("\nTo complete this task run:"));
+			console.log(
+				chalk.cyan(
+					`  ${chalk.bold(`\`pnpm tools tasks complete ${task.id} -d ${selectedDoc.name}\``)}`,
+				),
+			);
+		} catch (error) {
+			if (spinner) {
+				spinner.fail("Failed to start next task");
+			}
+			console.error(chalk.red(getErrorMessage(error)));
+			process.exit(1);
+		}
+	});
+
+// ----------------------------------------------------------------------------
 // tasks start
 // ----------------------------------------------------------------------------
 
@@ -1268,9 +1380,17 @@ tasks
 	.command("start <taskId>")
 	.description("Mark a task as in progress")
 	.option("-d, --doc <name>", "Document name, path, or partial path")
-	.action(async (taskId: string, options: { doc?: string }) => {
-		await updateTaskStatusCommand(taskId, "in progress", options.doc);
-	});
+	.option("-v, --verbose", "Show detailed progress messages")
+	.action(
+		async (taskId: string, options: { doc?: string; verbose?: boolean }) => {
+			await updateTaskStatusCommand(
+				taskId,
+				"in progress",
+				options.doc,
+				options.verbose,
+			);
+		},
+	);
 
 // ----------------------------------------------------------------------------
 // tasks complete
@@ -1280,9 +1400,12 @@ tasks
 	.command("complete <taskId>")
 	.description("Mark a task as completed")
 	.option("-d, --doc <name>", "Document name, path, or partial path")
-	.action(async (taskId: string, options: { doc?: string }) => {
-		await updateTaskStatusCommand(taskId, "completed", options.doc);
-	});
+	.option("-v, --verbose", "Show detailed progress messages")
+	.action(
+		async (taskId: string, options: { doc?: string; verbose?: boolean }) => {
+			await updateTaskStatusCommand(taskId, "completed", options.doc, options.verbose);
+		},
+	);
 
 // ----------------------------------------------------------------------------
 // tasks cancel
@@ -1292,9 +1415,12 @@ tasks
 	.command("cancel <taskId>")
 	.description("Mark a task as cancelled")
 	.option("-d, --doc <name>", "Document name, path, or partial path")
-	.action(async (taskId: string, options: { doc?: string }) => {
-		await updateTaskStatusCommand(taskId, "cancelled", options.doc);
-	});
+	.option("-v, --verbose", "Show detailed progress messages")
+	.action(
+		async (taskId: string, options: { doc?: string; verbose?: boolean }) => {
+			await updateTaskStatusCommand(taskId, "cancelled", options.doc, options.verbose);
+		},
+	);
 
 // ----------------------------------------------------------------------------
 // tasks reset
@@ -1304,9 +1430,12 @@ tasks
 	.command("reset <taskId>")
 	.description("Mark a task as todo")
 	.option("-d, --doc <name>", "Document name, path, or partial path")
-	.action(async (taskId: string, options: { doc?: string }) => {
-		await updateTaskStatusCommand(taskId, "todo", options.doc);
-	});
+	.option("-v, --verbose", "Show detailed progress messages")
+	.action(
+		async (taskId: string, options: { doc?: string; verbose?: boolean }) => {
+			await updateTaskStatusCommand(taskId, "todo", options.doc, options.verbose);
+		},
+	);
 
 // ----------------------------------------------------------------------------
 // tasks delete
@@ -1600,15 +1729,20 @@ async function updateTaskStatusCommand(
 	taskId: string,
 	newStatus: TaskStatus,
 	docOption?: string,
+	verbose = false,
 ): Promise<void> {
-	const spinner = ora(`Updating task ${taskId}...`).start();
+	const spinner = verbose ? ora(`Updating task ${taskId}...`).start() : null;
 
 	try {
 		// Discover document
 		const documents = await taskTools.discoverDocuments({ doc: docOption });
 
 		if (documents.length === 0) {
-			spinner.fail("No task documents found");
+			if (spinner) {
+				spinner.fail("No task documents found");
+			} else {
+				console.error(chalk.red("No task documents found"));
+			}
 			return;
 		}
 
@@ -1618,7 +1752,11 @@ async function updateTaskStatusCommand(
 				: await taskTools.selectDocument(documents);
 
 		if (!selectedDoc) {
-			spinner.fail("No document selected");
+			if (spinner) {
+				spinner.fail("No document selected");
+			} else {
+				console.error(chalk.red("No document selected"));
+			}
 			return;
 		}
 
@@ -1630,12 +1768,45 @@ async function updateTaskStatusCommand(
 		);
 
 		if (result.success) {
-			spinner.succeed(result.message);
+			if (spinner) {
+				spinner.succeed(result.message);
+			}
+
+			// Show progress stats when completing a task
+			if (newStatus === "completed") {
+				const progress = await taskTools.getDocumentProgress(selectedDoc.path);
+
+				console.log(
+					chalk.bold(
+						`\n📊 Progress: ${progress.completedTasks}/${progress.totalTasks} tasks completed (${progress.percentageComplete}%)\n`,
+					),
+				);
+
+				if (progress.percentageComplete === 100) {
+					console.log(
+						chalk.green(
+							`🎉 Congratulations! All tasks in ${progress.documentName} are complete!`,
+						),
+					);
+				} else {
+					console.log(
+						chalk.cyan(
+							`Run ${chalk.bold(`\`pnpm tools tasks next -d ${selectedDoc.name}\``)} to start working on the next task.`,
+						),
+					);
+				}
+			}
 		} else {
-			spinner.fail(result.message);
+			if (spinner) {
+				spinner.fail(result.message);
+			} else {
+				console.error(chalk.red(result.message));
+			}
 		}
 	} catch (error) {
-		spinner.fail("Failed to update task status");
+		if (spinner) {
+			spinner.fail("Failed to update task status");
+		}
 		console.error(chalk.red(getErrorMessage(error)));
 		process.exit(1);
 	}

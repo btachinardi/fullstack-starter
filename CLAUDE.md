@@ -222,24 +222,62 @@ The monorepo uses a **layered architecture** separating foundational building bl
 
 ---
 
-### Tools (`cli/tools/`)
+### Development Tools (`dev/cli/`)
 
-**@cli/tools**
+**@dev/cli**
 
 - **CLI utilities** for project management and development workflows
-- **Session Management**: Inspect Claude Code session data (info, agents, tools, files, conversation, bash history)
-- **Log Analysis**: Tail, query, and analyze logs with stats and source tracking
-- **Stack**: Commander.js, Chalk, Ora (spinners), Claude Agent SDK
+- **Architecture**: Vertical module structure (NestJS-like organization)
+- **Stack**: Commander.js, Chalk, Ora (spinners), Vitest
 - **Build**: TypeScript + tsup (bundler)
-- **Usage**: `pnpm tools <command>` or `node cli/tools/dist/cli/main.js`
+- **Usage**: `pnpm tools <command>`
+
+**Tool Modules** (vertical structure):
+- **session** - Parse and analyze Claude Code session files (info, agents, tools, conversation, bash history)
+- **logs** - Query and analyze structured logs (tail, query, stats, sources)
+- **tasks** - Manage task documents (next, list, complete, validate *.tasks.md files)
+- **prisma** - Compose Prisma schemas from imports with plugin support
+- **generate** - Scaffold new tools with vertical module structure
 
 **Key Commands**:
 
 ```bash
-pnpm tools session info          # Session metadata
-pnpm tools session conversation  # View conversation history
-pnpm tools logs tail             # Tail project logs
-pnpm tools logs query <term>     # Search logs
+# Session analysis
+pnpm tools session list
+pnpm tools session info <file>
+pnpm tools session conversation <file>
+pnpm tools session export <file> -o output.json
+
+# Log analysis
+pnpm tools logs tail -n 50
+pnpm tools logs query --source "session-parser" --level error
+pnpm tools logs stats
+
+# Task management
+pnpm tools tasks list-docs
+pnpm tools tasks list --status "in progress"
+pnpm tools tasks next -d <documentName>              # Start next TODO task
+pnpm tools tasks complete <taskId> -d <documentName> # Complete task with progress stats
+pnpm tools tasks start <taskId>                      # Mark as in progress
+pnpm tools tasks cancel <taskId>                     # Mark as cancelled
+pnpm tools tasks get <taskId>                        # View task details
+pnpm tools tasks validate                            # Validate document structure
+# Add --verbose to any command for detailed logging
+
+# Prisma schema composition
+pnpm tools prisma build <schema>
+
+# Tool generation
+pnpm tools generate tool my-tool --description "My tool description"
+```
+
+**Module Structure** (each tool follows this pattern):
+```
+dev/cli/src/tools/<tool>/
+├── <tool>.types.ts      # Type definitions
+├── <tool>.service.ts    # Business logic
+├── <tool>.spec.ts       # Tests
+└── index.ts             # Barrel export
 ```
 
 ---
@@ -452,6 +490,35 @@ libs/health/api/src/
 - Local CI: `pnpm ci:local` runs full pipeline
 - Manual: `pnpm lint:assertions` - Type assertion code review tool (run periodically)
 
+**Complete Validation Pipeline** (run before marking work complete):
+
+```bash
+pnpm lint && pnpm typecheck && pnpm build && pnpm test
+```
+
+**Why each step matters:**
+- `lint`: Code style and quality checks (Biome)
+- `typecheck`: TypeScript type checking (tsc --noEmit)
+- `build`: Compilation and bundling (tsup/webpack/vite) - **separate from typecheck**
+- `test`: Functionality verification (Vitest/Jest)
+
+**Before Marking Work Complete Checklist:**
+- [ ] Run full validation pipeline (all 4 steps pass)
+- [ ] Verify expected outputs exist (use Glob for dist/, build/ artifacts)
+- [ ] For code generators: Test generated output compiles (not just generator code)
+- [ ] For migrations: Verify ALL files migrated (use Glob `**/*.spec.ts`, `**/*.test.ts`)
+- [ ] For agent work: Independently verify outputs (don't trust agent reports alone)
+- [ ] Spot-check 2-3 files to ensure changes are correct
+- [ ] No stale error cache files (.tsbuildinfo, .eslintcache)
+
+**Agent Output Verification:**
+
+After any agent completes work:
+1. Use Glob to verify files agent claimed to create actually exist
+2. Use Read to spot-check 1-2 files for correctness
+3. Run validation pipeline to confirm zero errors
+4. Don't mark complete based on agent report alone - verify independently
+
 ---
 
 ## Development Workflow
@@ -462,8 +529,10 @@ libs/health/api/src/
 4. **Dev**: `pnpm dev` (starts all apps in parallel)
 5. **Build**: `pnpm build` (topological build order)
 6. **Test**: `pnpm test` (all test suites)
-7. **Quality**: `pnpm lint && pnpm typecheck && pnpm format:check`
+7. **Quality**: `pnpm lint && pnpm typecheck && pnpm build && pnpm test` (complete validation)
 8. **Code Review** (optional): `pnpm lint:assertions` - Review type assertions
+
+**Note:** Step 7 runs complete validation pipeline. Build is separate from typecheck in modern tooling (bundlers like tsup, webpack, vite). Always run all 4 steps before marking work complete.
 
 ### Adding New Feature Modules
 
@@ -501,6 +570,64 @@ Feature modules follow the pattern: `libs/<feature>/{api,web}`
 
 ---
 
+## Agent Usage (Critical)
+
+**⚠️ Use specialized agents proactively - don't solve manually when agents exist**
+
+| Trigger | Agent | Don't Use Instead | Impact |
+|---------|-------|-------------------|--------|
+| TypeScript/lint errors | **lint-debugger** | code-writer | ~20 min saved |
+| Multiple test failures | **test-debugger** | manual fixing | ~15 min saved |
+| Turbo cyclic dependency | **monorepo-specialist** | trial and error | ~20 min saved |
+| Package naming/module resolution | **monorepo-specialist** | manual config | ~15 min saved |
+| Need comprehensive tests | **test-writer** | manual writing | ~30 min saved |
+| Complex code refactoring | **code-writer** | manual editing | ~10 min saved |
+| Uncertain about conventions | **AskUserQuestion** | guessing | ~10 min saved |
+| "Find all X" searches | **Explore** | Grep/Glob | 5x faster |
+
+**Agent Selection Guidelines:**
+
+Use **lint-debugger** (not code-writer) when:
+- Multiple TypeScript errors need fixing
+- Linting errors blocking commit
+- Type safety cleanup needed
+- Pre-commit quality check
+
+Use **test-debugger** (not code-writer) when:
+- Multiple tests failing (especially unknown causes)
+- Test failures after refactoring
+- Missing test fixtures/dependencies
+- Need to restore passing test state
+
+Use **test-writer** when:
+- Creating comprehensive test coverage
+- Need 10+ tests for new features
+- Testing patterns need consistency
+
+Use **code-writer** when:
+- Complex refactoring work
+- Creating new features
+- File structure changes
+
+**Verify Agent Outputs (Critical):**
+
+After ANY agent completes work:
+1. **Use Glob** to verify files agent claimed to create actually exist
+   - Example: Agent says "created 3 files" → `Glob pattern: "tools/my-tool/*.ts"`
+2. **Use Read** to spot-check 1-2 files for correctness
+3. **Run validation** pipeline to confirm zero errors
+4. **Don't trust agent reports alone** - verify independently with tools
+
+**Before Creating New Packages:**
+1. **Grep** pattern: `"name"` path: `libs` → see naming conventions
+2. **Read** file: existing similar package's tsconfig.json → see config pattern
+3. **Glob** pattern: `libs/similar-package/**/*.ts` → see structure
+4. Implement matching discovered patterns
+
+**Critical:** Use specialized tools (**Grep**, **Read**, **Glob**), not bash commands
+
+---
+
 ## Key Technologies
 
 - **Frontend**: Next.js 16, React 19, Tailwind CSS, Turbopack
@@ -520,6 +647,25 @@ Feature modules follow the pattern: `libs/<feature>/{api,web}`
 - **Documentation**: Update CLAUDE.md when adding/changing workspace structure
 - **Commits**: Follow Conventional Commits for changelog generation
 - **PRs**: Keep focused and small; link to PRD/specs when applicable
+
+**Validation & Verification:**
+- Run complete validation pipeline BEFORE marking work complete (not after)
+- Verify outputs exist independently (Glob for artifacts, Read for spot-checks)
+- For code generators: Test generated output compiles, not just generator code
+- For migrations: Use Glob to find ALL related files (`**/*.spec.ts`) before cleanup
+- Don't claim completion based on "work done" - completion requires validation passing
+
+**Helpful Mindset:**
+- Help fix ALL issues proactively, regardless of who caused them
+- No "not my problem" or "pre-existing issue" deflections
+- Role is to solve problems, not assign blame or make excuses
+- When issues arise, work systematically to resolve them
+
+**Professional Communication:**
+- Use factual technical language (no marketing superlatives)
+- No emojis unless user explicitly requests them
+- No "Perfect!", "Excellent!", "Amazing!" - use precise descriptions
+- Clear, concise, professional tone for tooling work
 
 ### Architecture Best Practices
 
@@ -547,6 +693,27 @@ Feature modules follow the pattern: `libs/<feature>/{api,web}`
 - **Flat structure**: If module has 1-5 files, keep them at src/ root
 - **Organized structure**: If module has 6+ files or clear sub-domains, use folders
 - **No single-file folders**: Never wrap one file in a folder
+
+**Migration & Refactoring Patterns:**
+
+When migrating/refactoring code structure:
+1. **Find ALL related files** before starting:
+   - Use Glob: `**/*.spec.ts`, `**/*.test.ts`, `**/*.d.ts`
+   - Don't forget test files, type definitions, documentation
+   - Create comprehensive file list first
+2. **Handle duplicate code during transitions**:
+   - Code may exist in both old and new locations
+   - Use Grep to find ALL instances of errors
+   - Fix errors in ALL locations until old structure deleted
+   - Example: During migration, fix both `src/old/file.ts` and `src/new/file.ts`
+3. **Verify migration completeness**:
+   - Use Glob to confirm all files migrated
+   - Check for orphaned files in old structure
+   - Don't suggest cleanup until verification complete
+4. **Update tests after refactoring**:
+   - Tests may have assertions reflecting old behavior
+   - Update test expectations to match new structure
+   - Example: Test expects old import path - update to new path
 
 ---
 
@@ -681,19 +848,34 @@ function handleData(data: unknown) {
 
 ### Code Quality Checklist
 
-Before committing code, ensure:
+**Before marking any work complete:**
 
-- [ ] Zero TypeScript errors (`pnpm typecheck`)
-- [ ] Zero Biome errors (`pnpm lint`)
-- [ ] All tests passing (`pnpm test`)
+**Validation Pipeline (all must pass):**
+- [ ] Zero Biome errors: `pnpm lint` → exit code 0
+- [ ] Zero TypeScript errors: `pnpm typecheck` → exit code 0
+- [ ] Build succeeds: `pnpm build` → exit code 0 (if build script exists)
+- [ ] All tests passing: `pnpm test` → 100% pass rate
+
+**Independent Verification:**
+- [ ] Expected outputs verified with Glob (dist/, build/ artifacts exist if build ran)
+- [ ] No stale error cache (.tsbuildinfo, .eslintcache files removed)
+- [ ] For migrations: ALL files migrated (verify with Glob `**/*.spec.ts`, `**/*.test.ts`)
+- [ ] For code generators: Generated output compiles (test sample output, not just generator)
+- [ ] For agent work: Files agent claimed to create actually exist (verify with Glob)
+- [ ] Spot-checked 2-3 files with Read to ensure changes are correct
+
+**Type Safety (enforced in validation above):**
 - [ ] No `any` types
-- [ ] No type assertions (`as`)
-- [ ] No non-null assertions (`!`)
+- [ ] No type assertions (`as`) - use type guards instead
+- [ ] No non-null assertions (`!`) - use explicit null checks
 - [ ] All `unknown` values validated with type guards
 - [ ] All regex matches checked for null/undefined
 - [ ] All array accesses checked for undefined
 - [ ] All optional properties handled
 - [ ] No unused variables or imports
+
+**Completion Definition:**
+Work is complete when: Validation pipeline passes AND independent verification confirms outputs exist. "Work implemented" ≠ "Work complete" - completion requires validation.
 
 ### Type Guard Pattern
 

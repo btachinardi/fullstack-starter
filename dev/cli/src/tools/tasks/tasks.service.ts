@@ -2,7 +2,15 @@
  * Tasks Management Tool
  *
  * Core functions for managing *.tasks.md files with YAML task blocks.
- * Supports document discovery, parsing, filtering, and task operations.
+ * Supports document discovery, parsing, filtering, task lifecycle management,
+ * progress tracking, and automated next-task workflow.
+ *
+ * Features:
+ * - Automatic next task selection and status updates
+ * - Progress tracking (excludes cancelled tasks)
+ * - Task lifecycle management (todo → in progress → completed/cancelled)
+ * - Document validation
+ * - Flexible document discovery
  */
 
 import { readFile, writeFile } from "node:fs/promises";
@@ -338,6 +346,45 @@ export async function listTaskLists(documentPath: string): Promise<{
 	return { document, taskLists };
 }
 
+/**
+ * Get progress statistics for a document
+ * Excludes cancelled tasks from total count
+ */
+export async function getDocumentProgress(documentPath: string): Promise<{
+	totalTasks: number;
+	completedTasks: number;
+	percentageComplete: number;
+	documentName: string;
+}> {
+	const document = await parseTaskDocument(documentPath);
+	let completedTasks = 0;
+
+	// Only count tasks that are not cancelled (todo + in progress + completed)
+	const activeTasks: Task[] = [];
+
+	for (const taskList of document.taskLists) {
+		for (const task of taskList.tasks) {
+			if (task.status !== "cancelled") {
+				activeTasks.push(task);
+				if (task.status === "completed") {
+					completedTasks++;
+				}
+			}
+		}
+	}
+
+	const totalTasks = activeTasks.length;
+	const percentageComplete =
+		totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+	return {
+		totalTasks,
+		completedTasks,
+		percentageComplete,
+		documentName: document.frontmatter.title || basename(documentPath, ".tasks.md"),
+	};
+}
+
 // ============================================================================
 // Task Operations
 // ============================================================================
@@ -384,6 +431,50 @@ export async function updateTaskStatus(
 	return {
 		success: false,
 		message: `Task ${taskId} not found in document`,
+	};
+}
+
+/**
+ * Start the next TODO task (mark as in progress) and return its details
+ */
+export async function startNextTask(
+	documentPath: string,
+): Promise<
+	| { success: true; task: Task; listName: string; message: string }
+	| { success: false; message: string }
+> {
+	const document = await parseTaskDocument(documentPath);
+
+	// Find first TODO task across all task lists
+	for (const taskList of document.taskLists) {
+		const todoTask = taskList.tasks.find((t) => t.status === "todo");
+		if (todoTask) {
+			// Update status to in progress
+			const result = await updateTaskStatus(
+				documentPath,
+				todoTask.id,
+				"in progress",
+			);
+
+			if (result.success) {
+				return {
+					success: true,
+					task: { ...todoTask, status: "in progress" },
+					listName: taskList.name,
+					message: result.message,
+				};
+			}
+
+			return {
+				success: false,
+				message: result.message,
+			};
+		}
+	}
+
+	return {
+		success: false,
+		message: "No TODO tasks found in document",
 	};
 }
 
