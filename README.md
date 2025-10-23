@@ -1,42 +1,50 @@
 # Full-Stack Starter
 
-A batteries-included **monorepo starter** for shipping full-stack features with high quality and repeatability. It implements the **Feature Delivery Playbook** (workflows, checklists, templates) and a stack-specific baseline:
+A batteries-included **modular monorepo** for shipping full-stack TypeScript applications with high quality standards and streamlined developer experience:
 
-* **Frontend**: React + Vite + Tailwind v4 + TanStack (Query/Router/Store/DevTools) + shadcn/ui
-* **Backend**: NestJS + Prisma + PostgreSQL + Redis + BullMQ (queues, webhooks)
-* **Tooling**: PNPM Workspaces + Turborepo + Biome + Playwright + Vitest
-* **Ops**: GitHub Actions CI, Docker Compose (local), Render.com manifests, Dependabot
-* **DX**: Shared packages, domain types, test helpers, and a Playbook with PRD/API/UI/Test templates
-* **(Planned)**: Interactive Manual API Playground (scenario stories + SSE logs + queue visualization) and Develop dashboards for AI-assisted workflows
+* **Frontend**: Next.js 16 + React 19 + Tailwind v4 + shadcn/ui components
+* **Backend**: NestJS 11 + Prisma 6 + Better Auth + Health checks
+* **Tooling**: PNPM Workspaces + Turborepo + Biome + TypeScript 5.9 (strict mode)
+* **Architecture**: Consolidated core packages (4 total) + modular feature modules
+* **DX**: Zero-config bootstrap, shared error classes, type-safe workspace dependencies
+* **(Planned)**: Feature modules (auth, notifications, payments), TanStack wrappers, API playground
 
 ---
 
 ## Repository layout
 
 ```
-apps/
-  api/          # NestJS HTTP API (OpenAPI, auth, queues, webhooks)
-  web/          # Vite + React app (TanStack Query/Router/Store, shadcn/ui)
-  docs/         # Placeholder for documentation site (Docusaurus/Next/MDX)
+fullstack-starter/
+├── apps/                   (@apps/*) - Deployable applications
+│   ├── api/               → @apps/api (NestJS 11 + Prisma + Better Auth)
+│   └── web/               → @apps/web (Next.js 16 + React 19)
+├── dev/                    (@dev/*) - Development tools
+│   └── cli/               → @dev/cli (future - CLI tools migration)
+├── configs/                (@configs/*) - Shared configurations
+│   ├── typescript/        → @configs/typescript
+│   └── jest/              → @configs/jest
+├── libs/
+│   └── core/              (@libs/core/*) - 4 consolidated core packages
+│       ├── api/           → @libs/core/api (All backend utilities)
+│       ├── web/           → @libs/core/web (All frontend utilities)
+│       ├── ui/            → @libs/core/ui (Components + cn utility)
+│       └── utils/         → @libs/core/utils (Pure TS + shared errors)
+└── cli/                    (Legacy - to be migrated to dev/)
+    └── tools/             → @cli/tools (Session management, log analysis)
+```
 
-shared/
-  domain/       # Framework-agnostic domain types & logic (imported by api/web)
-
-develop/
-  api/          # (Roadmap) Automation/agents dashboard for API workflows
-  web/          # (Roadmap) Web dashboard to orchestrate PRDs/features/agents
-
-packages/
-  api/          # Shared API utilities (client setup, typing, OpenAPI hooks)
-  web/          # Shared UI primitives/utilities (wrapped shadcn components)
-  docs/         # Docs components/utilities (MDX helpers, code blocks)
-  tests/        # Shared test configs & helpers (Vitest/Playwright/MSW)
-
-playbook/
-  README.md                 # Master playbook overview
-  definitions/              # DoR/DoD, quality gates, branching, coding standards
-  templates/                # PRD, API spec, UI spec, Test Plan, QA, ADR, RFC, etc.
-  workflows/                # API/UI/DB/infra/security/a11y/perf/analytics tracks
+**Future feature modules** (follow `libs/<feature>/{api,web}` pattern):
+```
+libs/
+├── auth/                   (@libs/auth/*)
+│   ├── api/               → @libs/auth/api (JWT, guards, strategies)
+│   └── web/               → @libs/auth/web (Login, register, protected routes)
+├── notifications/          (@libs/notifications/*)
+│   ├── api/               → @libs/notifications/api
+│   └── web/               → @libs/notifications/web
+└── payments/               (@libs/payments/*)
+    ├── api/               → @libs/payments/api
+    └── web/               → @libs/payments/web
 ```
 
 ---
@@ -142,13 +150,20 @@ Scenarios live in repo YAML files and link from API docs. This is scaffolded for
 
 ---
 
-## Packages overview
+## Core Packages Overview
 
-* **shared/domain**: business types & pure logic—framework-agnostic and reusable.
-* **packages/api**: HTTP client setup, error handling, serialization, generated clients (optional).
-* **packages/web**: UI primitives (wrapped shadcn/ui) with Tailwind tokens and a11y defaults.
-* **packages/docs**: MDX components/utilities for docs, code blocks, and API example embedding.
-* **packages/tests**: central test presets & helpers (fixtures, MSW, data generators, Playwright config).
+The monorepo uses **4 consolidated core packages** organized by concern:
+
+* **@libs/core/api**: All backend utilities (NestJS, Prisma, auth, health checks, bootstrap)
+* **@libs/core/web**: All frontend utilities (Next.js/React hooks, browser utilities)
+* **@libs/core/ui**: Component library (shadcn/ui) + UI utilities (`cn()` for Tailwind)
+* **@libs/core/utils**: Pure TypeScript utilities + shared error classes (NetworkError, etc.)
+
+**Key architectural decisions:**
+* Shared errors in `@libs/core/utils` - used by BOTH frontend and backend
+* `cn()` utility in `@libs/core/ui` - UI-specific, not in generic utils
+* Zero dependencies in `@libs/core/utils` - pure TypeScript only
+* Context API for frontend DI - no Angular-style DI containers
 
 ---
 

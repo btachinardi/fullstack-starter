@@ -1,7 +1,6 @@
 ---
 name: subagent-writer
 description: Writes (creates and updates) Claude Code sub-agents following project templates and best practices
-tools: Read, Write, Glob, Grep
 model: claude-sonnet-4-5
 autoCommit: true
 ---
@@ -155,56 +154,67 @@ You have access to: Read, Write, Glob, Grep
    ```
 
 2. Write agent identity section:
+
    - Agent name and one-line purpose
    - Core directive with key responsibilities
    - When to use this agent (3+ scenarios)
    - Operating mode
 
 3. Write configuration notes section:
+
    - Tool access explanation
    - Model selection rationale
    - Reference to MODEL_GUIDELINES.md
 
 4. Write available tools section:
+
    - List specific tools or "All tools (inherited)"
    - Tool usage priority and when to use each
 
 5. Write methodology section with 3-5 phases:
+
    - Each phase with objective, steps, and outputs
    - Clear, actionable steps
    - Expected outputs defined
 
 6. Write quality standards section:
+
    - Completeness criteria checklist
    - Output format specifications
    - Validation requirements
 
 7. Write communication protocol section:
+
    - Progress updates format
    - Final report structure with all sections
 
 8. Write behavioral guidelines section:
+
    - Decision-making guidance
    - Code/implementation standards if applicable
    - Safety and risk management
    - Scope management boundaries
 
 9. Write error handling section:
+
    - When blocked (what to do)
    - When uncertain (how to proceed)
    - When complete (validation steps)
 
 10. Write examples section (1-3 examples):
+
     - Input: what agent receives
     - Process: how agent approaches it
     - Output: what agent delivers
 
 11. Write integration & delegation section:
+
     - Works well with (other agents)
     - Delegates to (when and what)
     - Handoff protocol
 
 12. Write success metrics section:
+
     - Measurable success criteria
 
 13. Add metadata footer:
@@ -235,11 +245,13 @@ You have access to: Read, Write, Glob, Grep
 **Steps:**
 
 1. Determine file location: `.claude/agents/[category]/[agent-name].md`
+
    - If no category specified, use `.claude/agents/[agent-name].md`
    - Common categories: `analysis/`, `generation/`, `workflow/`, `validation/`, `claude/`
    - For updates: use existing file location
 
 2. Use temporary file workflow for .claude folder files:
+
    ```bash
    # Create tmp directory structure if needed
    mkdir -p tmp/agents/[category]
@@ -251,6 +263,7 @@ You have access to: Read, Write, Glob, Grep
    ```
 
 3. Validate file operation:
+
    - Confirm file written successfully
    - Check file is in correct location
    - Verify YAML frontmatter format
@@ -475,6 +488,7 @@ After writing the agent:
 **Process:**
 
 1. Requirements Analysis:
+
    - Operation: New agent creation
    - Purpose: Code quality analysis
    - Tools needed: Read, Grep, Bash (for running linters)
@@ -482,6 +496,7 @@ After writing the agent:
    - Name: code-quality-analyzer
 
 2. Agent Design:
+
    - Phase 1: Code Discovery (find files to analyze)
    - Phase 2: Quality Analysis (check patterns, metrics)
    - Phase 3: Recommendation Generation (suggest improvements)
@@ -506,12 +521,14 @@ After writing the agent:
 **Process:**
 
 1. Requirements Analysis:
+
    - Operation: Agent update
    - Target: `.claude/agents/generation/react-component-generator.md`
    - Read existing file to understand current structure
    - Identify gaps: missing error handling section, outdated examples
 
 2. Agent Design:
+
    - Load current template and guidelines
    - Compare with existing agent structure
    - Plan updates: add error handling, update examples, refine phases
@@ -539,6 +556,7 @@ After writing the agent:
 **Process:**
 
 1. Requirements Analysis:
+
    - Operation: New agent creation
    - Purpose: TypeScript validation
    - Tools: Read, Bash (for tsc command)
@@ -546,6 +564,7 @@ After writing the agent:
    - Name: typescript-validator
 
 2. Agent Design:
+
    - Phase 1: File Discovery (find TS files)
    - Phase 2: Compilation Check (run tsc)
    - Phase 3: Error Reporting (parse and format errors)
@@ -568,12 +587,14 @@ After writing the agent:
 **Process:**
 
 1. Requirements Analysis:
+
    - Operation: Major agent refactor/migration
    - Current: `.claude/agents/claude/subagent-creator.md`
    - Target: `.claude/agents/claude/subagent-writer.md`
    - Changes: rename, expand scope, update terminology
 
 2. Agent Design:
+
    - Load existing agent structure
    - Plan terminology updates: "create" → "write", "creator" → "writer"
    - Add update workflows to methodology

@@ -1,0 +1,43 @@
+{
+	"name": "@libs/email/api",
+	"version": "0.0.0",
+	"private": true,
+	"license": "MIT",
+	"description": "Email service using Resend for sending transactional emails",
+	"scripts": {
+		"dev": "pnpm build --watch",
+		"build": "tsc -b -v"
+	},
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"./dist/**"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"require": "./dist/index.js"
+		},
+		"./*": {
+			"import": "./dist/*.js",
+			"require": "./dist/*.js"
+		}
+	},
+	"dependencies": {
+		"@libs/core/utils": "workspace:*",
+		"@libs/email/templates": "workspace:*",
+		"@nestjs/common": "^11.1.7",
+		"@react-email/render": "^1.0.1",
+		"resend": "^4.0.1"
+	},
+	"devDependencies": {
+		"@configs/typescript": "workspace:*",
+		"@types/node": "^24.9.1",
+		"@types/react": "^19.0.8",
+		"react": "^19.0.0",
+		"typescript": "5.9.3"
+	}
+}

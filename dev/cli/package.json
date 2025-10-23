@@ -1,0 +1,32 @@
+{
+	"name": "@dev/cli",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Development CLI tools for session management and log analysis",
+	"scripts": {
+		"dev": "tsup --watch",
+		"build": "tsup",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"lint": "tsc --noEmit"
+	},
+	"bin": {
+		"tools": "./dist/cli/main.js"
+	},
+	"dependencies": {
+		"chalk": "^5.3.0",
+		"commander": "^12.1.0",
+		"glob": "^11.0.3",
+		"js-yaml": "^4.1.0",
+		"ora": "^8.1.1"
+	},
+	"devDependencies": {
+		"@configs/typescript": "workspace:*",
+		"@types/js-yaml": "^4.0.9",
+		"@types/node": "^24.9.1",
+		"tsup": "^8.3.5",
+		"typescript": "5.9.3",
+		"vitest": "^2.1.8"
+	}
+}

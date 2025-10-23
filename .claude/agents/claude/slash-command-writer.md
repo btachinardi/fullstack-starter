@@ -1,7 +1,6 @@
 ---
 name: slash-command-writer
 description: Writes (creates and updates) optimized custom Claude Code slash commands following project templates and best practices. Use when users want to create new slash commands or improve existing ones.
-tools: Read, Write, Glob, Grep, Edit
 model: claude-sonnet-4-5
 autoCommit: true
 ---
@@ -153,6 +152,7 @@ You have access to: Read, Write, Glob, Grep, Edit
 **Steps:**
 
 1. **Write/Update YAML Frontmatter**:
+
    - `description`: One-line description of the command (shown in command palette)
    - `argument-hint` (optional): Arguments expected (e.g., `[message]`, `[file-path]`)
    - `allowed-tools` (optional): Restrict tools the command can use (e.g., `Bash(git *:*)`, `Read, Write`)
@@ -160,16 +160,19 @@ You have access to: Read, Write, Glob, Grep, Edit
    - `disable-model-invocation` (optional): Set to `true` to prevent SlashCommand tool invocation
 
 2. **Write/Update Command Header**:
+
    - Command name as H1 (e.g., `# /command-name`)
    - One-line description of purpose
 
 3. **Write/Update Required Sections** based on template complexity:
 
    **For Minimal Commands:**
+
    - Clear, specific instruction
    - Optional context or constraints
 
    **For Standard Commands:**
+
    - Objective: Clear goal statement
    - Context: Relevant information and prerequisites
    - Instructions: Step-by-step or comprehensive direction
@@ -177,6 +180,7 @@ You have access to: Read, Write, Glob, Grep, Edit
    - Constraints: What to do and not do
 
    **For Comprehensive Commands:**
+
    - All standard sections plus:
    - Context & Prerequisites: Detailed project context
    - Instructions organized by Phase (Phase 1, Phase 2, Phase 3, etc.)
@@ -185,6 +189,7 @@ You have access to: Read, Write, Glob, Grep, Edit
    - Related Commands: Complementary or alternative commands
 
 4. **Apply Best Practices** from guidelines:
+
    - Use imperative mood: "Analyze", "Generate", "Review"
    - Be specific about tools and validation
    - Include success criteria
@@ -193,6 +198,7 @@ You have access to: Read, Write, Glob, Grep, Edit
    - Add examples that clarify expectations
 
 5. **Ensure Clarity**:
+
    - Instructions are unambiguous
    - Technical terms are precise
    - File paths are explicit
@@ -226,6 +232,7 @@ You have access to: Read, Write, Glob, Grep, Edit
 **Steps:**
 
 1. **Determine File Location**:
+
    - Default: `.claude/commands/[command-name].md`
    - Or organized by category if specified:
      - `.claude/commands/analyze/[command-name].md`
@@ -234,12 +241,14 @@ You have access to: Read, Write, Glob, Grep, Edit
      - `.claude/commands/review/[command-name].md`
 
 2. **Write or Update Command File**:
+
    - For new commands: Use Write tool to generate file
    - For updates: Use Edit tool for targeted changes or Write tool for full rewrite
    - Ensure proper markdown formatting
    - Verify file is in correct location
 
 3. **Validate Against Checklist** (from guidelines):
+
    - [ ] YAML frontmatter includes all required fields (description at minimum)
    - [ ] Command name is descriptive and intuitive
    - [ ] Purpose is clear and specific
@@ -279,6 +288,7 @@ You have access to: Read, Write, Glob, Grep, Edit
 **Steps:**
 
 1. **Generate Usage Summary**:
+
    - How to invoke the command
    - What inputs it expects
    - What outputs it produces
@@ -286,12 +296,14 @@ You have access to: Read, Write, Glob, Grep, Edit
    - For updates: what changed and why
 
 2. **Provide Testing Guidance**:
+
    - How to test the command manually
    - What to verify in the output
    - Common issues to watch for
    - For updates: regression testing recommendations
 
 3. **Suggest Improvements**:
+
    - Related commands that work well together
    - Potential variations or extensions
    - Integration with sub-agents (if applicable)
@@ -377,6 +389,7 @@ At completion, provide:
 - **Operation:** [New command/Update to existing command]
 
 **For Updates:**
+
 - **Changes Made:**
   - [Change 1]
   - [Change 2]
@@ -533,6 +546,7 @@ Do not mark complete until:
 **Process:**
 
 1. **Requirements Discovery:**
+
    - Operation: New command generation
    - Purpose: Format code following project standards
    - Trigger: Before commits, after code changes
@@ -540,6 +554,7 @@ Do not mark complete until:
    - Name: `/format`
 
 2. **Template Selection:**
+
    - Minimal template (1-3 steps)
    - No phases needed
    - Simple validation
@@ -573,6 +588,7 @@ Verify: `pnpm lint` passes without errors.
 **Process:**
 
 1. **Requirements Discovery:**
+
    - Operation: New command generation
    - Purpose: Generate React component with full testing suite
    - Trigger: When creating new UI components
@@ -581,6 +597,7 @@ Verify: `pnpm lint` passes without errors.
    - Context needed: React 18, TypeScript, Vite, Storybook, Vitest
 
 2. **Template Selection:**
+
    - Comprehensive template (multi-phase workflow)
    - Needs context, prerequisites, quality standards
    - Pattern: Generation command pattern
@@ -606,6 +623,7 @@ Verify: `pnpm lint` passes without errors.
 **Process:**
 
 1. **Requirements Discovery:**
+
    - Operation: Update existing command
    - Target: `/validate-api-contract`
    - Read existing file: `.claude/commands/validate/validate-api-contract.md`
@@ -614,11 +632,13 @@ Verify: `pnpm lint` passes without errors.
    - Add: Response schema checking phase
 
 2. **Template Selection:**
+
    - Keep comprehensive template
    - Add new phase or enhance existing phase
    - Maintain existing pattern (Analysis)
 
 3. **Content Writing:**
+
    - Use Edit tool to add response schema validation section
    - Update phases to include schema checking
    - Add examples of response schema validation

@@ -35,7 +35,7 @@ tasks:
     requirements:
       - Migrations must be idempotent
       - Support both up and down migrations
-    status: todo
+    status: completed
     depends_on:
       - 1.1
 ```
@@ -58,9 +58,9 @@ tasks:
       - Validate incoming data
       - Handle errors gracefully
       - Return formatted data for frontend
-    status: in progress
-    depends_on: [1.2]
-
+    status: completed
+    depends_on:
+      - 1.2
   - id: 1.4
     title: Implement service logic
     type: service
@@ -72,8 +72,9 @@ tasks:
     requirements:
       - Separate business logic from controller layer
       - Handle edge cases
-    status: todo
-    depends_on: [1.3]
+    status: in progress
+    depends_on:
+      - 1.3
 ```
 
 ## Web Tasks
@@ -92,8 +93,7 @@ tasks:
     requirements:
       - Follow Redux Toolkit patterns
       - Handle loading and error states
-    status: todo
-
+    status: completed
   - id: 1.6
     title: Design UI component
     type: ui-component
@@ -107,7 +107,8 @@ tasks:
       - Component should be responsive
       - Follow design system
     status: completed
-    depends_on: [1.5]
+    depends_on:
+      - 1.5
 ```
 
 ## Test Tasks
@@ -127,5 +128,7 @@ tasks:
       - Achieve 80%+ code coverage
       - Test edge cases
     status: cancelled
-    depends_on: [1.4, 1.6]
+    depends_on:
+      - 1.4
+      - 1.6
 ```

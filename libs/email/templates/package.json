@@ -1,0 +1,28 @@
+{
+	"name": "@libs/email/templates",
+	"version": "0.0.0",
+	"private": true,
+	"license": "MIT",
+	"description": "Email templates built with React Email",
+	"scripts": {
+		"dev": "email dev --dir src/emails --port 3002",
+		"build": "echo 'No build needed - using source files directly'",
+		"check": "echo 'Type checking skipped for email templates'"
+	},
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"exports": {
+		".": "./src/index.ts",
+		"./*": "./src/*"
+	},
+	"dependencies": {
+		"@react-email/components": "^0.0.29",
+		"react": "^19.0.0"
+	},
+	"devDependencies": {
+		"@configs/typescript": "workspace:*",
+		"@types/react": "^19.0.8",
+		"react-email": "^3.0.3",
+		"typescript": "5.9.3"
+	}
+}

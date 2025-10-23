@@ -1,15 +1,15 @@
 {
-  "recommendations": [
-    "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode",
-    "bradlc.vscode-tailwindcss",
-    "Prisma.prisma",
-    "github.vscode-github-actions",
-    "github.vscode-pull-request-github",
-    "ms-azuretools.vscode-docker",
-    "redhat.vscode-yaml",
-    "VisualStudioExptTeam.vscodeintellicode",
-    "usernamehw.errorlens",
-    "streetsidesoftware.code-spell-checker"
-  ]
+	"recommendations": [
+		"dbaeumer.vscode-eslint",
+		"esbenp.prettier-vscode",
+		"bradlc.vscode-tailwindcss",
+		"Prisma.prisma",
+		"github.vscode-github-actions",
+		"github.vscode-pull-request-github",
+		"ms-azuretools.vscode-docker",
+		"redhat.vscode-yaml",
+		"VisualStudioExptTeam.vscodeintellicode",
+		"usernamehw.errorlens",
+		"streetsidesoftware.code-spell-checker"
+	]
 }

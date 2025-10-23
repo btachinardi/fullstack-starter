@@ -1,12 +1,11 @@
 ---
 description: Create comprehensive task documents from PRDs with automated validation and iterative refinement
-allowed-tools: Task, AskUserQuestion, Read
 model: claude-sonnet-4-5
 ---
 
 # /tasks:create
 
-Create comprehensive task documents (*.tasks.md) from PRD specifications through an orchestrated workflow: research (optional) → PRD creation → task generation → validation → iterative refinement.
+Create comprehensive task documents (\*.tasks.md) from PRD specifications through an orchestrated workflow: research (optional) → PRD creation → task generation → validation → iterative refinement.
 
 ## Objective
 
@@ -15,6 +14,7 @@ Orchestrate the complete task document creation workflow by delegating to specia
 ## Context & Prerequisites
 
 **Task Document System:**
+
 - Format: `*.tasks.md` files with YAML frontmatter and YAML task blocks
 - Location: `ai/docs/tasks/`
 - Structure: Organized by task lists (db, api, web, test, doc)
@@ -22,12 +22,14 @@ Orchestrate the complete task document creation workflow by delegating to specia
 - Format Specification: `ai/docs/specifications/task-document-format.md`
 
 **Specialized Subagents:**
+
 - `research-writer`: Conducts preliminary research before PRD creation
 - `prd-writer`: Creates product requirement documents
 - `task-writer`: Generates structured task documents from PRDs
 - `task-validator`: Validates task documents against PRD requirements
 
 **Prerequisites:**
+
 - Subagent definitions exist in `.claude/agents/planning/`
 - Format specification exists at `ai/docs/specifications/task-document-format.md`
 - CLI tool built at `tools/dist/cli/main.js`
@@ -43,6 +45,7 @@ Orchestrate the complete task document creation workflow by delegating to specia
 1. **Check User Input**
 
    Determine what the user provided:
+
    - Full PRD path: `--prd=ai/docs/prds/feature-name-prd.md`
    - Feature name only: `dashboard` or `user-authentication`
    - Detailed requirements: prose description of feature
@@ -80,6 +83,7 @@ Orchestrate the complete task document creation workflow by delegating to specia
 3. **Handle User Choice**
 
    Based on user selection:
+
    - **Use existing PRD:** Ask for PRD path, skip to Phase 3
    - **Create PRD from requirements:** Gather requirements, proceed to Phase 2
    - **Research then create PRD:** Gather research topic, proceed to Phase 1
@@ -101,6 +105,7 @@ Orchestrate the complete task document creation workflow by delegating to specia
    ```
 
 2. **Wait for Research Completion**
+
    - Subagent will analyze codebase
    - Subagent will document findings and recommendations
    - Subagent will create research document
@@ -108,6 +113,7 @@ Orchestrate the complete task document creation workflow by delegating to specia
 3. **Present Research Summary**
 
    Show user:
+
    ```
    ✅ Research Complete
 
@@ -134,11 +140,13 @@ Orchestrate the complete task document creation workflow by delegating to specia
 1. **If Using Existing PRD:**
 
    Read and validate PRD file:
+
    ```
    Read(file_path="{user-provided-prd-path}")
    ```
 
    Verify PRD has:
+
    - Requirements section
    - User stories or acceptance criteria
    - Feature objectives
@@ -154,12 +162,14 @@ Orchestrate the complete task document creation workflow by delegating to specia
      subagent_type="prd-writer",
      description="Create PRD for {feature-name}",
      prompt="Create a comprehensive Product Requirement Document for {feature-name} based on the following requirements:
+   ```
 
 {user-provided-requirements}
 
 {if research exists: 'Reference research findings from ai/docs/research/{feature-name}-research.md'}
 
 Create PRD at ai/docs/prds/{feature-name}-prd.md following the standard PRD format. Include:
+
 - Problem statement
 - Goals and objectives
 - User stories
@@ -168,10 +178,14 @@ Create PRD at ai/docs/prds/{feature-name}-prd.md following the standard PRD form
 - Acceptance criteria
 - Technical considerations
 - Out of scope items"
-   )
-   ```
+  )
+
+  ```
+
+  ```
 
 3. **Wait for PRD Creation**
+
    - Subagent will create comprehensive PRD
    - PRD will be saved to ai/docs/prds/
 
@@ -192,6 +206,7 @@ Create PRD at ai/docs/prds/{feature-name}-prd.md following the standard PRD form
 5. **Get User Approval**
 
    Ask user to review PRD:
+
    ```
    AskUserQuestion(
      questions: [
@@ -235,10 +250,12 @@ Create PRD at ai/docs/prds/{feature-name}-prd.md following the standard PRD form
      subagent_type="task-writer",
      description="Create task document for {feature-name}",
      prompt="Create a comprehensive task document for {feature-name} based on the PRD at {prd-path}.
+   ```
 
 Generate task document at ai/docs/tasks/{feature-name}.tasks.md following the task document format specification at ai/docs/specifications/task-document-format.md.
 
 Requirements:
+
 - Break down all PRD requirements into granular tasks (1-4 hours each)
 - Organize tasks into logical task lists (db, api, web, test, doc)
 - Specify concrete deliverables and requirements for each task
@@ -247,15 +264,20 @@ Requirements:
 - Ensure all tasks have required fields: id, title, type, project, description, status
 
 Create tasks for:
+
 - Database schema and migrations (tasks:db)
 - Backend API endpoints and services (tasks:api)
 - Frontend components and pages (tasks:web)
 - Test cases (tasks:test)
 - Documentation (tasks:doc)"
-   )
-   ```
+  )
+
+  ```
+
+  ```
 
 2. **Wait for Task Document Creation**
+
    - Subagent will analyze PRD
    - Subagent will create structured task document
    - Task document saved to ai/docs/tasks/
@@ -293,24 +315,29 @@ Create tasks for:
      subagent_type="task-validator",
      description="Validate task document (iteration {iteration})",
      prompt="Validate the task document at ai/docs/tasks/{feature-name}.tasks.md against its source PRD.
+   ```
 
 Perform comprehensive validation:
 
 1. Structural Validation
+
    - YAML frontmatter complete
    - All tasks have required fields
    - YAML syntax valid
 
 2. PRD Coverage Validation
+
    - All PRD requirements covered by tasks
    - No orphaned requirements
 
 3. Dependency Validation
+
    - No circular dependencies
    - All depends_on references valid
    - Logical dependency order
 
 4. Task Quality Validation
+
    - Tasks are granular (1-4 hours)
    - Deliverables specific
    - Requirements clear
@@ -321,6 +348,7 @@ Perform comprehensive validation:
    - Error handling addressed
 
 Provide detailed validation report with:
+
 - Pass/Fail status
 - List of errors (severity: error)
 - List of warnings (severity: warning)
@@ -328,128 +356,146 @@ Provide detailed validation report with:
 - PRD coverage percentage
 
 Format as structured validation report."
-   )
-   ```
+)
+
+```
 
 3. **Parse Validation Results**
 
-   Expect validation report with:
-   - Overall status: PASS or FAIL
-   - Error count
-   - Warning count
-   - Specific issues with task IDs
-   - Recommendations
+Expect validation report with:
+- Overall status: PASS or FAIL
+- Error count
+- Warning count
+- Specific issues with task IDs
+- Recommendations
 
 4. **If Validation PASSES:**
 
-   ```
-   ✅ Validation Passed (iteration {iteration}/{max_iterations})
+```
 
-   Task Document: ai/docs/tasks/{feature-name}.tasks.md
-   - {task-count} tasks across {list-count} task lists
-   - {coverage}% PRD requirements covered
-   - 0 errors, {warning-count} warnings
+✅ Validation Passed (iteration {iteration}/{max_iterations})
 
-   The task document is ready for execution!
-   ```
+Task Document: ai/docs/tasks/{feature-name}.tasks.md
 
-   Proceed to Phase 5.
+- {task-count} tasks across {list-count} task lists
+- {coverage}% PRD requirements covered
+- 0 errors, {warning-count} warnings
+
+The task document is ready for execution!
+
+```
+
+Proceed to Phase 5.
 
 5. **If Validation FAILS:**
 
-   ```
-   ❌ Validation Failed (iteration {iteration}/{max_iterations})
+```
 
-   Issues Found:
-   - {error-count} errors
-   - {warning-count} warnings
+❌ Validation Failed (iteration {iteration}/{max_iterations})
 
-   Top Issues:
-   1. {issue-1}
-   2. {issue-2}
-   3. {issue-3}
+Issues Found:
 
-   Refining task document based on validation feedback...
-   ```
+- {error-count} errors
+- {warning-count} warnings
 
-   If `iteration < max_iterations`:
-     - Increment iteration counter
-     - Invoke task-writer with validation feedback (Step 6)
-     - Repeat validation (Step 2)
+Top Issues:
 
-   If `iteration >= max_iterations`:
-     - Validation failed after max attempts
-     - Present best attempt to user (Step 7)
+1.  {issue-1}
+2.  {issue-2}
+3.  {issue-3}
+
+Refining task document based on validation feedback...
+
+```
+
+If `iteration < max_iterations`:
+  - Increment iteration counter
+  - Invoke task-writer with validation feedback (Step 6)
+  - Repeat validation (Step 2)
+
+If `iteration >= max_iterations`:
+  - Validation failed after max attempts
+  - Present best attempt to user (Step 7)
 
 6. **Refine Task Document Based on Validation**
 
-   ```
-   Task(
-     subagent_type="task-writer",
-     description="Refine task document based on validation feedback",
-     prompt="Update the task document at ai/docs/tasks/{feature-name}.tasks.md to address the following validation issues:
+```
+
+Task(
+subagent_type="task-writer",
+description="Refine task document based on validation feedback",
+prompt="Update the task document at ai/docs/tasks/{feature-name}.tasks.md to address the following validation issues:
 
 {validation-issues}
 
 Specific fixes required:
+
 - {issue-1-fix}
 - {issue-2-fix}
 - {issue-3-fix}
 
 Maintain the existing task structure while addressing these issues. Ensure:
+
 - All PRD requirements are covered
 - Dependencies are valid (no circular refs)
 - Tasks have specific deliverables
 - YAML syntax is correct
 
 Update the task document in place."
-   )
-   ```
+)
 
-   After refinement, repeat validation (return to Step 2).
+```
+
+After refinement, repeat validation (return to Step 2).
 
 7. **Handle Max Iterations Exceeded**
 
-   ```
-   ⚠️  Validation did not pass after {max_iterations} iterations.
+```
 
-   Best attempt saved at: ai/docs/tasks/{feature-name}.tasks.md
+⚠️ Validation did not pass after {max_iterations} iterations.
 
-   Remaining issues:
-   - {issue-1}
-   - {issue-2}
+Best attempt saved at: ai/docs/tasks/{feature-name}.tasks.md
 
-   Recommendations:
-   1. Review task document manually
-   2. Address remaining issues
-   3. Run CLI validation: node tools/dist/cli/main.js tasks validate --doc={feature-name}
-   ```
+Remaining issues:
 
-   Ask user how to proceed:
-   ```
-   AskUserQuestion(
-     questions: [
-       {
-         question: "Validation did not pass. How would you like to proceed?",
-         header: "Next Steps",
-         multiSelect: false,
-         options: [
-           {
-             label: "Accept best attempt",
-             description: "Use the task document as-is and fix issues manually"
-           },
-           {
-             label: "Cancel",
-             description: "Discard the task document"
-           }
-         ]
-       }
-     ]
-   )
-   ```
+- {issue-1}
+- {issue-2}
 
-   - If "Accept": Proceed to Phase 5 with warnings
-   - If "Cancel": Exit gracefully
+Recommendations:
+
+1.  Review task document manually
+2.  Address remaining issues
+3.  Run CLI validation: node tools/dist/cli/main.js tasks validate --doc={feature-name}
+
+```
+
+Ask user how to proceed:
+```
+
+AskUserQuestion(
+questions: [
+{
+question: "Validation did not pass. How would you like to proceed?",
+header: "Next Steps",
+multiSelect: false,
+options: [
+{
+label: "Accept best attempt",
+description: "Use the task document as-is and fix issues manually"
+},
+{
+label: "Cancel",
+description: "Discard the task document"
+}
+]
+}
+]
+)
+
+```
+
+- If "Accept": Proceed to Phase 5 with warnings
+- If "Cancel": Exit gracefully
 
 ### Phase 5: Finalization
 
@@ -459,77 +505,88 @@ Update the task document in place."
 
 1. **Run CLI Validation**
 
-   Verify task document is parseable by CLI:
-   ```
-   Bash(
-     command="node tools/dist/cli/main.js tasks validate --doc={feature-name}",
-     description="Validate task document with CLI tool"
-   )
-   ```
+Verify task document is parseable by CLI:
+```
+
+Bash(
+command="node tools/dist/cli/main.js tasks validate --doc={feature-name}",
+description="Validate task document with CLI tool"
+)
+
+```
 
 2. **Present Final Summary**
 
-   ```
-   ✅ Task Document Complete
+```
 
-   **File:** ai/docs/tasks/{feature-name}.tasks.md
+✅ Task Document Complete
 
-   **Summary:**
-   - Total Tasks: {count}
-   - Task Lists: {db, api, web, test, doc}
-   - Source PRD: {prd-path}
-   - Validation Status: ✅ PASSED
+**File:** ai/docs/tasks/{feature-name}.tasks.md
 
-   **Task Breakdown:**
-   - tasks:db: {count} tasks (database schema and migrations)
-   - tasks:api: {count} tasks (backend endpoints and services)
-   - tasks:web: {count} tasks (frontend components and pages)
-   - tasks:test: {count} tasks (test cases)
-   - tasks:doc: {count} tasks (documentation)
+**Summary:**
 
-   **Dependencies:**
-   - Critical path: {task-chain}
-   - Parallel opportunities: {count} tasks can run concurrently
+- Total Tasks: {count}
+- Task Lists: {db, api, web, test, doc}
+- Source PRD: {prd-path}
+- Validation Status: ✅ PASSED
 
-   **Next Steps:**
+**Task Breakdown:**
 
-   1. View all tasks:
-      ```
-      node tools/dist/cli/main.js tasks list --doc={feature-name}
-      ```
+- tasks:db: {count} tasks (database schema and migrations)
+- tasks:api: {count} tasks (backend endpoints and services)
+- tasks:web: {count} tasks (frontend components and pages)
+- tasks:test: {count} tasks (test cases)
+- tasks:doc: {count} tasks (documentation)
 
-   2. View specific task details:
-      ```
-      node tools/dist/cli/main.js tasks get 1.1 --doc={feature-name}
-      ```
+**Dependencies:**
 
-   3. Start working on a task:
-      ```
-      node tools/dist/cli/main.js tasks start 1.1 --doc={feature-name}
-      ```
+- Critical path: {task-chain}
+- Parallel opportunities: {count} tasks can run concurrently
 
-   4. Mark task as complete:
-      ```
-      node tools/dist/cli/main.js tasks complete 1.1 --doc={feature-name}
-      ```
+**Next Steps:**
 
-   5. Track progress:
-      ```
-      node tools/dist/cli/main.js tasks list --doc={feature-name} --status="in progress"
-      ```
+1.  View all tasks:
 
-   **Workflow Created:**
-   {if research exists: '✅ Research: ai/docs/research/{feature-name}-research.md'}
-   ✅ PRD: {prd-path}
-   ✅ Tasks: ai/docs/tasks/{feature-name}.tasks.md
+    ```
+    node tools/dist/cli/main.js tasks list --doc={feature-name}
+    ```
 
-   Your team can now begin execution using the tasks CLI tool!
-   ```
+2.  View specific task details:
+
+    ```
+    node tools/dist/cli/main.js tasks get 1.1 --doc={feature-name}
+    ```
+
+3.  Start working on a task:
+
+    ```
+    node tools/dist/cli/main.js tasks start 1.1 --doc={feature-name}
+    ```
+
+4.  Mark task as complete:
+
+    ```
+    node tools/dist/cli/main.js tasks complete 1.1 --doc={feature-name}
+    ```
+
+5.  Track progress:
+    ```
+    node tools/dist/cli/main.js tasks list --doc={feature-name} --status="in progress"
+    ```
+
+**Workflow Created:**
+{if research exists: '✅ Research: ai/docs/research/{feature-name}-research.md'}
+✅ PRD: {prd-path}
+✅ Tasks: ai/docs/tasks/{feature-name}.tasks.md
+
+Your team can now begin execution using the tasks CLI tool!
+
+```
 
 3. **Store Task Document Path**
 
-   For future reference, the task document is at:
-   `ai/docs/tasks/{feature-name}.tasks.md`
+For future reference, the task document is at:
+`ai/docs/tasks/{feature-name}.tasks.md`
 
 ## Error Handling
 
@@ -588,3 +645,4 @@ Before finalizing, verify:
 **Command Version:** 1.0
 **Last Updated:** 2025-10-21
 **Owner:** Platform Engineering
+```

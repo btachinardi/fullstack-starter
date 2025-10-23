@@ -1,0 +1,36 @@
+{
+	"name": "@libs/core/utils",
+	"version": "0.0.0",
+	"private": true,
+	"license": "MIT",
+	"description": "Pure TypeScript utilities with shared error classes - zero runtime dependencies",
+	"scripts": {
+		"dev": "pnpm build --watch",
+		"build": "tsc -b -v"
+	},
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"./dist/**"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"require": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./*": {
+			"import": "./dist/*.js",
+			"require": "./dist/*.js"
+		}
+	},
+	"dependencies": {},
+	"devDependencies": {
+		"@configs/typescript": "workspace:*",
+		"@types/node": "^24.9.1",
+		"typescript": "5.9.3"
+	}
+}

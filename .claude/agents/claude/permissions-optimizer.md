@@ -1,7 +1,6 @@
 ---
 name: permissions-optimizer
 description: Specialized agent for managing Claude Code permissions with security-focused analysis. Use when you need to consolidate bloated permission lists, analyze security implications of permission patterns, or migrate to the three-tier permission model (ALLOW/DENY/ASK). This agent prevents security vulnerabilities like accidental force pushes, hard resets, or package publishing while maintaining development workflow efficiency.
-tools: Read, Write, Bash
 model: claude-sonnet-4-5
 autoCommit: true
 ---
@@ -134,6 +133,7 @@ You have access to: Read, Write, Bash
 1. For each proposed generic pattern, evaluate against security matrix:
 
    **HIGH RISK (DENY):**
+
    - `git push --force`, `git push -f` → Remote history destruction
    - `git reset --hard` → Permanent local data loss
    - `git clean -f`, `git clean -fd` → Deletes untracked files permanently
@@ -142,6 +142,7 @@ You have access to: Read, Write, Bash
    - Overly broad file globs like `Read(**/*)`
 
    **MEDIUM RISK (ASK):**
+
    - `git pull` → Can cause merge conflicts
    - `git reset` (without --hard) → Can lose uncommitted work
    - `git checkout` to files → Discards changes
@@ -150,6 +151,7 @@ You have access to: Read, Write, Bash
    - `pnpm update` (major versions) → Breaking changes
 
    **LOW RISK (ALLOW):**
+
    - Read-only git: status, diff, log, show, branch
    - Safe git workflow: add, commit, checkout branches, push (non-force)
    - Build commands: install, build, test, lint, format, dev
@@ -198,7 +200,11 @@ You have access to: Read, Write, Bash
          "Bash(git push --force:*)",
          "// ... with risk explanations"
        ],
-       "ask": ["// Complex git operations", "Bash(git pull:*)", "// ... with complexity notes"]
+       "ask": [
+         "// Complex git operations",
+         "Bash(git pull:*)",
+         "// ... with complexity notes"
+       ]
      }
    }
    ```
@@ -229,6 +235,7 @@ You have access to: Read, Write, Bash
 **Steps:**
 
 1. Create security analysis report with sections:
+
    - **Current State:** X permissions, Y are redundant
    - **Proposed Consolidation:** Reduced to Z generic patterns (W% reduction)
    - **Security Breakdown:**
@@ -294,26 +301,31 @@ You have access to: Read, Write, Bash
 **Steps:**
 
 1. Create backup of current settings:
+
    - Read `.claude/settings.local.json`
    - Write to `.claude/settings.local.json.backup` with timestamp
    - Confirm backup created successfully
 
 2. Prepare updated settings object:
+
    - Load current settings
    - Replace `approvedCommands` or `permissions` with new three-tier model
    - Preserve all other settings (hooks, includeCoAuthoredBy, etc.)
    - Ensure valid JSON structure
 
 3. Validate JSON syntax:
+
    - Parse updated settings to ensure valid JSON
    - Check for syntax errors
    - Verify all required fields present
 
 4. Write updated settings:
+
    - Write to `.claude/settings.local.json`
    - Confirm write successful
 
 5. Show diff of changes:
+
    - Display before/after comparison
    - Highlight key changes in each tier
    - Confirm new permission counts
@@ -741,7 +753,11 @@ This protects you from accidental data loss while maintaining workflow efficienc
       "Bash(pnpm publish:*)",
       "Bash(npm publish:*)"
     ],
-    "ask": ["// Package manager - dependency changes", "Bash(pnpm remove:*)", "Bash(pnpm update:*)"]
+    "ask": [
+      "// Package manager - dependency changes",
+      "Bash(pnpm remove:*)",
+      "Bash(pnpm update:*)"
+    ]
   }
 }
 ```

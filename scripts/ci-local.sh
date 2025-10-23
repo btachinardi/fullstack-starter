@@ -61,10 +61,13 @@ echo ""
 
 # Run CI jobs in order (matching GitHub Actions workflow)
 run_job "Setup / Bootstrap Check" "pnpm ci:bootstrap"
-run_job "Lint" "pnpm turbo run lint --filter='./packages/*' --filter='./apps/*'"
-run_job "Type Check" "pnpm turbo run typecheck --filter='./packages/*' --filter='./apps/*'"
-run_job "Test" "pnpm turbo run test --filter='./packages/*' --filter='./apps/*'"
+run_job "Lint" "pnpm turbo run lint"
+run_job "Type Check" "pnpm turbo run typecheck"
+run_job "Test" "pnpm turbo run test"
 run_job "Build" "pnpm turbo run build"
+
+# Security: Dependency audit (fails on high/critical vulnerabilities only)
+run_job "Security / Audit" "pnpm audit --production --audit-level high"
 
 # Optional: Security checks (may require additional setup)
 if command -v gitleaks &> /dev/null; then

@@ -1,61 +1,60 @@
 {
-  "name": "@fullstack-starter/root",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "packageManager": "pnpm@9.15.0",
-  "engines": {
-    "node": ">=20.18.0",
-    "pnpm": ">=9.0.0"
-  },
-  "scripts": {
-    "setup": "node scripts/setup.mjs",
-    "dev": "turbo run dev --parallel",
-    "dev:web": "turbo run dev --filter=@fullstack-starter/web",
-    "dev:api": "turbo run dev --filter=@fullstack-starter/api",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "lint:fix": "turbo run lint --  --fix",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,mdx,css,yaml,yml}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,mdx,css,yaml,yml}\"",
-    "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
-    "test:watch": "turbo run test:watch",
-    "clean": "turbo run clean && rm -rf node_modules .turbo",
-    "smoke": "turbo run smoke",
-    "ci:bootstrap": "node scripts/setup.mjs --check",
-    "ci:local": "bash scripts/ci-local.sh",
-    "ci:quick": "bash scripts/ci-quick.sh",
-    "tools": "pnpm --filter @fullstack-starter/tools tools",
-    "web:scaffold": "node scripts/scaffold-feature.mjs",
-    "web:route": "node scripts/scaffold-route.mjs",
-    "api:migrate": "turbo run migrate --filter=@fullstack-starter/api",
-    "api:seed": "turbo run seed --filter=@fullstack-starter/api",
-    "api:db:studio": "turbo run db:studio --filter=@fullstack-starter/api",
-    "api:queue": "turbo run queue --filter=@fullstack-starter/api",
-    "api:openapi": "turbo run openapi --filter=@fullstack-starter/api",
-    "changeset": "changeset",
-    "version-packages": "changeset version",
-    "release": "turbo run build --filter='./packages/*' && changeset publish"
-  },
-  "devDependencies": {
-    "@changesets/cli": "^2.27.10",
-    "dotenv": "^16.4.7",
-    "dotenv-flow": "^4.1.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^15.3.0",
-    "prettier": "^3.4.2",
-    "turbo": "^2.3.3",
-    "typescript": "^5.7.2",
-    "zod": "^3.24.1"
-  },
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "prettier --write",
-      "eslint --fix"
-    ],
-    "*.{json,md,mdx,css,yaml,yml}": [
-      "prettier --write"
-    ]
-  }
+	"name": "fullstack-starter",
+	"version": "0.0.1",
+	"private": true,
+	"scripts": {
+		"build": "turbo build --concurrency 25",
+		"dev": "turbo dev --concurrency 25",
+		"typecheck": "turbo typecheck",
+		"check": "biome check . --diagnostic-level error --max-diagnostics 200",
+		"check:fix": "biome check . --write --unsafe --max-diagnostics 200 --diagnostic-level error",
+		"check:strict": "biome check . --diagnostic-level warn --max-diagnostics 200",
+		"check:fix:strict": "biome check . --write --unsafe --max-diagnostics 200 --diagnostic-level warn",
+		"prepare": "husky",
+		"docker:up": "docker-compose up -d",
+		"docker:up:dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up",
+		"docker:down": "docker-compose down",
+		"docker:down:volumes": "docker-compose down -v",
+		"docker:build": "docker-compose build",
+		"docker:build:no-cache": "docker-compose build --no-cache",
+		"docker:logs": "docker-compose logs -f",
+		"docker:logs:api": "docker-compose logs -f api",
+		"docker:logs:web": "docker-compose logs -f web",
+		"docker:logs:postgres": "docker-compose logs -f postgres",
+		"docker:restart": "docker-compose restart",
+		"docker:restart:api": "docker-compose restart api",
+		"docker:restart:web": "docker-compose restart web",
+		"docker:ps": "docker-compose ps",
+		"docker:exec:api": "docker-compose exec api sh",
+		"docker:exec:web": "docker-compose exec web sh",
+		"docker:exec:postgres": "docker-compose exec postgres psql -U postgres -d fullstack",
+		"docker:prune": "docker system prune -af --volumes",
+		"tools": "node dev/cli/dist/main.js",
+		"tools:build": "pnpm --filter @dev/cli build",
+		"tools:dev": "pnpm --filter @dev/cli dev",
+		"email:preview": "pnpm --filter @libs/email/templates dev"
+	},
+	"devDependencies": {
+		"@better-auth/cli": "^1.3.29",
+		"@biomejs/biome": "2.2.7",
+		"@configs/typescript": "workspace:*",
+		"husky": "^9.1.7",
+		"turbo": "^2.5.8",
+		"typescript": "5.9.3"
+	},
+	"packageManager": "pnpm@10.19.0",
+	"engines": {
+		"node": ">=20"
+	},
+	"volta": {
+		"node": "25.0.0",
+		"pnpm": "10.19.0"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"@nestjs/core",
+			"core-js-pure",
+			"sharp"
+		]
+	}
 }

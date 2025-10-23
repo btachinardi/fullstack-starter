@@ -114,6 +114,7 @@ Each subagent receives a JSON payload, writes files under `ai/…`, and returns 
 
 - **Purpose:** Persist cross-agent learnings as reviewable feedback.
 - **Input:**
+
   - `authorAgent` (string)
   - `targetAgent` (string)
   - `sources[]`: `{ content, file, lineStart, lineEnd }`
@@ -123,6 +124,7 @@ Each subagent receives a JSON payload, writes files under `ai/…`, and returns 
   - `solutions[]` (optional same shape as `sources`)
 
 - **Side-effects:**
+
   - `git blame` for each `file:lineStart..lineEnd` to list authors; if file is uncommitted, mark `author = authorAgent`.
   - Write `ai/feedback/<targetAgent>/<timestamp>_<slug>.md` using the Feedback Template.
   - Append a row to `ai/indexes/feedback.jsonl`.
@@ -134,6 +136,7 @@ Each subagent receives a JSON payload, writes files under `ai/…`, and returns 
 - **Purpose:** Decide: `accepted` / `rejected` (+ notes).
 - **Inputs:** `{ path, projectRulesPath, prdPath }`
 - **Logic:**
+
   - Validate evidence: sources→observation→insight→feedback chain.
   - Check against **global rules** (`ai/rules/*`) and **target PRD** (`ai/prd/<agent>.prd.md`).
 
@@ -159,6 +162,7 @@ Each subagent receives a JSON payload, writes files under `ai/…`, and returns 
 - **Purpose:** Update PRD from **accepted** feedback (only if PRD-worthy).
 - **Inputs:** `{ prdPath, feedbackPath }`
 - **Strict rules:**
+
   - **Reject** if transient/debug-only/bug-fix guidance.
   - **Accept** only if requirement/process/template gaps.
 
@@ -214,6 +218,7 @@ Each subagent receives a JSON payload, writes files under `ai/…`, and returns 
 
 - **Args:** `[agent-name] [purpose (free text)]`
 - **Flow:**
+
   1. `agent:prd-creator` → PRD
   2. `agent:creator` → agent file
   3. `agent:verifier` → report problems (inline)
@@ -223,6 +228,7 @@ Each subagent receives a JSON payload, writes files under `ai/…`, and returns 
 ### `/agent:update [agent-name] [optional-user-feedback]`
 
 - **Flow:** 0) If `agent-name` omitted and text looks like feedback, **infer** target and **confirm with user** (your rule).
+
   1. If user supplied feedback: `agent:feedback-writer` → `agent:feedback-reviewer` (must pass before proceeding).
   2. Batch-review all `waiting_for_review`: call `agent:feedback-reviewer` per file.
   3. For each newly `accepted`: run `agent:prd-updater`.
@@ -260,7 +266,7 @@ status: waiting_for_review # waiting_for_review | accepted | rejected | supersed
 evidenceScore: null # optional numeric, set by reviewer
 relatedPRDImpact: null # "none" | "minor" | "major"
 sourceAuthors: # filled via git blame
-  - { file: '...', lines: '10-24', authors: ['alice <…>', 'bob <…>'] }
+  - { file: "...", lines: "10-24", authors: ["alice <…>", "bob <…>"] }
 ---
 
 # Observation
@@ -400,35 +406,45 @@ ${table of solution refs}
 ### Core
 
 1. **`agent-feedbacks`**
+
    - `--name=<agent>` `--status=<status>` `--format=table|json`
    - Reads `ai/feedback/<agent>/*.md`, surfaces frontmatter.
 
 2. **`agent-feedback-create`** (used by subagent or slash)
-   - Writes feedback file from JSON payload; computes slug; updates index.
+
+   - Writes feedback file from 'SON payload; computes slug'; updates index.
 
 3. **`agent-feedback-review`**
+
    - `--path=<feedback.md>` `--decision=accept|reject` `--reason="…"`.
    - Mutates status + appends “Review Notes”.
 
 4. **`agent-author-detect`**
+
    - Wrap `git blame` by `file:lineStart..lineEnd`; fallback to `authorAgent`.
 
 5. **`agent-prd-create`**
+
    - From request → PRD (uses PRD template).
 
 6. **`agent-create`**
+
    - From PRD → agent instructions (uses Instructions template).
 
 7. **`agent-prd-update`**
+
    - `--prd=<path>` `--feedback=<path>`; enforces PRD-worthiness rules.
 
 8. **`agent-update-plan`**
+
    - Synthesizes `accepted` feedbacks + PRD into a concrete plan md.
 
 9. **`agent-update-apply`**
+
    - Applies plan to `<agent>.md`; writes changelog; deletes plan.
 
 10. **`agent-verify`**
+
     - Lints presence of mandatory sections, cross-links, token budget, examples, references.
 
 11. **`agent-index`**
@@ -437,12 +453,15 @@ ${table of solution refs}
 ### Supporting / quality-of-life
 
 12. **`agent-next`**
+
     - Returns next agent with pending `waiting_for_review` feedback.
 
 13. **`agent-scan-runtime`**
+
     - Converts logs/test failures into **draft** feedback files via `agent:observation-catcher`.
 
 14. **`.hooks/commit-msg`** (git hook)
+
     - Reject commit if touching `ai/agents/<name>.md` without referencing at least one `accepted` feedback ID or “no-feedback-needed” tag in message.
 
 15. **`agent-report`**
@@ -454,6 +473,7 @@ ${table of solution refs}
 
 - **Feedback statuses:** `waiting_for_review` → `accepted | rejected | superseded` (immutable after decision; superseding creates a new file and links prior id).
 - **Integration lifecycle:**
+
   1. `accepted` → may or may not touch PRD (record decision).
   2. If PRD-worthy → `agent:prd-updater`.
   3. Always considered by `agent:update-planner` for instruction updates.

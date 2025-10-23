@@ -1,124 +1,124 @@
 name: CI
 
 on:
-  push:
-    branches: ['main', 'develop', 'claude/**']
-  pull_request:
-    branches: ['main', 'develop']
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20.18.0'
-  PNPM_VERSION: '9.15.0'
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+    NODE_VERSION: "25.0.0"
+    PNPM_VERSION: "10.19.0"
+    TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+    TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
 jobs:
-  setup:
-    name: Setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    setup:
+        name: Setup
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Setup environment
-        uses: ./.github/actions/setup
+            - name: Setup environment
+              uses: ./.github/actions/setup
 
-      - name: Run bootstrap check
-        run: pnpm ci:bootstrap
+            - name: Run bootstrap check
+              run: pnpm ci:bootstrap
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    lint:
+        name: Lint
+        runs-on: ubuntu-latest
+        needs: setup
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Setup environment
-        uses: ./.github/actions/setup
+            - name: Setup environment
+              uses: ./.github/actions/setup
 
-      - name: Run linting
-        run: pnpm turbo run lint
+            - name: Run linting
+              run: pnpm turbo run lint
 
-  typecheck:
-    name: Type Check
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    typecheck:
+        name: Type Check
+        runs-on: ubuntu-latest
+        needs: setup
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Setup environment
-        uses: ./.github/actions/setup
+            - name: Setup environment
+              uses: ./.github/actions/setup
 
-      - name: Run type checking
-        run: pnpm turbo run typecheck
+            - name: Run type checking
+              run: pnpm turbo run typecheck
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    test:
+        name: Test
+        runs-on: ubuntu-latest
+        needs: setup
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Setup environment
-        uses: ./.github/actions/setup
+            - name: Setup environment
+              uses: ./.github/actions/setup
 
-      - name: Run tests
-        run: pnpm turbo run test
+            - name: Run tests
+              run: pnpm turbo run test
 
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: [lint, typecheck, test]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+        needs: [lint, typecheck, test]
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Setup environment
-        uses: ./.github/actions/setup
+            - name: Setup environment
+              uses: ./.github/actions/setup
 
-      - name: Build packages
-        run: pnpm turbo run build
+            - name: Build packages
+              run: pnpm turbo run build
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: |
-            apps/*/dist
-            packages/*/dist
-          retention-days: 7
+            - name: Upload build artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: build-artifacts
+                  path: |
+                      apps/*/dist
+                      packages/*/dist
+                  retention-days: 7
 
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    security:
+        name: Security Scan
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Run secret scanning
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Run secret scanning
+              uses: gitleaks/gitleaks-action@v2
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup environment
-        uses: ./.github/actions/setup
+            - name: Setup environment
+              uses: ./.github/actions/setup
 
-      - name: Run dependency audit
-        run: pnpm audit --production
+            - name: Run dependency audit
+              run: pnpm audit --production --level high
 
-      - name: Generate SBOM
-        run: pnpm sbom
+            - name: Generate SBOM
+              run: pnpm sbom
 
-      - name: Upload SBOM
-        uses: actions/upload-artifact@v4
-        with:
-          name: sbom
-          path: sbom.json
-          retention-days: 90
+            - name: Upload SBOM
+              uses: actions/upload-artifact@v4
+              with:
+                  name: sbom
+                  path: sbom.json
+                  retention-days: 90

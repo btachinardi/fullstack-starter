@@ -1,0 +1,24 @@
+// Schema with Plugin Directive
+// Tests plugin system integration
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["plugin_test"]
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+// @prisma-plugin: mock-plugin
+
+model PluginTest {
+  id        String   @id @default(cuid())
+  name      String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@schema("plugin_test")
+}

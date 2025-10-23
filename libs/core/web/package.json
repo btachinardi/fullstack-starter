@@ -1,0 +1,33 @@
+{
+	"name": "@libs/core/web",
+	"version": "0.0.0",
+	"type": "module",
+	"private": true,
+	"license": "MIT",
+	"description": "Core frontend utilities - Next.js/React hooks and utilities",
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"build": "tsc -b -v"
+	},
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./hooks/*": "./src/hooks/*.ts"
+	},
+	"dependencies": {
+		"@libs/core/utils": "workspace:*",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0"
+	},
+	"devDependencies": {
+		"@configs/typescript": "workspace:*",
+		"@types/node": "^24.9.1",
+		"@types/react": "^19.2.2",
+		"@types/react-dom": "^19.2.2",
+		"typescript": "^5.9.3"
+	}
+}

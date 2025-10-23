@@ -1,48 +1,48 @@
 {
-  "name": "fullstack-starter",
-  "image": "mcr.microsoft.com/devcontainers/typescript-node:20-bullseye",
-  "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers-contrib/features/pnpm:2": {
-      "version": "9.15.0"
-    }
-  },
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode",
-        "bradlc.vscode-tailwindcss",
-        "Prisma.prisma",
-        "github.vscode-github-actions",
-        "github.vscode-pull-request-github",
-        "ms-azuretools.vscode-docker",
-        "redhat.vscode-yaml",
-        "VisualStudioExptTeam.vscodeintellicode",
-        "usernamehw.errorlens",
-        "streetsidesoftware.code-spell-checker"
-      ],
-      "settings": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.codeActionsOnSave": {
-          "source.fixAll.eslint": "explicit"
-        },
-        "typescript.tsdk": "node_modules/typescript/lib",
-        "typescript.enablePromptUseWorkspaceTsdk": true,
-        "tailwindCSS.experimental.classRegex": [
-          ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
-          ["cn\\(([^)]*)\\)", "\"([^\"]*)\""]
-        ]
-      }
-    }
-  },
-  "postCreateCommand": "corepack enable && pnpm setup",
-  "mounts": [
-    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
-    "source=pnpm-store,target=/root/.local/share/pnpm/store,type=volume"
-  ],
-  "remoteUser": "root",
-  "workspaceFolder": "/workspace"
+	"name": "fullstack-starter",
+	"image": "mcr.microsoft.com/devcontainers/typescript-node:20-bullseye",
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/devcontainers-contrib/features/pnpm:2": {
+			"version": "9.15.0"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+				"bradlc.vscode-tailwindcss",
+				"Prisma.prisma",
+				"github.vscode-github-actions",
+				"github.vscode-pull-request-github",
+				"ms-azuretools.vscode-docker",
+				"redhat.vscode-yaml",
+				"VisualStudioExptTeam.vscodeintellicode",
+				"usernamehw.errorlens",
+				"streetsidesoftware.code-spell-checker"
+			],
+			"settings": {
+				"editor.formatOnSave": true,
+				"editor.defaultFormatter": "esbenp.prettier-vscode",
+				"editor.codeActionsOnSave": {
+					"source.fixAll.eslint": "explicit"
+				},
+				"typescript.tsdk": "node_modules/typescript/lib",
+				"typescript.enablePromptUseWorkspaceTsdk": true,
+				"tailwindCSS.experimental.classRegex": [
+					["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+					["cn\\(([^)]*)\\)", "\"([^\"]*)\""]
+				]
+			}
+		}
+	},
+	"postCreateCommand": "corepack enable && pnpm setup",
+	"mounts": [
+		"source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+		"source=pnpm-store,target=/root/.local/share/pnpm/store,type=volume"
+	],
+	"remoteUser": "root",
+	"workspaceFolder": "/workspace"
 }

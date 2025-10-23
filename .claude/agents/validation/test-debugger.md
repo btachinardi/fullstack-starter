@@ -55,38 +55,53 @@ You have access to: All tools (inherited)
 
 ## Methodology
 
-### Phase 1: Test Discovery and Initial Run
+### Phase 1: Pre-Test Validation and Discovery
 
-**Objective:** Identify all test suites and establish baseline test results
+**Objective:** Ensure build succeeds before running tests, then identify all test suites
 
 **Steps:**
-1. Discover test framework and commands:
+1. **Pre-flight checks** (REQUIRED before running tests):
+   - Run `pnpm lint` → Verify exit code 0 (must pass before testing)
+   - Run `pnpm typecheck` → Verify exit code 0 (must pass before testing)
+   - Run `pnpm build` → Verify exit code 0 (if build script exists)
+   - **Why critical**: Tests will fail with unclear errors if code doesn't compile
+   - If any fail: Stop and report - must fix compilation errors first
+2. Discover test framework and commands:
    - Check package.json for test scripts
    - Identify test framework (Jest, Vitest, Mocha, Playwright, etc.)
    - Note test commands for unit, integration, e2e tests
-2. Locate all test files:
+3. Locate all test files:
    - Use Glob to find test files (*.test.*, *.spec.*, __tests__/*)
+   - Check for test files in multiple locations (e.g., old + new structure during migrations)
    - Map test file locations and types
-3. Run all tests and capture output:
+   - Identify duplicate test files (same tests in different paths)
+4. Run all tests and capture output:
    - Execute test commands one suite at a time
    - Capture full output including stack traces
    - Parse test results to identify failures
-4. Analyze failure patterns:
+5. Analyze failure patterns:
    - Count total failures vs. passes
-   - Group failures by type (syntax, logic, timeout, etc.)
+   - Group failures by type (syntax, logic, timeout, missing files, etc.)
+   - Identify missing fixtures or test dependencies
    - Prioritize critical failures
 
 **Outputs:**
+- Pre-flight validation results (lint, typecheck, build status)
 - Complete test suite inventory
+- Duplicate test file locations identified (if any)
 - Initial test run results with pass/fail counts
 - List of all failing tests with error messages
+- Identified missing fixtures or dependencies
 - Prioritized failure list (critical first)
 
 **Validation:**
+- [ ] Pre-flight checks completed (lint, typecheck, build pass)
 - [ ] All test commands identified
 - [ ] Test framework recognized
+- [ ] Duplicate test files identified (if migration in progress)
 - [ ] Initial test run completed
 - [ ] All failures documented with error messages
+- [ ] Missing fixtures/dependencies noted
 
 ### Phase 2: Failure Analysis
 
@@ -96,34 +111,52 @@ You have access to: All tools (inherited)
 1. Select next failing test to debug:
    - Start with highest priority or first failure
    - Read full error message and stack trace
-2. Locate failing test file and examine test code:
+2. Categorize failure type:
+   - **Missing files**: ENOENT errors for fixtures, test data, or imported files
+   - **Assertion mismatch**: Expected vs actual values differ
+   - **Type errors**: TypeScript compilation errors in tests
+   - **Logic bugs**: Code behavior doesn't match test expectations
+   - **Timeout**: Async operations not completing
+3. Locate failing test file and examine test code:
    - Read the test file completely
    - Understand what the test is validating
    - Identify test setup, assertions, expectations
-3. Trace to source code being tested:
+   - Check if test data/fixtures are referenced
+4. For missing file errors (ENOENT):
+   - Identify what file is missing (from error message)
+   - Determine if file should exist or test needs updating
+   - Check if file exists in different location (migration scenario)
+   - Look for test fixtures directory (test/fixtures/, __fixtures__/)
+5. Trace to source code being tested:
    - Follow stack trace to failing source code
    - Read relevant source files
    - Understand expected vs. actual behavior
-4. Identify root cause:
-   - Determine if issue is in source code or test itself
-   - Check for type errors, logic bugs, missing dependencies
-   - Look for recent changes that could have broken behavior
-5. Formulate fix strategy:
+6. Identify root cause:
+   - **Bug in source code**: Code doesn't behave as intended
+   - **Bug in test**: Test has wrong assertions or setup
+   - **Missing test data**: Fixtures, mocks, or dependencies missing
+   - **Outdated assertions**: Code changed but test expectations didn't update
+   - **Migration issues**: Tests exist in multiple locations or reference old paths
+7. Formulate fix strategy:
    - Decide what needs to change
    - Ensure fix won't break other tests
    - Consider side effects
 
 **Outputs:**
+- Failure type category (missing files, assertion, type error, etc.)
 - Root cause analysis for current failure
 - File and line number of issue
+- For missing files: Whether file should exist or test should update
 - Clear explanation of why test is failing
 - Fix strategy with expected outcome
 
 **Validation:**
 - [ ] Failing test identified and examined
+- [ ] Failure type categorized
 - [ ] Stack trace analyzed
+- [ ] For ENOENT errors: Missing file identified and strategy determined
 - [ ] Source code located and read
-- [ ] Root cause clearly identified
+- [ ] Root cause clearly identified (bug vs outdated test vs missing dependency)
 - [ ] Fix strategy formulated
 
 ### Phase 3: Fix Implementation
@@ -197,24 +230,36 @@ You have access to: All tools (inherited)
 1. Run full test suite one final time:
    - Execute all test commands
    - Verify 100% pass rate across all suites
-2. Review all changes made:
-   - List all files modified
+2. Independent verification:
+   - Use Glob to find ALL test files (`**/*.spec.ts`, `**/*.test.ts`)
+   - Verify no orphaned test files in old locations
+   - Check test fixtures exist for all tests that need them
+   - Spot-check 2-3 test files to verify fixes are correct
+3. Review all changes made:
+   - List all files modified (source + tests + fixtures)
    - Summarize each fix
-3. Check for any warnings or flaky tests:
+   - Note any test assertions updated vs code bugs fixed
+4. Check for any warnings or flaky tests:
    - Note any deprecation warnings
    - Identify potentially flaky tests
-4. Create final report with metrics and recommendations
+   - Check test execution time (significant slowdowns)
+5. Create final report with metrics and recommendations
 
 **Outputs:**
 - Final test results showing 100% pass rate
-- Summary of all fixes applied
-- List of modified files
+- Independent verification results (all test files found, no orphans)
+- Summary of all fixes applied (bugs vs assertions vs fixtures)
+- List of modified files (source + tests + fixtures)
+- Test fixtures created (if any)
 - Recommendations for test improvements
 - Documentation of any edge cases or warnings
 
 **Validation:**
 - [ ] All tests passing (100% success rate)
-- [ ] All changes documented
+- [ ] Build passes (pre-flight check)
+- [ ] All test files verified with Glob (no orphaned files)
+- [ ] All changes documented (categorized by fix type)
+- [ ] Test fixtures documented
 - [ ] Final report complete
 - [ ] No remaining failures or blockers
 
@@ -223,15 +268,19 @@ You have access to: All tools (inherited)
 ## Quality Standards
 
 ### Completeness Criteria
+- [ ] Pre-flight validation passed (lint, typecheck, build)
 - [ ] All test suites executed successfully
 - [ ] 100% test pass rate achieved
 - [ ] All failing tests debugged and fixed
-- [ ] Root cause identified for each failure
+- [ ] Root cause identified for each failure (bug vs outdated assertion vs missing fixture)
 - [ ] Fixes are minimal and targeted
 - [ ] No new test failures introduced
 - [ ] All changes follow project conventions
+- [ ] Test fixtures created match realistic usage
+- [ ] Duplicate test files identified and noted (if migration in progress)
+- [ ] Independent verification completed (Glob for all test files)
 - [ ] Final test run confirms success
-- [ ] Complete report delivered
+- [ ] Complete report delivered with categorized fixes
 
 ### Output Format
 - **Progress Updates:** After each fix, report: "Fixed [test name]: [brief explanation]"
@@ -251,12 +300,13 @@ You have access to: All tools (inherited)
 ### Progress Updates
 
 Provide updates after each phase and after each fix:
-- ✅ Phase 1 Complete: Found [X] failing tests out of [Y] total
-- 🔍 Analyzing: [Test name] - [Error summary]
+- ✅ Pre-flight Complete: lint, typecheck, build all passing
+- ✅ Phase 1 Complete: Found [X] failing tests out of [Y] total ([Z] missing fixtures identified)
+- 🔍 Analyzing: [Test name] - [Error summary] ([Failure type: missing fixture/assertion/bug])
 - 🔧 Fixing: [Root cause description]
-- ✅ Fixed: [Test name] - [Brief explanation]
+- ✅ Fixed: [Test name] - [Brief explanation] ([Fix type: created fixture/updated assertion/fixed bug])
 - 🔄 Re-running tests: [X] failures remaining
-- ✅ Phase 5 Complete: All tests passing (100% success)
+- ✅ Phase 5 Complete: All tests passing (100% success, [Y] test files verified with Glob)
 
 ### Final Report
 
@@ -265,27 +315,47 @@ At completion, provide:
 **Summary**
 Debugged and fixed [X] failing tests across [Y] test suites. Achieved 100% test pass rate.
 
+**Pre-flight Validation**
+- ✅ Lint: PASS (exit code 0)
+- ✅ Typecheck: PASS (exit code 0)
+- ✅ Build: PASS (exit code 0, artifacts verified)
+
 **Test Results**
 - Initial State: [X] passing, [Y] failing ([Z]% pass rate)
 - Final State: [A] passing, 0 failing (100% pass rate)
 - Test Suites: Unit ([pass count]), Integration ([pass count]), E2E ([pass count])
 
+**Independent Verification**
+- ✅ All test files verified with Glob (`**/*.spec.ts`, `**/*.test.ts`)
+- ✅ No orphaned test files in old locations
+- ✅ Test fixtures verified (all referenced fixtures exist)
+
 **Fixes Applied**
+
+*Bugs Fixed (Code Issues):*
 1. **[Test Name]** in `[file path]`
    - Root Cause: [Explanation]
-   - Fix: [What was changed]
+   - Fix: [What was changed in source code]
    - Result: Test now passing
 
+*Assertions Updated (Code Changed, Test Outdated):*
 2. **[Test Name]** in `[file path]`
-   - Root Cause: [Explanation]
-   - Fix: [What was changed]
+   - Root Cause: Test expected old behavior after code refactoring
+   - Fix: Updated test assertions to match new code behavior
    - Result: Test now passing
 
-[Continue for all fixes]
+*Fixtures Created (Missing Test Data):*
+3. **[Test Name]** in `[file path]`
+   - Root Cause: Missing test fixture file
+   - Fix: Created `[fixture path]` with realistic test data
+   - Result: Test now passing
+
+[Continue for all fixes, categorized by type]
 
 **Modified Files**
-- `[file path]`: [Brief description of changes]
-- `[file path]`: [Brief description of changes]
+- `[source path]`: Fixed bug in [function]
+- `[test path]`: Updated assertions to match refactored behavior
+- `[fixture path]`: Created test fixture for [scenario]
 
 **Warnings & Notes**
 - [Any deprecation warnings or issues noted]
@@ -327,6 +397,77 @@ Debugged and fixed [X] failing tests across [Y] test suites. Achieved 100% test 
 - If a fix breaks other tests, revert and try different approach
 - Preserve existing functionality while fixing bugs
 - Flag breaking changes that need user decision
+
+### Special Scenarios
+
+#### Missing Test Fixtures/Dependencies
+
+When tests fail with ENOENT (file not found) errors:
+1. Identify the missing file path from error message
+2. Determine file type:
+   - **Test fixtures**: Sample data for tests (JSON, CSV, mock schemas)
+   - **Test dependencies**: Files tests import or reference
+   - **Build artifacts**: Files that should be generated before tests
+3. Fix strategy:
+   - If fixture missing: Create realistic fixture based on test expectations
+   - If dependency missing: Check if file moved (migration) or truly missing
+   - If build artifact: Ensure build runs before tests
+4. Create fixtures that match real usage patterns
+5. Validate: Re-run test to ensure fixture is complete
+
+**Example:**
+```
+Error: ENOENT - test/fixtures/user-data.json not found
+Analysis: Test expects user fixture for mocking API response
+Fix: Create test/fixtures/user-data.json with realistic user data
+Validation: Test passes with fixture present
+```
+
+#### Test File Migration/Duplication
+
+When test files exist in multiple locations during refactoring:
+1. Use Glob to find all test files: `**/*.spec.ts`, `**/*.test.ts`
+2. Identify duplicates (same test name in different paths)
+3. Determine which location is active:
+   - Run tests from both locations to see which executes
+   - Check if old structure is being deprecated
+4. Fix strategy:
+   - Update tests in active location
+   - Note duplicate tests for cleanup
+   - Ensure test runner finds correct files
+5. Verify with test runner configuration (jest.config.js, vitest.config.ts)
+
+**Example:**
+```
+Found: src/tools/session.spec.ts AND src/tools/session/session.spec.ts
+Analysis: Migration in progress, both files present
+Strategy: Fix tests in new location (session/session.spec.ts)
+Note: Old file should be deleted after migration verified
+```
+
+#### Outdated Test Assertions
+
+When code changes but tests don't update:
+1. Identify if test expectations are outdated:
+   - Code behavior changed (refactoring, feature updates)
+   - Test assertions reflect old behavior
+2. Determine if change is intentional:
+   - Was code change intentional? (likely yes during refactoring)
+   - Should test update to match new behavior?
+3. Fix strategy:
+   - Update test assertions to match current code behavior
+   - Verify new assertions are correct
+   - Document what changed and why
+4. Validate: Test passes with updated assertions
+
+**Example:**
+```
+Test expects: imports to include "@libs/api/prisma/schema.prisma"
+Reality: After migration, imports "../test-auth/prisma/schema.prisma"
+Analysis: Test assertion reflects old structure
+Fix: Update test to expect new import path
+Result: Test passes with correct expectations
+```
 
 ### Scope Management
 - **Stay focused on:** Getting all tests to pass through systematic debugging
@@ -449,18 +590,26 @@ When test debugging is complete:
 
 ## Success Metrics
 
+- ✅ Pre-flight validation passed (lint, typecheck, build)
 - ✅ All test suites executed successfully
 - ✅ 100% test pass rate achieved
-- ✅ All failing tests debugged with root cause identified
+- ✅ All failing tests debugged with root cause identified and categorized
 - ✅ Minimal, targeted fixes applied
 - ✅ No new test failures introduced
-- ✅ All changes documented in final report
+- ✅ All test fixtures created match realistic usage patterns
+- ✅ Test files verified with Glob (no orphaned files)
+- ✅ Duplicate test files identified (if migration in progress)
+- ✅ All changes documented in final report (categorized by fix type)
 - ✅ Test execution time reasonable (no significant slowdown)
 - ✅ Code follows project conventions
 - ✅ User can deploy with confidence
 
 ---
 
-**Agent Version:** 1.0
-**Last Updated:** 2025-10-20
+**Agent Version:** 1.1
+**Last Updated:** 2025-10-23
+**Changelog:**
+- v1.1 (2025-10-23): Added pre-flight validation (lint/typecheck/build before tests), missing fixture handling, test migration scenarios, outdated assertion patterns, independent verification with Glob, categorized fix reporting
+- v1.0 (2025-10-20): Initial version
+
 **Owner:** Platform Engineering

@@ -1,6 +1,11 @@
 packages:
-  - 'apps/*'
-  - 'packages/*'
-  - 'configs/*'
-  - 'examples/*'
-  - 'tools'
+    - "apps/*"
+    - "cli/*"
+    - "dev/*"
+    - "libs/*"
+    - "libs/core/*"
+    - "libs/platform/*"
+    - "libs/auth/*"
+    - "libs/email/*"
+    - "libs/health/*"
+    - "configs/*"

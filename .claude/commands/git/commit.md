@@ -1,6 +1,5 @@
 ---
 description: Intelligently commit git changes using semantic commit messages with smart grouping for multi-concern changes
-allowed-tools: Bash(git *:*), Task
 model: claude-haiku-4-5
 ---
 
@@ -55,6 +54,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
    ```
 
 2. **Wait for Subagent Response**
+
    - Subagent will analyze git status and diffs
    - Subagent will determine grouping strategy (single-commit vs. multi-commit)
    - Subagent will return JSON structure with commit groups
@@ -172,6 +172,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
    **IMPORTANT:** All three Task calls happen in parallel - Claude Code executes them concurrently.
 
 2. **Wait for All Subagents to Complete**
+
    - All message generators run simultaneously
    - Wait for all responses before proceeding
    - Total time ≈ time of slowest generator (not sum of all)
@@ -197,6 +198,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
 **Steps:**
 
 1. **Prepare Commit Execution**
+
    - Create temporary files for multi-line commit messages if needed
    - Prepare file lists for each commit group
    - Determine commit order (respect dependencies from grouper)
@@ -224,6 +226,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
    Confirm only intended files are staged.
 
    d. **Create commit:**
+
    - If message is single-line:
      ```bash
      git commit -m "message"
@@ -265,6 +268,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
    Confirm no staged or unstaged changes remain.
 
    c. **Cleanup:**
+
    - Remove temporary message files
    - Confirm all operations successful
 
@@ -302,6 +306,7 @@ Orchestrate intelligent git commits by delegating to specialized subagents for c
 **When Invoked from Hook:**
 
 1. **Detect Hook Context**
+
    - Check for subagent context (session_id, invocation_id, agent_type, prompt)
 
 2. **Include agent metadata**: Ensure commit message footer includes:

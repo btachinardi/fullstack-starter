@@ -54,6 +54,7 @@ lerna-debug.log*
 .cache
 .temp
 tmp
+session-exports
 *.tgz
 .changeset/*.md
 !.changeset/README.md
@@ -63,6 +64,9 @@ tmp
 *.sqlite
 *.sqlite3
 prisma/migrations/migration_lock.toml
+
+# Prisma generated client
+**/prisma/generated/**
 
 # SBOM
 sbom.json
