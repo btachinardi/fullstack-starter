@@ -4,9 +4,15 @@
 		"baseUrl": ".",
 		"paths": {
 			"@/*": ["./*"],
+			"@libs/auth/web": ["../../libs/auth/web/src/index.ts"],
+			"@libs/auth/web/*": ["../../libs/auth/web/src/*"],
 			"@libs/core/ui/*": ["../../libs/core/ui/src/*", "../../libs/core/ui/*"],
 			"@libs/core/web/*": ["../../libs/core/web/src/*"],
-			"@libs/core/utils/*": ["../../libs/core/utils/src/*"]
+			"@libs/core/utils/*": ["../../libs/core/utils/src/*"],
+			"@libs/health/web": ["../../libs/health/web/src/index.ts"],
+			"@libs/health/web/*": ["../../libs/health/web/src/*"],
+			"@libs/platform/web": ["../../libs/platform/web/src/index.ts"],
+			"@libs/platform/web/*": ["../../libs/platform/web/src/*"]
 		},
 		"plugins": [
 			{

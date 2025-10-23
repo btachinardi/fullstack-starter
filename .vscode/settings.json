@@ -75,5 +75,6 @@
 		"**/build/**": true,
 		"**/.turbo/**": true
 	},
-	"biome.requireConfiguration": true
+	"biome.requireConfiguration": true,
+	"css.lint.unknownAtRules": "ignore"
 }

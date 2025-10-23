@@ -1,0 +1,90 @@
+// ============================================================================
+// Auth Schema - Better Auth Integration
+// ============================================================================
+// This schema defines authentication models for Better Auth.
+// Applications can import this schema using:
+//   // @prisma-import: @libs/auth/api/prisma/schema.prisma
+//
+// Models:
+// - User: User accounts with email/password authentication
+// - Session: Active user sessions
+// - Account: OAuth/social provider accounts
+// - Verification: Email verification tokens
+// ============================================================================
+
+generator client {
+	provider = "prisma-client-js"
+	output   = "./generated/client"
+}
+
+datasource db {
+	provider = "postgresql"
+	url      = env("DATABASE_URL")
+	schemas  = ["auth"]
+}
+
+// ============================================================================
+// Better Auth Core Schema
+// ============================================================================
+
+model User {
+	id            String    @id
+	email         String    @unique
+	emailVerified Boolean   @default(false)
+	name          String?
+	createdAt     DateTime  @default(now())
+	updatedAt     DateTime  @updatedAt
+	image         String?
+	sessions      Session[]
+	accounts      Account[]
+
+	@@map("users")
+	@@schema("auth")
+}
+
+model Session {
+	id        String   @id
+	expiresAt DateTime
+	token     String   @unique
+	createdAt DateTime @default(now())
+	updatedAt DateTime @updatedAt
+	ipAddress String?
+	userAgent String?
+	userId    String
+	user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+	@@map("sessions")
+	@@schema("auth")
+}
+
+model Account {
+	id                    String    @id
+	accountId             String
+	providerId            String
+	userId                String
+	user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+	accessToken           String?
+	refreshToken          String?
+	idToken               String?
+	accessTokenExpiresAt  DateTime?
+	refreshTokenExpiresAt DateTime?
+	scope                 String?
+	password              String?
+	createdAt             DateTime  @default(now())
+	updatedAt             DateTime  @updatedAt
+
+	@@map("accounts")
+	@@schema("auth")
+}
+
+model Verification {
+	id         String   @id
+	identifier String
+	value      String
+	expiresAt  DateTime
+	createdAt  DateTime @default(now())
+	updatedAt  DateTime @updatedAt
+
+	@@map("verifications")
+	@@schema("auth")
+}

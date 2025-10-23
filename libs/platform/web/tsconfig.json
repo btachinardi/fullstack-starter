@@ -1,0 +1,14 @@
+{
+	"extends": "@configs/typescript/nextjs.json",
+	"compilerOptions": {
+		"outDir": "dist",
+		"rootDir": "src",
+		"composite": true,
+		"incremental": true,
+		"noEmit": false,
+		"jsx": "react-jsx",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"]
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "dist"]
+}

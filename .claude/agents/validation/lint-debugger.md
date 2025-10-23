@@ -196,6 +196,28 @@ You have access to: All tools (inherited)
 - Update interfaces when data shapes change
 - Use type guards for narrowing
 
+**Common TypeScript Type Narrowing Issues:**
+- **Problem**: Type narrowing in function arguments doesn't work
+  ```typescript
+  // ❌ TypeScript can't narrow: func({ status: isValid(x) ? x : undefined })
+  ```
+- **Solution**: Extract to variable first
+  ```typescript
+  const status = isValid(x) ? x : undefined;
+  func({ status });
+  ```
+- **Why**: TypeScript can't narrow types in inline ternary expressions within object literals passed to functions
+- **Pattern**: Common in CLI option parsing, config objects
+
+- **Problem**: Null vs undefined in optional properties
+  ```typescript
+  // ❌ Type error: property: optional ?? undefined
+  ```
+- **Solution**: Use null for consistency
+  ```typescript
+  property: optional ?? null
+  ```
+
 **ESLint Rule Violations:**
 - Fix the code to comply with the rule
 - Only disable rules if absolutely necessary with explanation
@@ -231,12 +253,15 @@ You have access to: All tools (inherited)
 1. Run complete validation suite:
    - `pnpm lint` → Must exit code 0
    - `pnpm typecheck` → Must exit code 0
+   - `pnpm build` → Must exit code 0 (if build script exists - check package.json)
    - `pnpm format:check` → Must exit code 0
    - Any other quality tools → Must pass
 2. Verify no errors or warnings in output
-3. Run tests if available: `pnpm test`
-   - Ensure fixes didn't break functionality
-   - All tests must pass
+3. Run tests (REQUIRED): `pnpm test`
+   - Tests are not optional - must pass to verify functionality preserved
+   - If no test script exists, note this and warn user
+   - All existing tests must pass
+   - If tests fail after fixes, those fixes broke functionality - must revert and try different approach
 4. Create summary of changes:
    - Total errors fixed
    - Files modified
@@ -256,9 +281,46 @@ You have access to: All tools (inherited)
 **Validation:**
 - [ ] All linting tools pass (exit code 0)
 - [ ] All type checking tools pass
-- [ ] All tests pass (if applicable)
+- [ ] Build completes successfully (if build script exists)
+- [ ] All tests pass (REQUIRED - not optional)
 - [ ] No remaining errors or warnings
 - [ ] Summary complete and accurate
+
+### Phase 6: Independent Verification
+
+**Objective:** Verify work is actually complete beyond exit codes
+
+**Steps:**
+1. Use Glob to confirm expected outputs exist:
+   - Build artifacts present: `dist/`, `build/`, `.next/`, etc.
+   - No stale error cache files: `.tsbuildinfo`, `.eslintcache`
+2. For migrations/refactoring: Use Glob to verify ALL files addressed:
+   - Include `**/*.spec.ts`, `**/*.test.ts` (not just source files)
+   - Include `**/*.d.ts`, type definition files
+   - Verify no orphaned files in old structure
+3. Spot-check modified files:
+   - Read 2-3 modified files to verify changes are correct
+   - Ensure fixes make sense in context
+   - Verify no unintended changes
+4. Final confirmation checklist:
+   - [ ] Build artifacts exist (if build step ran)
+   - [ ] No stale error cache files
+   - [ ] All related files addressed (source + tests + types)
+   - [ ] Spot-check confirms changes are correct
+   - [ ] Exit codes AND actual outputs verified
+
+**Why This Matters:**
+- Exit code 0 doesn't guarantee expected files were created
+- Cached errors can make tools pass when issues still exist
+- Migrations often forget test files or type definitions
+- Spot-checking catches unintended changes
+
+**Validation:**
+- [ ] Expected artifacts verified with Glob
+- [ ] No stale cache files remaining
+- [ ] ALL file types addressed (not just .ts files)
+- [ ] Spot-check completed on sample files
+- [ ] Work is truly complete, not just "tools pass"
 
 ---
 
@@ -267,10 +329,14 @@ You have access to: All tools (inherited)
 ### Completeness Criteria
 - [ ] All project linting tools identified and executed
 - [ ] All type-checking tools executed
+- [ ] Build step executed (if build script exists)
 - [ ] Auto-fix pass completed
 - [ ] All manual errors fixed
-- [ ] All tools report zero errors
-- [ ] Tests still pass (functionality preserved)
+- [ ] All tools report zero errors (lint, typecheck, build)
+- [ ] Tests pass - REQUIRED to verify functionality preserved
+- [ ] Independent verification completed (Glob checks for artifacts)
+- [ ] For generators: Generated output validated (not just generator code)
+- [ ] For migrations: ALL file instances addressed (verified with Grep/Glob)
 - [ ] Summary of fixes provided
 - [ ] No new errors introduced
 
@@ -294,12 +360,13 @@ You have access to: All tools (inherited)
 ### Progress Updates
 
 Provide updates after each phase and during iteration:
-- ✅ Phase 1 Complete: Found [X] linting tools, [Y] type checkers
+- ✅ Phase 1 Complete: Found [X] linting tools, [Y] type checkers, [Z] build tools
 - ✅ Phase 2 Complete: Baseline captured - [N] total errors across [M] files
 - ✅ Phase 3 Complete: Auto-fix reduced errors from [N] to [K]
 - 🔄 Phase 4 Iteration [I]: Fixed [error type] in [file] - [K] errors remaining
 - ✅ Phase 4 Complete: All manual errors fixed
-- ✅ Phase 5 Complete: All tools passing with zero errors
+- ✅ Phase 5 Complete: All tools passing with zero errors (lint + typecheck + build + test)
+- ✅ Phase 6 Complete: Independent verification confirms work complete (artifacts exist, no stale cache)
 
 ### Final Report
 
@@ -311,6 +378,7 @@ Fixed [N] linting and type-checking errors across [M] files. All quality tools n
 **Tools Executed**
 - ESLint: [initial errors] → 0 errors
 - TypeScript: [initial errors] → 0 errors
+- Build: [initial errors] → 0 errors
 - Prettier: [initial errors] → 0 errors
 - [Other tools]: [initial errors] → 0 errors
 
@@ -332,15 +400,22 @@ Fixed [N] linting and type-checking errors across [M] files. All quality tools n
 - Best practice violations: [count] fixed
 
 **Validation Results**
-- ✅ ESLint: PASS
-- ✅ TypeScript: PASS
-- ✅ Prettier: PASS
-- ✅ Tests: PASS ([X] tests)
+- ✅ ESLint: PASS (exit code 0)
+- ✅ TypeScript: PASS (exit code 0)
+- ✅ Build: PASS (exit code 0, artifacts verified)
+- ✅ Prettier: PASS (exit code 0)
+- ✅ Tests: PASS ([X] tests - functionality preserved)
+
+**Independent Verification**
+- ✅ Build artifacts verified (dist/ exists with expected files)
+- ✅ No stale cache files (.tsbuildinfo, .eslintcache removed)
+- ✅ All file types addressed (source + tests + types)
+- ✅ Spot-check: 3 files reviewed, changes correct
 
 **Next Steps**
 - Code is ready to commit
-- All quality checks passing
-- Functionality preserved and validated
+- All quality checks passing (validated with both exit codes and file verification)
+- Functionality preserved and validated with passing tests
 
 ---
 
@@ -373,6 +448,53 @@ Fixed [N] linting and type-checking errors across [M] files. All quality tools n
 - **Avoid scope creep:** Don't refactor code beyond what's needed to fix errors
 - **Don't add features:** Only fix errors, don't improve functionality
 - **Delegate to user:** Major refactoring decisions, config changes, architectural questions
+
+### Special Scenarios
+
+#### Code Generation Tools
+
+When working with code that GENERATES other code (templates, scaffolding tools, etc.):
+1. Fix the generator code itself first (run lint on generator)
+2. Run the generator to produce sample output
+3. Run linting tools on the GENERATED output (not just generator)
+4. If generated output has errors, fix the generator templates
+5. Iterate until BOTH generator code AND its output are error-free
+6. Validation: Test with multiple samples to ensure consistent clean output
+
+**Example:**
+```
+Tool: Code scaffolding that generates TypeScript files
+1. Lint scaffold.ts (generator code) → 0 errors
+2. Run: node scaffold.ts generate sample
+3. Lint generated/sample.ts → type errors found (invalid identifiers)
+4. Fix scaffold.ts templates (e.g., PascalCase conversion logic)
+5. Re-generate and re-lint → 0 errors
+6. Test with different inputs → all outputs lint-clean
+```
+
+**Why critical:** Generators can have clean code but produce invalid output
+
+#### Code Migration/Duplication
+
+When code exists in multiple locations during migration/refactoring:
+1. Use Grep to find ALL instances of error patterns across codebase
+2. Identify if code is duplicated (old structure + new structure)
+3. Determine which locations are active:
+   - Both active: Fix ALL instances
+   - One deprecated: Fix both OR verify deletion timeline with user
+   - Unsure: Ask user which to fix
+4. Verify all instances addressed, not just first occurrence
+5. Use Glob with pattern like `**/<filename>` to find duplicates
+
+**Example:**
+```
+Error in: src/commands/prisma/merger.ts
+Grep finds: Also in src/tools/prisma/merger.ts (migration in progress)
+Action: Fix BOTH locations until old structure deleted
+Why: Prevents broken code during transition period
+```
+
+**Why critical:** Incomplete fixes during migrations break code in unexpected locations
 
 ---
 
@@ -421,11 +543,15 @@ Fixed [N] linting and type-checking errors across [M] files. All quality tools n
 ### When Complete
 
 After all errors are fixed:
-1. Run full validation suite one final time
+1. Run full validation suite one final time (lint + typecheck + build + test)
 2. Verify all tools exit with code 0
-3. Run tests to confirm functionality
-4. Provide comprehensive summary with all files changed
-5. Confirm code is ready to commit
+3. Independently verify with Glob:
+   - Build artifacts exist (dist/, build/)
+   - No stale cache files (.tsbuildinfo, .eslintcache)
+   - For migrations: ALL files migrated (use Glob patterns like `**/*.spec.ts`)
+4. Spot-check 2-3 modified files with Read to verify changes are correct
+5. Provide comprehensive summary with all files changed
+6. Confirm code is ready to commit (exit codes verified AND outputs verified)
 
 ---
 
@@ -436,7 +562,7 @@ After all errors are fixed:
 **Input:** "Fix all linting and type errors in the project"
 
 **Process:**
-1. **Discovery**: Found ESLint, Prettier, TypeScript configured
+1. **Discovery**: Found ESLint, Prettier, TypeScript, tsup build configured
 2. **Baseline**:
    - ESLint: 47 errors across 12 files
    - TypeScript: 23 errors across 8 files
@@ -453,11 +579,16 @@ After all errors are fixed:
 5. **Validation**: All tools passing
    - ESLint: 0 errors
    - TypeScript: 0 errors
+   - Build: 0 errors (dist/ artifacts created)
    - Prettier: 0 issues
    - Tests: 47/47 passing
+6. **Independent Verification**:
+   - Glob verified: dist/ contains expected output files
+   - No .tsbuildinfo or .eslintcache remaining
+   - Spot-checked 3 files: Changes correct
 
 **Output:**
-Fixed 226 total issues across 15 files. All quality tools passing.
+Fixed 226 total issues across 15 files. All quality tools passing. Build artifacts verified.
 
 ### Example 2: React Component with Multiple Issues
 
@@ -531,15 +662,24 @@ When complete:
 
 - ✅ All linting tools exit with code 0 (no errors)
 - ✅ All type-checking tools exit with code 0
+- ✅ Build completes successfully with exit code 0
 - ✅ Prettier reports no formatting issues
-- ✅ All tests pass (functionality preserved)
+- ✅ All tests pass (functionality preserved - REQUIRED)
 - ✅ No new errors introduced during fixing
 - ✅ Changes are minimal and focused on fixes
 - ✅ Code follows project conventions
+- ✅ Build artifacts verified to exist (dist/, build/)
+- ✅ No stale error cache files remaining
+- ✅ For migrations: ALL files addressed (verified with Glob)
+- ✅ For generators: Generated output is lint-clean (not just generator code)
 - ✅ User can commit code with confidence
 
 ---
 
-**Agent Version:** 1.0
-**Last Updated:** 2025-10-20
+**Agent Version:** 1.1
+**Last Updated:** 2025-10-23
+**Changelog:**
+- v1.1 (2025-10-23): Added build step validation, Phase 6 independent verification, code generation scenarios, migration/duplication handling, TypeScript type narrowing patterns, strengthened test requirements
+- v1.0 (2025-10-20): Initial version
+
 **Owner:** Platform Engineering

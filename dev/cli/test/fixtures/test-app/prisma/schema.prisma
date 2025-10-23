@@ -1,0 +1,54 @@
+// Application Schema
+// Main app schema importing multiple library schemas
+
+// @prisma-import: ../../test-auth/prisma/schema.prisma
+// @prisma-import: ../../test-payments/prisma/schema.prisma
+// @prisma-import: ../../test-blog/prisma/schema.prisma
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["auth", "blog", "payments", "public"]
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+
+  @@schema("public")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Int
+  stock       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orders      Order[]
+
+  @@schema("public")
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  productId  String
+  userId     String
+  quantity   Int
+  status     OrderStatus
+  totalPrice Int
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@schema("public")
+}

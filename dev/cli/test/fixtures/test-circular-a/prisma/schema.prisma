@@ -1,0 +1,13 @@
+// Circular Dependency Test A
+// This schema imports test-circular-b, which imports this schema back
+// This should trigger a CircularDependencyError
+
+// @prisma-import: ../../test-circular-b/prisma/schema.prisma
+
+model CircularA {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  @@schema("circular_a")
+}

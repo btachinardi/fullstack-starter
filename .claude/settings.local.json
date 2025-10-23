@@ -91,7 +91,13 @@
 			"Bash(pnpm prisma:build:*)",
 			"Bash(for dir in test-auth test-payments test-blog test-app test-circular-a test-circular-b)",
 			"Bash(pnpm prisma:generate:*)",
-			"Bash(pnpm check:fix:*)"
+			"Bash(pnpm check:fix:*)",
+			"Bash(mkdir:*)",
+			"Bash(npx @better-auth/cli generate:*)",
+			"Bash(pnpm tsc:*)",
+			"WebFetch(domain:www.better-auth.com)",
+			"Bash(pnpm test:coverage:*)",
+			"Bash(ls:*)"
 		],
 		"deny": [
 			"// Git - destructive operations (BLOCKED FOR SAFETY)",

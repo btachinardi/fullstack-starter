@@ -3,8 +3,8 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"build": "turbo build",
-		"dev": "turbo dev",
+		"build": "turbo build --concurrency 25",
+		"dev": "turbo dev --concurrency 25",
 		"typecheck": "turbo typecheck",
 		"check": "biome check . --diagnostic-level error --max-diagnostics 200",
 		"check:fix": "biome check . --write --unsafe --max-diagnostics 200 --diagnostic-level error",
@@ -29,10 +29,13 @@
 		"docker:exec:web": "docker-compose exec web sh",
 		"docker:exec:postgres": "docker-compose exec postgres psql -U postgres -d fullstack",
 		"docker:prune": "docker system prune -af --volumes",
-		"tools": "node cli/tools/dist/main.js",
-		"tools:build": "pnpm --filter @cli/tools build"
+		"tools": "node dev/cli/dist/main.js",
+		"tools:build": "pnpm --filter @dev/cli build",
+		"tools:dev": "pnpm --filter @dev/cli dev",
+		"email:preview": "pnpm --filter @libs/email/templates dev"
 	},
 	"devDependencies": {
+		"@better-auth/cli": "^1.3.29",
 		"@biomejs/biome": "2.2.7",
 		"@configs/typescript": "workspace:*",
 		"husky": "^9.1.7",

@@ -1,0 +1,35 @@
+// Payments Schema
+// Provides Payment and Transaction models
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+
+  @@schema("payments")
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  amount       Int
+  currency     String
+  status       PaymentStatus
+  customerId   String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+
+  @@schema("payments")
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  paymentId String
+  amount    Int
+  type      String
+  createdAt DateTime @default(now())
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@schema("payments")
+}

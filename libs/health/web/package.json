@@ -1,0 +1,34 @@
+{
+	"name": "@libs/health/web",
+	"version": "0.0.0",
+	"type": "module",
+	"private": true,
+	"license": "MIT",
+	"description": "Health check UI components and utilities for React",
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"build": "tsc -b -v"
+	},
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"dependencies": {
+		"@libs/core/ui": "workspace:*",
+		"@libs/core/utils": "workspace:*",
+		"@tanstack/react-query": "^5.90.5",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0"
+	},
+	"devDependencies": {
+		"@configs/typescript": "workspace:*",
+		"@types/node": "^24.9.1",
+		"@types/react": "^19.2.2",
+		"@types/react-dom": "^19.2.2",
+		"typescript": "^5.9.3"
+	}
+}

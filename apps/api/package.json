@@ -10,15 +10,16 @@
 		"test": "jest",
 		"test:watch": "jest --watch",
 		"test:e2e": "jest --config ./test/jest-e2e.json",
-		"prisma:build": "pnpm --filter @cli/tools build && node ../../cli/tools/dist/main.js prisma build prisma/schema.prisma",
-		"prisma:generate": "prisma generate",
-		"prisma:migrate": "prisma migrate dev",
-		"prisma:migrate:deploy": "prisma migrate deploy",
-		"prisma:studio": "prisma studio",
-		"db:push": "prisma db push"
+		"db:build": "pnpm --filter @dev/cli build && pnpm tools prisma build prisma/schema.prisma",
+		"db:generate": "pnpm db:build && prisma generate",
+		"db:migrate": "pnpm db:build && prisma migrate dev",
+		"db:migrate:deploy": "pnpm db:build && prisma migrate deploy",
+		"db:studio": "prisma studio",
+		"db:push": "pnpm db:build && prisma db push"
 	},
 	"dependencies": {
 		"@libs/core/api": "workspace:*",
+		"@libs/platform/api": "workspace:*",
 		"@nestjs/common": "^11.1.7",
 		"@nestjs/core": "^11.1.7",
 		"@nestjs/platform-express": "^11.1.7",

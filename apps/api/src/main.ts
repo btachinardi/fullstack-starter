@@ -1,4 +1,4 @@
-import { bootstrapApp } from "@libs/core/api";
+import { bootstrapApp } from "@libs/platform/api";
 import { AppModule } from "./app.module";
 
 /**

@@ -1,0 +1,275 @@
+/**
+ * Log Service
+ *
+ * Business logic for querying and filtering structured logs.
+ * These are pure functions that the CLI dispatches to.
+ */
+
+import { existsSync } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import type { LogEntry, LogLevel } from "../../shared/services/logger.js";
+import { getDefaultLogDir, isLogEntry } from "../../shared/services/logger.js";
+import type {
+	LogQueryOptions,
+	LogStatsResult,
+	LogTailOptions,
+} from "./log.types.js";
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Parse a JSONL log file
+ */
+async function parseLogFile(filePath: string): Promise<LogEntry[]> {
+	const content = await readFile(filePath, "utf-8");
+	const lines = content.trim().split("\n").filter(Boolean);
+
+	const entries: LogEntry[] = [];
+	for (const line of lines) {
+		try {
+			const parsed: unknown = JSON.parse(line);
+			if (isLogEntry(parsed)) {
+				entries.push(parsed);
+			}
+		} catch {
+			// Skip invalid lines
+		}
+	}
+
+	return entries;
+}
+
+/**
+ * Get all log files in the log directory
+ */
+async function getLogFiles(logDir: string): Promise<string[]> {
+	if (!existsSync(logDir)) {
+		return [];
+	}
+
+	const files = await readdir(logDir);
+	return files
+		.filter((f) => f.endsWith(".jsonl"))
+		.sort()
+		.map((f) => join(logDir, f));
+}
+
+/**
+ * Filter log entries based on query options
+ */
+function filterEntries(
+	entries: LogEntry[],
+	options: LogQueryOptions,
+): LogEntry[] {
+	let filtered = entries;
+
+	if (options.source) {
+		filtered = filtered.filter((e) => e.source === options.source);
+	}
+
+	if (options.level) {
+		filtered = filtered.filter((e) => e.level === options.level);
+	}
+
+	if (options.toolName) {
+		filtered = filtered.filter((e) => e.context?.toolName === options.toolName);
+	}
+
+	if (options.sessionId) {
+		filtered = filtered.filter(
+			(e) => e.context?.sessionId === options.sessionId,
+		);
+	}
+
+	if (options.search) {
+		const searchLower = options.search.toLowerCase();
+		filtered = filtered.filter(
+			(e) =>
+				e.message.toLowerCase().includes(searchLower) ||
+				JSON.stringify(e.data || {})
+					.toLowerCase()
+					.includes(searchLower),
+		);
+	}
+
+	if (options.limit) {
+		filtered = filtered.slice(-options.limit);
+	}
+
+	return filtered;
+}
+
+// ============================================================================
+// Public API Functions
+// ============================================================================
+
+/**
+ * Query logs with filters
+ */
+export async function queryLogs(
+	options: LogQueryOptions = {},
+): Promise<LogEntry[]> {
+	const logDir = options.logDir || getDefaultLogDir();
+	const files = await getLogFiles(logDir);
+
+	// Filter files by date range
+	let filesToRead = files;
+	if (options.startDate || options.endDate) {
+		filesToRead = files.filter((f) => {
+			const fileName = f.split(/[\\/]/).pop()?.replace(".jsonl", "");
+			if (!fileName) return false;
+			if (options.startDate && fileName < options.startDate) return false;
+			if (options.endDate && fileName > options.endDate) return false;
+			return true;
+		});
+	}
+
+	// Read and parse all log files
+	const allEntries: LogEntry[] = [];
+	for (const file of filesToRead) {
+		const entries = await parseLogFile(file);
+		allEntries.push(...entries);
+	}
+
+	// Sort by timestamp
+	allEntries.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+	// Apply filters
+	return filterEntries(allEntries, options);
+}
+
+/**
+ * Get the last N log entries (tail)
+ */
+export async function tailLogs(
+	options: LogTailOptions = {},
+): Promise<LogEntry[]> {
+	const logDir = options.logDir || getDefaultLogDir();
+	const lines = options.lines || 20;
+
+	const files = await getLogFiles(logDir);
+	if (files.length === 0) {
+		return [];
+	}
+
+	// Read the most recent log file
+	const latestFile = files[files.length - 1];
+	if (!latestFile) {
+		return [];
+	}
+
+	const entries = await parseLogFile(latestFile);
+
+	// Return last N entries
+	return entries.slice(-lines);
+}
+
+/**
+ * Get log statistics
+ */
+export async function logStats(
+	options: { logDir?: string } = {},
+): Promise<LogStatsResult> {
+	const logDir = options.logDir || getDefaultLogDir();
+	const files = await getLogFiles(logDir);
+
+	const byLevel: Record<LogLevel, number> = {
+		debug: 0,
+		info: 0,
+		warn: 0,
+		error: 0,
+	};
+	const bySource: Record<string, number> = {};
+	const byTool: Record<string, number> = {};
+
+	let totalEntries = 0;
+	let firstTimestamp = "";
+	let lastTimestamp = "";
+
+	for (const file of files) {
+		const entries = await parseLogFile(file);
+		totalEntries += entries.length;
+
+		for (const entry of entries) {
+			byLevel[entry.level]++;
+
+			bySource[entry.source] = (bySource[entry.source] || 0) + 1;
+
+			if (
+				entry.context?.toolName &&
+				typeof entry.context.toolName === "string"
+			) {
+				byTool[entry.context.toolName] =
+					(byTool[entry.context.toolName] || 0) + 1;
+			}
+
+			if (!firstTimestamp || entry.timestamp < firstTimestamp) {
+				firstTimestamp = entry.timestamp;
+			}
+			if (!lastTimestamp || entry.timestamp > lastTimestamp) {
+				lastTimestamp = entry.timestamp;
+			}
+		}
+	}
+
+	return {
+		totalEntries,
+		byLevel,
+		bySource,
+		byTool,
+		dateRange: {
+			start: firstTimestamp,
+			end: lastTimestamp,
+		},
+	};
+}
+
+/**
+ * List all unique sources in logs
+ */
+export async function listSources(
+	options: { logDir?: string } = {},
+): Promise<string[]> {
+	const logDir = options.logDir || getDefaultLogDir();
+	const files = await getLogFiles(logDir);
+
+	const sources = new Set<string>();
+
+	for (const file of files) {
+		const entries = await parseLogFile(file);
+		for (const entry of entries) {
+			sources.add(entry.source);
+		}
+	}
+
+	return Array.from(sources).sort();
+}
+
+/**
+ * List all unique tools in logs
+ */
+export async function listTools(
+	options: { logDir?: string } = {},
+): Promise<string[]> {
+	const logDir = options.logDir || getDefaultLogDir();
+	const files = await getLogFiles(logDir);
+
+	const tools = new Set<string>();
+
+	for (const file of files) {
+		const entries = await parseLogFile(file);
+		for (const entry of entries) {
+			if (
+				entry.context?.toolName &&
+				typeof entry.context.toolName === "string"
+			) {
+				tools.add(entry.context.toolName);
+			}
+		}
+	}
+
+	return Array.from(tools).sort();
+}
